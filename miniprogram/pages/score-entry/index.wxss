@@ -1,6 +1,7 @@
 .page-title { margin: 12rpx 0; color: #143F43; font-size: 44rpx; font-weight: 700; }
 .intro { color: #687574; font-size: 27rpx; line-height: 1.7; }
 .upload { display: block; width: 100%; margin-top: 40rpx; padding: 34rpx 28rpx; text-align: left; }
+.voice { display:block; width:100%; margin-top:16rpx; padding:30rpx 28rpx; text-align:left; }.voice-result { margin:14rpx 4rpx 0; color:#2C6194; font-size:23rpx; line-height:1.6; }
 .upload-title { margin-bottom: 8rpx; color: #143F43; font-size: 31rpx; font-weight: 650; }
 .divider { display: flex; align-items: center; gap: 18rpx; margin: 34rpx 4rpx 22rpx; color: #687574; font-size: 24rpx; }
 .divider view { height: 1rpx; flex: 1; background: #D8E1DE; }
@@ -12,5 +13,5 @@
 input, .picker-value { height: 52rpx; color: #1C2828; font-size: 30rpx; line-height: 52rpx; }
 input::placeholder { color: #A0ABAA; }
 .privacy { margin: 24rpx 4rpx 30rpx; color: #687574; font-size: 22rpx; line-height: 1.65; }
-.subject-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:16rpx; margin-top:12rpx; }.subject { padding:14rpx 12rpx; background:#F5F7F5; border-radius:10rpx; }.subject text { display:block; color:#687574; font-size:22rpx; }.subject input { height:42rpx; font-size:28rpx; line-height:42rpx; }.voice-tip { margin:22rpx 4rpx 0; padding:16rpx 20rpx; color:#725017; background:#FFF7E9; border-radius:12rpx; font-size:23rpx; line-height:1.6; }
+.subject-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:16rpx; margin-top:12rpx; }.subject { padding:14rpx 12rpx; background:#F5F7F5; border-radius:10rpx; }.subject text { display:block; color:#687574; font-size:22rpx; }.subject input { height:42rpx; font-size:28rpx; line-height:42rpx; }
 .save { width: 100%; }

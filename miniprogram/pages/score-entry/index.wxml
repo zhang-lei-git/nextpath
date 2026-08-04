@@ -7,6 +7,11 @@
     <view class="upload-title">上传成绩截图</view>
     <view class="muted">相册或拍照 · 支持 JPG、PNG、WebP</view>
   </button>
+  <button class="voice card" bindtap="voiceInput">
+    <view class="upload-title">{{recording ? '结束录音并识别' : '语音录入成绩'}}</view>
+    <view class="muted">{{recording ? '正在录音，点击结束' : '可说“语文 90，数学 95，班级第 12 名”'}}</view>
+  </button>
+  <view class="voice-result" wx:if="{{voiceText}}">识别文本：{{voiceText}}</view>
 
   <view class="divider"><view></view><text>或手动录入</text><view></view></view>
   <view class="form card">
@@ -17,7 +22,6 @@
     <view class="field"><view class="label">班级排名 <text>选填</text></view><input type="number" placeholder="例如：28" value="{{form.class_rank}}" data-key="class_rank" bindinput="updateField" /></view>
     <view class="field last"><view class="label">年级排名 <text>建议填写</text></view><input type="number" placeholder="例如：126" value="{{form.grade_rank}}" data-key="grade_rank" bindinput="updateField" /></view>
   </view>
-  <view class="voice-tip">语音录入正在接入识别服务。首轮测试可使用截图上传或手动录入，提交前均由家长确认。</view>
   <view class="privacy">成绩截图仅用于生成待确认记录。内部测试阶段不进行对外共享。</view>
   <button class="primary-button save" bindtap="submit" loading="{{saving}}">确认并保存</button>
 </view>
