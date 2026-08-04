@@ -1,0 +1,21 @@
+page {
+  min-height: 100%;
+  background: #F5F7F5;
+  color: #1C2828;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+button { margin: 0; padding: 0; border: 0; background: transparent; line-height: inherit; }
+button::after { border: none; }
+.page { padding: 28rpx 32rpx 140rpx; }
+.eyebrow { color: #16766D; font-size: 24rpx; font-weight: 700; letter-spacing: 1rpx; }
+.section-title { margin: 44rpx 0 20rpx; color: #143F43; font-size: 34rpx; font-weight: 700; line-height: 1.35; }
+.card { background: #FFFFFF; border: 1rpx solid #E2E8E5; border-radius: 16rpx; }
+.muted { color: #687574; font-size: 24rpx; line-height: 1.6; }
+.primary-button { height: 96rpx; border-radius: 14rpx; background: #143F43; color: #FFFFFF; font-size: 30rpx; font-weight: 600; line-height: 96rpx; text-align: center; }
+.secondary-button { height: 88rpx; border: 1rpx solid #B7CFCA; border-radius: 14rpx; color: #143F43; font-size: 28rpx; line-height: 88rpx; text-align: center; }
+.nav { position: fixed; z-index: 10; bottom: 0; left: 0; right: 0; display: flex; height: 116rpx; padding-bottom: env(safe-area-inset-bottom); background: rgba(255,255,255,.98); border-top: 1rpx solid #E2E8E5; }
+.nav-item { flex: 1; padding-top: 18rpx; color: #687574; font-size: 24rpx; text-align: center; }
+.nav-item.active { color: #143F43; font-weight: 700; }
+.nav-marker { width: 36rpx; height: 6rpx; margin: 10rpx auto 0; background: transparent; border-radius: 99rpx; }
+.nav-item.active .nav-marker { background: #16766D; }

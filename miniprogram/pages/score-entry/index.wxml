@@ -1,0 +1,23 @@
+<view class="page">
+  <view class="eyebrow">成绩记录</view>
+  <view class="page-title">先记录，后判断</view>
+  <view class="intro">上传学校通知截图后，系统会生成待确认信息。任何成绩在保存前都由你确认。</view>
+
+  <button class="upload card" bindtap="chooseImage" loading="{{uploading}}">
+    <view class="upload-title">上传成绩截图</view>
+    <view class="muted">相册或拍照 · 支持 JPG、PNG、WebP</view>
+  </button>
+
+  <view class="divider"><view></view><text>或手动录入</text><view></view></view>
+  <view class="form card">
+    <view class="field"><view class="label">考试名称</view><input placeholder="例如：9月月考" value="{{form.name}}" data-key="name" bindinput="updateField" /></view>
+    <view class="field"><view class="label">考试日期</view><picker mode="date" value="{{form.exam_date}}" bindchange="updateField" data-key="exam_date"><view class="picker-value">{{form.exam_date}}</view></picker></view>
+    <view class="field"><view class="label">各科成绩</view><view class="subject-grid"><view class="subject" wx:for="{{subjects}}" wx:key="key"><text>{{item.name}}</text><input type="digit" placeholder="-" value="{{form.scores[item.key]}}" data-key="{{item.key}}" bindinput="updateSubject" /></view></view></view>
+    <view class="field"><view class="label">总分 <text>由各科自动汇总，可手动修正</text></view><input type="digit" placeholder="例如：615" value="{{form.total_score}}" data-key="total_score" bindinput="updateField" /></view>
+    <view class="field"><view class="label">班级排名 <text>选填</text></view><input type="number" placeholder="例如：28" value="{{form.class_rank}}" data-key="class_rank" bindinput="updateField" /></view>
+    <view class="field last"><view class="label">年级排名 <text>建议填写</text></view><input type="number" placeholder="例如：126" value="{{form.grade_rank}}" data-key="grade_rank" bindinput="updateField" /></view>
+  </view>
+  <view class="voice-tip">语音录入正在接入识别服务。首轮测试可使用截图上传或手动录入，提交前均由家长确认。</view>
+  <view class="privacy">成绩截图仅用于生成待确认记录。内部测试阶段不进行对外共享。</view>
+  <button class="primary-button save" bindtap="submit" loading="{{saving}}">确认并保存</button>
+</view>

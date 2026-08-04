@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="NextPath 中考升学助手项目内部立项决策材料">
+  <title>NextPath｜中考升学助手立项决策</title>
+  <style>
+    :root {
+      --ink: #18201d;
+      --muted: #66706b;
+      --line: #d9dfdc;
+      --soft: #f3f6f4;
+      --paper: #ffffff;
+      --accent: #176b53;
+      --accent-soft: #e8f3ee;
+      --warn: #9a5d0c;
+      --warn-soft: #fff5e5;
+      --danger: #9a3333;
+      --max: 1160px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.72;
+    }
+
+    a { color: var(--accent); }
+    button { font: inherit; }
+    .page { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
+    }
+    .topbar-inner {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand { font-weight: 760; font-size: 17px; }
+    .brand span { color: var(--muted); font-weight: 500; }
+    .top-actions { display: flex; align-items: center; gap: 18px; }
+    .doc-link { color: var(--accent); font-size: 13px; font-weight: 700; text-decoration: none; }
+    .doc-link:hover { text-decoration: underline; }
+    .meta { color: var(--muted); font-size: 13px; white-space: nowrap; }
+
+    .masthead {
+      padding: 66px 0 42px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 760;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      max-width: 900px;
+      margin-bottom: 16px;
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1.14;
+      letter-spacing: 0;
+    }
+    .lead {
+      max-width: 830px;
+      margin-bottom: 30px;
+      color: #3f4944;
+      font-size: 20px;
+      line-height: 1.65;
+    }
+    .slogan {
+      margin: 0 0 10px;
+      font-size: 25px;
+      font-weight: 800;
+    }
+    .promise { margin: 0; color: var(--muted); font-size: 16px; }
+
+    .decision-strip {
+      display: grid;
+      grid-template-columns: 1.35fr repeat(3, 1fr);
+      margin-top: 38px;
+      border: 1px solid var(--line);
+    }
+    .decision-item { min-height: 118px; padding: 20px; border-left: 1px solid var(--line); }
+    .decision-item:first-child { border-left: 0; background: var(--accent); color: white; }
+    .decision-label { display: block; margin-bottom: 8px; opacity: .72; font-size: 12px; font-weight: 700; }
+    .decision-value { display: block; font-size: 22px; font-weight: 800; line-height: 1.35; }
+    .decision-note { display: block; margin-top: 5px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .decision-item:first-child .decision-note { color: rgba(255,255,255,.76); }
+
+    .layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 58px; }
+    .sidebar { padding: 34px 0; }
+    .sidebar nav { position: sticky; top: 90px; }
+    .sidebar a {
+      display: block;
+      padding: 7px 0 7px 12px;
+      border-left: 2px solid transparent;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .sidebar a:hover, .sidebar a.active { border-left-color: var(--accent); color: var(--ink); font-weight: 700; }
+
+    main { min-width: 0; padding-bottom: 80px; }
+    section { padding: 52px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 58px; }
+    section:last-child { border-bottom: 0; }
+    h2 { margin-bottom: 22px; font-size: 30px; line-height: 1.25; }
+    h3 { margin: 28px 0 10px; font-size: 20px; line-height: 1.4; }
+    .section-intro { max-width: 820px; color: #3e4843; font-size: 18px; }
+    .key { color: var(--accent); font-weight: 800; }
+    .note { color: var(--muted); font-size: 14px; }
+
+    .callout {
+      margin: 24px 0;
+      padding: 18px 20px;
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+    }
+    .callout.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+    .callout strong { display: block; margin-bottom: 4px; }
+    .callout p:last-child { margin-bottom: 0; }
+
+    .grid-2, .grid-3 { display: grid; gap: 16px; margin: 24px 0; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .panel { padding: 19px 20px; border: 1px solid var(--line); }
+    .panel h3 { margin-top: 0; font-size: 17px; }
+    .panel p:last-child, .panel ul:last-child { margin-bottom: 0; }
+    .number { margin-bottom: 6px; color: var(--accent); font-size: 27px; font-weight: 820; line-height: 1.2; }
+    .label { color: var(--muted); font-size: 13px; }
+
+    ul, ol { margin-top: 10px; padding-left: 24px; }
+    li { margin: 6px 0; }
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li { position: relative; padding-left: 27px; }
+    .checklist li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: .62em;
+      width: 9px;
+      height: 9px;
+      background: var(--accent);
+    }
+
+    .table-wrap { margin: 22px 0; overflow-x: auto; border: 1px solid var(--line); }
+    table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+    th, td { padding: 13px 15px; border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; }
+    th { background: var(--soft); font-weight: 760; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .recommended td { background: #f1f8f5; }
+    .money { white-space: nowrap; font-weight: 760; }
+
+    .flow { display: grid; grid-template-columns: repeat(5, 1fr); margin: 26px 0; border: 1px solid var(--line); }
+    .flow div { position: relative; padding: 17px 14px; border-left: 1px solid var(--line); text-align: center; font-size: 14px; }
+    .flow div:first-child { border-left: 0; }
+    .flow b { display: block; margin-bottom: 4px; color: var(--accent); }
+
+    .budget-tabs { display: flex; gap: 8px; margin: 20px 0 14px; }
+    .budget-tabs button {
+      padding: 8px 13px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--muted);
+      background: white;
+      cursor: pointer;
+    }
+    .budget-tabs button[aria-selected="true"] { border-color: var(--accent); color: white; background: var(--accent); }
+    .budget-view[hidden] { display: none; }
+    .budget-total {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+    }
+    .budget-total strong { font-size: 28px; }
+
+    .gate { display: grid; grid-template-columns: 100px 1fr 1.1fr; border-top: 1px solid var(--line); }
+    .gate > div { padding: 16px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .gate > div:nth-child(3n+1) { border-left: 1px solid var(--line); font-weight: 800; color: var(--accent); }
+
+    .sources { font-size: 13px; color: var(--muted); }
+    .sources li { margin: 8px 0; word-break: break-word; }
+    footer { padding: 30px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 900px) {
+      .decision-strip { grid-template-columns: 1fr 1fr; }
+      .decision-item:nth-child(3) { border-left: 0; border-top: 1px solid var(--line); }
+      .decision-item:nth-child(4) { border-top: 1px solid var(--line); }
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .grid-3 { grid-template-columns: 1fr; }
+      main { padding-bottom: 40px; }
+    }
+
+    @media (max-width: 620px) {
+      body { font-size: 15px; }
+      .page { width: min(100% - 28px, var(--max)); }
+      .meta { display: none; }
+      .masthead { padding: 42px 0 28px; }
+      h1 { font-size: 36px; }
+      .lead { font-size: 17px; }
+      .slogan { font-size: 22px; }
+      .decision-strip, .grid-2 { grid-template-columns: 1fr; }
+      .decision-item { border-left: 0; border-top: 1px solid var(--line); }
+      .decision-item:first-child { border-top: 0; }
+      section { padding: 38px 0; }
+      h2 { font-size: 25px; }
+      .flow { grid-template-columns: 1fr; }
+      .flow div { border-left: 0; border-top: 1px solid var(--line); text-align: left; }
+      .flow div:first-child { border-top: 0; }
+      .gate { grid-template-columns: 72px 1fr; }
+      .gate > div:nth-child(3n) { grid-column: 1 / -1; border-left: 1px solid var(--line); }
+      .gate > div:nth-child(3n+1) { border-left: 1px solid var(--line); }
+    }
+
+    @media print {
+      .topbar, .sidebar, .budget-tabs { display: none !important; }
+      .page { width: 100%; }
+      .masthead { padding-top: 20px; }
+      .layout { display: block; }
+      section { break-inside: avoid-page; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="page topbar-inner">
+      <div class="brand">NextPath <span>｜中考升学助手</span></div>
+      <div class="top-actions">
+        <a class="doc-link" href="./mvp.html">MVP需求与系统设计</a>
+        <div class="meta">内部讨论稿 V2.0　2026-08-03</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="masthead">
+    <div class="page">
+      <p class="eyebrow">项目立项决策材料</p>
+      <h1>做一个真正理解每个孩子的中考升学决策产品</h1>
+      <p class="lead">从初三总复习开始，持续记录成绩与排名，把学校、招生政策和孩子自身变化转化为家长看得懂、用得上的判断，最终支撑志愿决策。</p>
+      <p class="slogan">升学这件事，早点看清楚。</p>
+      <p class="promise">孩子能上哪、目标差多少、志愿怎么报，一直有依据。</p>
+
+      <div class="decision-strip" aria-label="立项结论">
+        <div class="decision-item">
+          <span class="decision-label">当前建议</span>
+          <span class="decision-value">有条件立项</span>
+          <span class="decision-note">先证明用户价值和数据闭环，再扩大投入</span>
+        </div>
+        <div class="decision-item">
+          <span class="decision-label">首期验证</span>
+          <span class="decision-value">5–12 万元</span>
+          <span class="decision-note">3个月，数据与种子家庭优先</span>
+        </div>
+        <div class="decision-item">
+          <span class="decision-label">首年现金预算</span>
+          <span class="decision-value">30–70 万元</span>
+          <span class="decision-note">Codex主导研发，不组建完整技术团队</span>
+        </div>
+        <div class="decision-item">
+          <span class="decision-label">首期范围</span>
+          <span class="decision-value">西安城六区</span>
+          <span class="decision-note">验证样板，不是产品边界</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page layout">
+    <aside class="sidebar">
+      <nav aria-label="页面目录">
+        <a href="#decision">01　项目判断</a>
+        <a href="#product">02　产品定义</a>
+        <a href="#moat">03　核心壁垒</a>
+        <a href="#model">04　科学依据</a>
+        <a href="#market">05　市场竞品</a>
+        <a href="#growth">06　品牌增长</a>
+        <a href="#budget">07　投入成本</a>
+        <a href="#gates">08　决策门槛</a>
+        <a href="#conclusion">09　最终建议</a>
+      </nav>
+    </aside>
+
+    <main>
+      <section id="decision">
+        <h2>01　项目判断</h2>
+        <p class="section-intro">这不是一个“查分数线”的小工具，而是一个围绕家庭持续决策建立的新产品类别：<span class="key">中考升学管理助手</span>。</p>
+        <div class="grid-3">
+          <div class="panel">
+            <div class="number">真需求</div>
+            <p>家长持续想知道孩子能上哪、距离目标多远、政策变化是否与自家有关。</p>
+          </div>
+          <div class="panel">
+            <div class="number">有空位</div>
+            <p>成绩平台只管学情，志愿工具只管最后几天，规划师服务不稳定，中间缺少连续产品。</p>
+          </div>
+          <div class="panel">
+            <div class="number">能验证</div>
+            <p>可以从一个城市、一个年级、少量真实家庭开始，逐步验证数据、模型、留存和付费。</p>
+          </div>
+        </div>
+        <div class="callout warn">
+          <strong>立项前提</strong>
+          <p>能获得真实纵向样本，建立“初三考试与排名 → 中考位次 → 志愿 → 录取结果”的数据链。没有这条链，产品只能是包装更好的资讯工具。</p>
+        </div>
+      </section>
+
+      <section id="product">
+        <h2>02　产品定义</h2>
+        <p class="section-intro">面向中考家庭，从初三开始持续理解一个具体孩子，动态判断当前学校层次、目标差距和志愿策略。</p>
+        <h3>首期用户与长期边界</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>维度</th><th>首期验证</th><th>长期产品</th></tr></thead>
+            <tbody>
+              <tr><td>地域</td><td>西安城六区</td><td>复制到更多城市，每个城市建设本地数据与规则层</td></tr>
+              <tr><td>用户</td><td>孩子即将进入初三的家长</td><td>以家长为核心决策者，覆盖完整初三周期</td></tr>
+              <tr><td>入口</td><td>周考、月考、模考成绩与排名记录</td><td>成绩、目标、学校偏好、政策资格和家庭约束的长期档案</td></tr>
+              <tr><td>交付</td><td>学校层次、目标差距、相关提醒、月度报告</td><td>动态升学管理与最终志愿决策</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>家长真正购买的不是功能，而是六个答案</h3>
+        <div class="grid-2">
+          <div class="panel"><b>当前定位</b><p>孩子现在大概能上什么层次的高中？</p></div>
+          <div class="panel"><b>目标差距</b><p>想上某所高中，还需提高多少分或前进多少位次？</p></div>
+          <div class="panel"><b>变化判断</b><p>本次考试是真进步、假进步，还是正常波动？</p></div>
+          <div class="panel"><b>信息过滤</b><p>新政策、新计划和学校变化，哪些与我家真正有关？</p></div>
+          <div class="panel"><b>学校权衡</b><p>学校层次、管理、出口、距离、费用如何平衡？</p></div>
+          <div class="panel"><b>志愿策略</b><p>冲、稳、保如何组合，机会依据和风险是什么？</p></div>
+        </div>
+
+        <div class="callout">
+          <strong>明确边界</strong>
+          <p>首阶段不做重型错题和整卷分析，不承诺提分，不制造确定性预测，不做泛资讯流，也不依靠培训班导流变现。</p>
+        </div>
+      </section>
+
+      <section id="moat">
+        <h2>03　核心竞争力</h2>
+        <p class="section-intro">核心竞争力不是“大模型”三个字，而是<span class="key">持续理解具体孩子，并把变化转化为可信决策</span>的能力。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>能力</th><th>具体内容</th><th>为什么难复制</th></tr></thead>
+            <tbody>
+              <tr><td>纵向孩子画像</td><td>历次成绩、排名、波动、学科结构、目标与家庭偏好</td><td>临时咨询和通用AI没有长期上下文</td></tr>
+              <tr><td>城市升学数据</td><td>学校门槛、招生计划、定向名额、管理、出口与政策</td><td>需要持续采集、核验、结构化和更新</td></tr>
+              <tr><td>决策模型</td><td>孩子位次分布、学校门槛分布、志愿规则与情景模拟</td><td>必须有真实结果回测，而不是经验包装</td></tr>
+              <tr><td>相关性过滤</td><td>只告诉家长与自家有关的变化、影响和下一步</td><td>依赖画像、规则和数据的联合判断</td></tr>
+              <tr><td>结果飞轮</td><td>中考位次、志愿和录取结果反哺下一届模型</td><td>每服务一届，数据资产和校准能力都增强</td></tr>
+              <tr><td>中立信任</td><td>不卖焦虑、不卖课、不做录取保证，公开依据与边界</td><td>信任需要长期一致的行为积累</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="model">
+        <h2>04　预测的科学依据</h2>
+        <p class="section-intro">单个孩子最后只有录取或未录取，但填报前存在可以测量的不确定性。科学目标不是猜中一个“神奇分数”，而是给出经过回测和校准的结果区间。</p>
+        <div class="flow" aria-label="预测决策流程">
+          <div><b>孩子状态</b>考试、排名、趋势、波动</div>
+          <div><b>位次预测</b>中考区位次分布</div>
+          <div><b>学校门槛</b>招生、热度、政策分布</div>
+          <div><b>规则模拟</b>批次、定向、志愿顺序</div>
+          <div><b>决策输出</b>冲稳保、敏感度、风险</div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <h3>孩子最终位次模型</h3>
+            <p>根据所在初中、历次考试、排名百分位、考试类型、趋势和波动，输出中考位次预测区间。</p>
+          </div>
+          <div class="panel">
+            <h3>学校录取门槛模型</h3>
+            <p>根据历年录取位次、招生计划、考生规模、政策变化和学校热度，输出当年门槛区间。</p>
+          </div>
+        </div>
+        <p>靠近1至2分边界时，应明确标记为<span class="key">高度敏感区</span>。评价模型要看历史回测、前瞻验证、区间覆盖率、概率校准、滑档率和方案后悔值，而不是只展示几个成功案例。</p>
+      </section>
+
+      <section id="market">
+        <h2>05　市场与竞品</h2>
+        <p class="section-intro">竞品不是某一款软件，而是家长今天为了获得答案所使用的全部替代方案。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>替代方案</th><th>优势</th><th>核心缺口</th></tr></thead>
+            <tbody>
+              <tr><td>智学网、好分数等成绩平台</td><td>数据入口强、学校覆盖广</td><td>终点是学情，不回答能上什么高中</td></tr>
+              <tr><td>中考资讯网站与本地媒体</td><td>信息和历史分数线丰富</td><td>信息通用，不理解具体孩子</td></tr>
+              <tr><td>出分后的志愿工具</td><td>使用简单、需求集中</td><td>周期短、缺少全过程数据和解释</td></tr>
+              <tr><td>主播与升学规划师</td><td>本地经验和人际信任</td><td>排队、粗糙、标准不一、利益关系不透明</td></tr>
+              <tr><td>通用大模型</td><td>随时可问、解释能力强</td><td>缺少可靠本地数据、长期画像和规则校验</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>市场判断</h3>
+        <ul class="checklist">
+          <li>全国每年有约千万级中考家庭，需求持续更新，不是存量市场。</li>
+          <li>西安城六区每年5万级核心家庭，足以完成产品与商业验证。</li>
+          <li>单城可以形成一门健康业务，但真正的公司价值来自多城市复制。</li>
+          <li>复制的不是一套全国统一分数算法，而是“城市数据、规则、模型和运营”的标准化生产系统。</li>
+        </ul>
+
+        <div class="callout">
+          <strong>竞争空位</strong>
+          <p>市场缺少把“初三持续成绩管理”与“最终高中及志愿决策”完整连接起来的可信产品。这是建立新品类的机会。</p>
+        </div>
+      </section>
+
+      <section id="growth">
+        <h2>06　品牌与市场增长</h2>
+        <p class="section-intro">品牌不应该扮演“吓唬家长的专家”，而应成为冷静、可信、随时能查证的家庭决策助手。</p>
+        <div class="grid-2">
+          <div class="panel">
+            <h3>品牌主张</h3>
+            <p class="slogan">升学这件事，早点看清楚。</p>
+            <p class="note">强调更早获得清晰判断，而不是许诺结果。</p>
+          </div>
+          <div class="panel">
+            <h3>产品承诺</h3>
+            <p><b>孩子能上哪、目标差多少、志愿怎么报，一直有依据。</b></p>
+            <p class="note">直接回答家长购买产品的原因。</p>
+          </div>
+        </div>
+
+        <h3>增长优先级</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>优先级</th><th>渠道</th><th>打法</th><th>预算原则</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>种子家庭与家长群</td><td>按初中建立样本，真实服务换数据、案例和转介绍</td><td>最优先投入</td></tr>
+              <tr><td>2</td><td>视频号与公众号</td><td>一次考试、一所学校、一条政策、一个家庭复盘</td><td>持续低成本生产</td></tr>
+              <tr><td>3</td><td>搜索与小红书</td><td>学校、位次、通勤、政策等长期搜索内容</td><td>建设可沉淀资产</td></tr>
+              <tr><td>4</td><td>抖音</td><td>用明确结论获客，不做训斥家长式直播</td><td>小额试投，按转化扩量</td></tr>
+              <tr><td>5</td><td>专业规划师</td><td>复杂案例人工复核，逐步建立服务标准</td><td>产品验证后接入</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">品牌底线：不卖课、不训斥、不承诺录取；重要数据标注来源、适用年份和更新时间。</p>
+      </section>
+
+      <section id="budget">
+        <h2>07　投入成本重算</h2>
+        <p class="section-intro">充分使用 Codex 后，首年没有必要先组建完整研发团队。创始人承担产品判断，Codex 完成主要开发、文档、数据脚本和运维辅助，技术现金成本可以压低；但<span class="key">数据真实性、用户研究和获客验证不能靠代码替代</span>。</p>
+
+        <div class="callout">
+          <strong>核算口径</strong>
+          <p>以下是现金投入，不包含创始人的时间机会成本。若改为招聘全职技术团队，预算需要另行上调。</p>
+        </div>
+
+        <div class="budget-tabs" role="tablist" aria-label="预算阶段">
+          <button type="button" role="tab" aria-selected="true" data-budget="phase1">首期 3 个月</button>
+          <button type="button" role="tab" aria-selected="false" data-budget="year1">首年验证</button>
+          <button type="button" role="tab" aria-selected="false" data-budget="scale">验证后扩张</button>
+        </div>
+
+        <div class="budget-view" id="phase1">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>投入项</th><th>预算</th><th>用途</th></tr></thead>
+              <tbody>
+                <tr><td>产品与技术</td><td class="money">0.5–1.5 万</td><td>Codex 主导开发，域名、服务器、必要插件与少量专业支持</td></tr>
+                <tr><td>数据整理与核验</td><td class="money">1.5–3 万</td><td>学校、招生、政策、历史录取数据结构化与交叉核验</td></tr>
+                <tr><td>种子家庭与访谈</td><td class="money">1–2.5 万</td><td>2026届复盘、2027届样本、激励和线下沟通</td></tr>
+                <tr><td>内容与品牌基础</td><td class="money">0.5–1.5 万</td><td>账号、基础视觉、内容模板和首批案例</td></tr>
+                <tr><td>市场小测</td><td class="money">0.5–2 万</td><td>渠道测试、社群合作和少量投放</td></tr>
+                <tr><td>合规与预备金</td><td class="money">1–1.5 万</td><td>隐私协议、数据安全和不可预见支出</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="budget-total"><span>建议批准额度</span><strong>5–12 万元</strong></div>
+        </div>
+
+        <div class="budget-view" id="year1" hidden>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>投入项</th><th>预算</th><th>占比判断</th></tr></thead>
+              <tbody>
+                <tr><td>产品、技术与云服务</td><td class="money">3–8 万</td><td>约10%，Codex 主导，关键环节外部复核</td></tr>
+                <tr><td>数据获取、整理与核验</td><td class="money">8–18 万</td><td>最重要的基础资产</td></tr>
+                <tr><td>种子用户与服务运营</td><td class="money">4–10 万</td><td>纵向样本、反馈、结果回收</td></tr>
+                <tr><td>品牌内容与市场推广</td><td class="money">8–22 万</td><td>内容生产、渠道合作、小额投放和转化验证</td></tr>
+                <tr><td>合规、安全与专业顾问</td><td class="money">2–5 万</td><td>儿童数据、协议、广告与模型表述</td></tr>
+                <tr><td>差旅、设备与预备金</td><td class="money">5–7 万</td><td>覆盖不确定支出</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="budget-total"><span>首年现金预算边界</span><strong>30–70 万元</strong></div>
+        </div>
+
+        <div class="budget-view" id="scale" hidden>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>投入方向</th><th>原则</th><th>启动条件</th></tr></thead>
+              <tbody>
+                <tr><td>专职技术或产品人员</td><td>有持续需求再招聘，不提前养团队</td><td>现有方式已影响迭代速度或系统可靠性</td></tr>
+                <tr><td>规模投放</td><td>以获客成本和回收周期决定预算</td><td>自然流量与小额投放已证明付费转化</td></tr>
+                <tr><td>第二城市</td><td>复制数据生产系统，不盲目全国化</td><td>西安模型和单城商业闭环通过验证</td></tr>
+                <tr><td>规划师专业端</td><td>先形成标准，再建设平台</td><td>人工复核需求稳定且质量可以量化</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="budget-total"><span>预算方式</span><strong>按结果逐项批准</strong></div>
+        </div>
+
+        <h3>钱应该花在哪里</h3>
+        <div class="grid-3">
+          <div class="panel"><div class="number">数据</div><p>真实性、完整性、结构化、跨来源核验和持续更新。</p></div>
+          <div class="panel"><div class="number">用户</div><p>纵向样本、访谈、报告服务、录取结果回收和转介绍。</p></div>
+          <div class="panel"><div class="number">增长</div><p>可信内容、渠道验证、品牌资产和可计算的获客模型。</p></div>
+        </div>
+      </section>
+
+      <section id="gates">
+        <h2>08　阶段决策门槛</h2>
+        <p class="section-intro">不要一次性批准完整项目。每一阶段只为验证下一项最关键的不确定性。</p>
+        <div class="gate">
+          <div>阶段一</div><div><b>数据与需求验证</b><br>复盘上一届家庭，启动下一届种子样本。</div><div><b>继续条件：</b>真实完整案例可获得；家长愿意持续录入；月报被认为有明显价值。</div>
+          <div>阶段二</div><div><b>年度陪伴验证</b><br>持续提供目标差距、相关提醒和月度报告。</div><div><b>继续条件：</b>留存和考试记录稳定；有明确付费意愿；人工成本可控。</div>
+          <div>阶段三</div><div><b>模型与志愿验证</b><br>考前冻结预测，出分后形成志愿方案并回收结果。</div><div><b>继续条件：</b>预测和方案明显优于简单沿用去年分数线，且误差边界可解释。</div>
+          <div>阶段四</div><div><b>商业与复制验证</b><br>扩大单城渗透，测试第二城市。</div><div><b>继续条件：</b>获客成本、贡献毛利、数据生产成本和城市复制周期可控。</div>
+        </div>
+        <div class="callout warn">
+          <strong>应停止或调整的信号</strong>
+          <p>家长不愿持续记录；关键排名数据长期不可得；模型不能超越简单规则；服务严重依赖高成本一对一人工；只能依靠高价投放获客。</p>
+        </div>
+      </section>
+
+      <section id="conclusion">
+        <h2>09　最终建议</h2>
+        <p class="section-intro"><span class="key">值得做，但只值得用验证式投入来做。</span></p>
+        <ol>
+          <li>产品定位为面向中考家庭的持续升学决策助手，西安城六区只是首期样板。</li>
+          <li>第一阶段不追求功能齐全，先证明家长愿意长期使用、数据能够形成闭环、判断比简单规则更有价值。</li>
+          <li>充分使用 Codex，把产品技术现金投入压到最低，不提前招聘完整团队。</li>
+          <li>首期批准5至12万元，重点投入数据、种子家庭、内容和渠道验证。</li>
+          <li>首年现金预算控制在30至70万元，每一笔后续投入都由阶段结果触发。</li>
+        </ol>
+
+        <h3>本轮内部讨论需要拍板的四件事</h3>
+        <ul class="checklist">
+          <li>是否认可“中考升学管理助手”而非“志愿填报工具”的产品方向。</li>
+          <li>是否以西安城六区作为首期验证样板，同时从一开始按多城市复制设计数据结构。</li>
+          <li>是否批准首期5至12万元预算，以及预算负责人和阶段验收标准。</li>
+          <li>是否立即启动2026届家庭复盘与2027届种子家庭招募。</li>
+        </ul>
+
+        <h3>参考资料</h3>
+        <ol class="sources">
+          <li><a href="https://www.moe.gov.cn/jyb_sjzl/sjzl_fztjgb/202506/t20250611_1193760.html">教育部《2024年全国教育事业发展统计公报》</a></li>
+          <li><a href="https://edu.xa.gov.cn/xwzx/tzgg/2076480238905311234.html">西安市2026年高中阶段学校招生录取工作方案</a></li>
+          <li><a href="https://edu.xa.gov.cn/xwzx/tzgg/2077576360413937666.html">西安市2026年普通高中分学校招生计划</a></li>
+          <li><a href="https://www.gov.cn/zhengce/zhengceku/202307/content_6891752.htm">《生成式人工智能服务管理暂行办法》</a></li>
+          <li><a href="https://www.gov.cn/zhengce/zhengceku/2019-08/22/content_5458118.htm">《儿童个人信息网络保护规定》</a></li>
+          <li><a href="https://doi.org/10.1111/j.1467-9868.2007.00587.x">概率预测的校准与锐度研究</a></li>
+        </ol>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <div class="page">NextPath 中考升学助手｜内部讨论材料｜V2.0</div>
+  </footer>
+
+  <script>
+    const tabs = document.querySelectorAll('[data-budget]');
+    const views = document.querySelectorAll('.budget-view');
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((item) => item.setAttribute('aria-selected', 'false'));
+        views.forEach((view) => { view.hidden = true; });
+        tab.setAttribute('aria-selected', 'true');
+        document.getElementById(tab.dataset.budget).hidden = false;
+      });
+    });
+
+    const links = [...document.querySelectorAll('.sidebar a')];
+    const sections = [...document.querySelectorAll('main section')];
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.toggle('active', link.hash === '#' + entry.target.id));
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach((section) => observer.observe(section));
+  </script>
+</body>
+</html>

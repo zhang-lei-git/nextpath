@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="NextPath中考升学助手MVP需求与系统设计文档">
+  <title>NextPath｜MVP需求与系统设计</title>
+  <style>
+    :root {
+      --ink: #18201d;
+      --muted: #66706b;
+      --line: #d9dfdc;
+      --soft: #f3f6f4;
+      --paper: #fff;
+      --accent: #176b53;
+      --accent-soft: #e9f3ef;
+      --warn: #935b10;
+      --warn-soft: #fff5e6;
+      --blue: #275d8c;
+      --max: 1180px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    a { color: var(--accent); }
+    button { font: inherit; }
+    .page { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.96);
+      backdrop-filter: blur(10px);
+    }
+    .topbar-inner {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .brand { font-size: 17px; font-weight: 800; }
+    .brand span { color: var(--muted); font-weight: 500; }
+    .toplinks { display: flex; align-items: center; gap: 18px; font-size: 13px; }
+    .toplinks a { color: var(--muted); text-decoration: none; }
+    .toplinks a:hover { color: var(--accent); }
+    .version { color: var(--muted); white-space: nowrap; }
+
+    .masthead { padding: 58px 0 38px; border-bottom: 1px solid var(--line); }
+    .eyebrow { margin: 0 0 9px; color: var(--accent); font-size: 14px; font-weight: 800; }
+    h1, h2, h3, h4, p { margin-top: 0; }
+    h1 { max-width: 900px; margin-bottom: 16px; font-size: clamp(34px, 5vw, 56px); line-height: 1.14; }
+    .lead { max-width: 880px; color: #3f4944; font-size: 19px; }
+    .scope-line { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+    .scope-line span { padding: 7px 10px; border: 1px solid var(--line); color: #425049; font-size: 13px; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1.2fr repeat(3, 1fr);
+      margin-top: 30px;
+      border: 1px solid var(--line);
+    }
+    .summary > div { min-height: 112px; padding: 18px; border-left: 1px solid var(--line); }
+    .summary > div:first-child { border-left: 0; color: white; background: var(--accent); }
+    .summary small { display: block; margin-bottom: 7px; opacity: .72; font-weight: 700; }
+    .summary strong { display: block; font-size: 21px; line-height: 1.35; }
+    .summary span { display: block; margin-top: 5px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .summary > div:first-child span { color: rgba(255,255,255,.75); }
+
+    .layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 54px; }
+    .sidebar { padding: 32px 0; }
+    .sidebar nav { position: sticky; top: 86px; }
+    .sidebar a {
+      display: block;
+      padding: 7px 0 7px 12px;
+      border-left: 2px solid transparent;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .sidebar a:hover, .sidebar a.active { border-left-color: var(--accent); color: var(--ink); font-weight: 750; }
+    main { min-width: 0; padding-bottom: 70px; }
+    section { padding: 48px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 58px; }
+    section:last-child { border-bottom: 0; }
+    h2 { margin-bottom: 20px; font-size: 29px; line-height: 1.28; }
+    h3 { margin: 28px 0 10px; font-size: 20px; line-height: 1.4; }
+    h4 { margin: 18px 0 8px; font-size: 16px; }
+    .section-intro { max-width: 850px; color: #3e4843; font-size: 18px; }
+    .key { color: var(--accent); font-weight: 800; }
+    .note { color: var(--muted); font-size: 14px; }
+    .tiny { color: var(--muted); font-size: 12px; }
+
+    .callout { margin: 22px 0; padding: 17px 19px; border-left: 4px solid var(--accent); background: var(--accent-soft); }
+    .callout.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+    .callout strong { display: block; margin-bottom: 4px; }
+    .callout p:last-child { margin-bottom: 0; }
+
+    .grid-2, .grid-3, .grid-4 { display: grid; gap: 15px; margin: 22px 0; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .panel { padding: 18px 19px; border: 1px solid var(--line); }
+    .panel h3, .panel h4 { margin-top: 0; }
+    .panel p:last-child, .panel ul:last-child { margin-bottom: 0; }
+    .number { margin-bottom: 6px; color: var(--accent); font-size: 26px; font-weight: 820; line-height: 1.2; }
+
+    .table-wrap { margin: 20px 0; overflow-x: auto; border: 1px solid var(--line); }
+    table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; }
+    th { background: var(--soft); font-weight: 780; }
+    tbody tr:last-child td { border-bottom: 0; }
+    td:first-child { font-weight: 690; }
+    .must { color: var(--accent); font-weight: 800; white-space: nowrap; }
+    .later { color: var(--muted); white-space: nowrap; }
+    code { padding: 2px 5px; background: var(--soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+
+    .journey {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      margin: 24px 0;
+      border: 1px solid var(--line);
+    }
+    .journey > div { min-height: 126px; padding: 16px; border-left: 1px solid var(--line); }
+    .journey > div:first-child { border-left: 0; }
+    .journey b { display: block; margin-bottom: 6px; color: var(--accent); }
+    .journey span { color: var(--muted); font-size: 13px; }
+
+    .phone-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0; }
+    .phone {
+      min-height: 280px;
+      padding: 13px;
+      border: 1px solid #bbc5c0;
+      border-radius: 20px;
+      background: #fbfcfb;
+    }
+    .phone-bar { width: 42%; height: 4px; margin: 2px auto 14px; border-radius: 2px; background: #cad1ce; }
+    .phone-title { margin-bottom: 12px; font-weight: 800; }
+    .phone-block { margin: 8px 0; padding: 10px; border: 1px solid var(--line); background: white; font-size: 12px; line-height: 1.5; }
+    .phone-cta { margin-top: 12px; padding: 9px; color: white; background: var(--accent); text-align: center; font-size: 12px; font-weight: 700; }
+
+    .architecture {
+      margin: 24px 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: #fbfcfb;
+    }
+    .arch-row { display: grid; grid-template-columns: 150px 1fr; border-top: 1px solid var(--line); }
+    .arch-row:first-child { border-top: 0; }
+    .arch-label { padding: 14px; color: var(--accent); font-weight: 800; }
+    .arch-boxes { display: flex; flex-wrap: wrap; gap: 8px; padding: 11px 14px; border-left: 1px solid var(--line); }
+    .arch-boxes span { padding: 7px 10px; border: 1px solid var(--line); background: white; font-size: 13px; }
+    .arch-boxes .primary { border-color: var(--accent); color: var(--accent); font-weight: 750; }
+
+    .model-lanes { display: grid; grid-template-columns: repeat(4, 1fr); margin: 24px 0; border: 1px solid var(--line); }
+    .model-lanes > div { padding: 16px; border-left: 1px solid var(--line); }
+    .model-lanes > div:first-child { border-left: 0; }
+    .model-lanes b { display: block; margin-bottom: 7px; color: var(--blue); }
+    .model-lanes span { color: var(--muted); font-size: 13px; }
+
+    ul, ol { margin-top: 10px; padding-left: 24px; }
+    li { margin: 6px 0; }
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li { position: relative; padding-left: 27px; }
+    .checklist li::before { content: ""; position: absolute; left: 0; top: .62em; width: 9px; height: 9px; background: var(--accent); }
+    .status { display: inline-block; min-width: 62px; padding: 2px 7px; text-align: center; font-size: 12px; font-weight: 750; }
+    .status.mvp { color: #0d624a; background: #dff1e9; }
+    .status.next { color: #725017; background: #faedcf; }
+
+    footer { padding: 28px 0 45px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 960px) {
+      .summary { grid-template-columns: 1fr 1fr; }
+      .summary > div:nth-child(3) { border-left: 0; border-top: 1px solid var(--line); }
+      .summary > div:nth-child(4) { border-top: 1px solid var(--line); }
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .grid-4, .phone-flow { grid-template-columns: repeat(2, 1fr); }
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      body { font-size: 15px; }
+      .page { width: calc(100% - 28px); }
+      .toplinks a, .version { display: none; }
+      .masthead { padding: 40px 0 28px; }
+      h1 { font-size: 35px; }
+      .lead { font-size: 17px; }
+      .summary, .grid-2, .grid-4, .phone-flow { grid-template-columns: 1fr; }
+      .summary > div { border-left: 0; border-top: 1px solid var(--line); }
+      .summary > div:first-child { border-top: 0; }
+      section { padding: 38px 0; }
+      h2 { font-size: 25px; }
+      .journey { grid-template-columns: 1fr; }
+      .journey > div { min-height: auto; border-left: 0; border-top: 1px solid var(--line); }
+      .journey > div:first-child { border-top: 0; }
+      .model-lanes { grid-template-columns: 1fr; }
+      .model-lanes > div { border-left: 0; border-top: 1px solid var(--line); }
+      .model-lanes > div:first-child { border-top: 0; }
+      .arch-row { grid-template-columns: 1fr; }
+      .arch-label { padding-bottom: 5px; }
+      .arch-boxes { border-left: 0; padding-top: 4px; }
+    }
+    @media print {
+      .topbar, .sidebar { display: none !important; }
+      .page { width: 100%; }
+      .layout { display: block; }
+      section { break-inside: avoid-page; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="page topbar-inner">
+      <div class="brand">NextPath <span>｜MVP需求与系统设计</span></div>
+      <div class="toplinks">
+        <a href="./">返回立项材料</a>
+        <span class="version">V1.0　2026-08-03</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="masthead">
+    <div class="page">
+      <p class="eyebrow">总体需求与设计文档｜第一阶段</p>
+      <h1>NextPath 中考升学助手 MVP</h1>
+      <p class="lead">基于成绩追踪系统与志愿预测系统，重新设计一个手机端优先、录入足够简单、判断可以验证、架构能够扩展的最小产品。</p>
+      <div class="scope-line">
+        <span>目标用户：即将进入初三的家长</span>
+        <span>首期样板：西安城六区</span>
+        <span>产品形态：微信小程序</span>
+        <span>开发原则：简单上线、数据先行、架构可演进</span>
+      </div>
+      <div class="summary">
+        <div><small>MVP核心验证</small><strong>家长是否愿意持续记录，并依赖系统判断</strong><span>不是验证能否做出更多页面</span></div>
+        <div><small>最短主流程</small><strong>截图录成绩 → 确认 → 看判断</strong><span>一次录入尽量控制在30秒内</span></div>
+        <div><small>首期核心交付</small><strong>当前层次、目标差距、变化解释</strong><span>志愿方案先保留已有能力，后续接入</span></div>
+        <div><small>技术路线</small><strong>模块化单体 + 异步任务</strong><span>先低成本部署，后期可水平扩展</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page layout">
+    <aside class="sidebar">
+      <nav aria-label="文档目录">
+        <a href="#basis">01　原型基础</a>
+        <a href="#goals">02　MVP目标</a>
+        <a href="#journey">03　用户流程</a>
+        <a href="#requirements">04　功能需求</a>
+        <a href="#mobile">05　手机端设计</a>
+        <a href="#architecture">06　系统架构</a>
+        <a href="#data">07　数据设计</a>
+        <a href="#ai">08　AI与预测</a>
+        <a href="#quality">09　性能与质量</a>
+        <a href="#delivery">10　开发计划</a>
+        <a href="#acceptance">11　验收清单</a>
+      </nav>
+    </aside>
+
+    <main>
+      <section id="basis">
+        <h2>01　已有原型提供了什么</h2>
+        <p class="section-intro">两个系统已经证明了功能可实现，也沉淀了真实数据和规则。新 MVP 的任务是把它们变成一条家长愿意长期使用的手机端路径。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>原型</th><th>已具备能力</th><th>可复用资产</th><th>需要改变</th></tr></thead>
+            <tbody>
+              <tr><td>成绩追踪系统</td><td>考试增删改、七科成绩、总分、班级排名、趋势图</td><td>考试与成绩数据结构、趋势逻辑、真实使用经验</td><td>手工录入过重；JSON单文件不可扩展；界面不是手机家长场景</td></tr>
+              <tr><td>志愿预测系统</td><td>分数位次换算、学校数据、招生计划、定向名额、距离、志愿组合</td><td>学校与初中数据、位次表、规则算法、招生计划比较、志愿逻辑</td><td>一次性填报导向；输入参数较多；数据和逻辑都在前端，不利于迭代和审计</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <strong>整合原则</strong>
+          <p>保留成绩系统的“持续记录”，保留志愿系统的“学校与规则判断”，用家庭档案和预测服务把二者连接起来。前端不再保存核心算法和大体量数据。</p>
+        </div>
+      </section>
+
+      <section id="goals">
+        <h2>02　MVP目标与边界</h2>
+        <h3>要验证的四个产品假设</h3>
+        <div class="grid-2">
+          <div class="panel"><div class="number">H1</div><p>截图自动识别能把一次成绩录入时间压到30秒以内。</p></div>
+          <div class="panel"><div class="number">H2</div><p>家长愿意在初三阶段持续记录至少三次考试，而不是只体验一次。</p></div>
+          <div class="panel"><div class="number">H3</div><p>“当前学校层次 + 目标差距 + 变化解释”比单纯趋势图更有价值。</p></div>
+          <div class="panel"><div class="number">H4</div><p>基于孩子纵向数据的判断能够形成月度查看和分享行为。</p></div>
+        </div>
+
+        <h3>MVP范围</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>模块</th><th>第一版</th><th>暂不进入第一版</th></tr></thead>
+            <tbody>
+              <tr><td>家庭档案</td><td>孩子、城市、初中、年级、目标学校</td><td>多孩子、复杂家庭协作权限</td></tr>
+              <tr><td>成绩录入</td><td>截图识别、手工补充、确认后保存</td><td>批量导入、学校系统直连</td></tr>
+              <tr><td>成绩管理</td><td>考试列表、总分/排名/科目趋势、编辑删除</td><td>错题本、试卷逐题分析</td></tr>
+              <tr><td>升学判断</td><td>当前学校区间、目标差距、变化解释、可信度</td><td>确定性录取承诺、复杂志愿自动填报</td></tr>
+              <tr><td>学校信息</td><td>目标学校基础信息、历年门槛、招生计划</td><td>全面学校百科、家长社区</td></tr>
+              <tr><td>报告提醒</td><td>考试后即时解读、月度简报</td><td>全渠道消息中心、复杂营销自动化</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="journey">
+        <h2>03　核心用户流程</h2>
+        <p class="section-intro">首版必须围绕一个高频动作设计：家长收到学校小程序或 App 的成绩通知后，立即截图并获得本次判断。</p>
+        <div class="journey">
+          <div><b>1. 上传截图</b><span>从相册选择或直接拍摄成绩页面</span></div>
+          <div><b>2. 自动识别</b><span>提取考试、科目、分数、排名和满分</span></div>
+          <div><b>3. 家长确认</b><span>高亮低置信字段，允许一键修改</span></div>
+          <div><b>4. 保存分析</b><span>计算趋势、位次区间和目标差距</span></div>
+          <div><b>5. 给出行动</b><span>说明变化、相关学校和下阶段重点</span></div>
+        </div>
+        <div class="callout warn">
+          <strong>不可省略确认步骤</strong>
+          <p>成绩截图格式不统一，OCR或多模态模型一定会出错。系统只能辅助提取，不能在未经家长确认的情况下把识别结果写入正式成绩记录或进入预测模型。</p>
+        </div>
+      </section>
+
+      <section id="requirements">
+        <h2>04　功能需求与可验证标准</h2>
+        <p class="section-intro">每项需求都以用户结果和验收条件描述，不以“做一个页面”作为完成标准。</p>
+
+        <h3>FR-01　首次建档</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>需求</th><th>验收标准</th><th>优先级</th></tr></thead>
+            <tbody>
+              <tr><td>家长通过手机号验证码登录。</td><td>新用户2分钟内完成登录与孩子建档；重复登录能恢复原数据。</td><td class="must">MVP</td></tr>
+              <tr><td>填写孩子昵称、城市、所在初中、年级和目标学校。</td><td>城市和初中采用搜索选择；目标学校可跳过；必填项缺失时不能完成建档。</td><td class="must">MVP</td></tr>
+              <tr><td>记录适用的考试总分和科目口径。</td><td>根据城市默认配置自动带出，家长可在录入时修正。</td><td class="must">MVP</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>FR-02　截图录入成绩</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>需求</th><th>验收标准</th><th>异常处理</th></tr></thead>
+            <tbody>
+              <tr><td>支持相册选择或拍照上传1至3张成绩截图。</td><td>单张不超过10MB；支持JPG、PNG、HEIC转码；上传后2秒内显示本地预览。</td><td>格式或大小不符时明确提示，不清空已填内容。</td></tr>
+              <tr><td>自动提取考试名称、日期、各科成绩、总分、班级/年级排名、参考人数。</td><td>典型样本字段识别准确率目标≥90%；每个字段返回置信度和来源截图位置。</td><td>未识别字段留空；冲突字段提示家长选择。</td></tr>
+              <tr><td>识别后进入确认页。</td><td>低置信字段醒目标记；家长可修改；确认前不写入正式成绩表。</td><td>识别失败时自动切换为简化手工录入。</td></tr>
+              <tr><td>支持不同学校、不同考试的科目和满分差异。</td><td>允许调整科目、分数和满分；总分自动重算；同一考试不能重复保存。</td><td>发现满分或总分异常时阻止提交并说明原因。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>FR-03　考试记录与趋势</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>需求</th><th>验收标准</th><th>优先级</th></tr></thead>
+            <tbody>
+              <tr><td>首页展示最近一次考试核心结果。</td><td>显示总分、排名、与上次变化、当前学校区间和目标差距；进入首页首屏可见。</td><td class="must">MVP</td></tr>
+              <tr><td>查看总分、排名和各科趋势。</td><td>可在“总分/排名/科目”间切换；排名趋势采用名次越高图形越向上；缺失数据不补0。</td><td class="must">MVP</td></tr>
+              <tr><td>查看、编辑、删除考试。</td><td>编辑后重新计算所有派生结果；删除需二次确认并保留审计记录。</td><td class="must">MVP</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>FR-04　升学判断</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>需求</th><th>验收标准</th><th>解释要求</th></tr></thead>
+            <tbody>
+              <tr><td>输出当前可达学校区间。</td><td>至少区分“冲刺、匹配、稳妥”三档；每次结果保存模型版本和数据版本。</td><td>必须显示依据、更新时间和可信等级。</td></tr>
+              <tr><td>输出目标学校差距。</td><td>用位次区间为主、分数差为辅；显示“当前区间、目标门槛、差距范围”。</td><td>边界样本必须提示对考试难度和政策变化敏感。</td></tr>
+              <tr><td>解释本次变化。</td><td>区分真实进步、正常波动、考试口径变化和数据不足；不得只根据总分涨跌下结论。</td><td>解释引用参与判断的考试和排名数据。</td></tr>
+              <tr><td>给出一条明确行动建议。</td><td>建议与数据相关，例如关注排名稳定性、补录年级排名或确认目标学校，不泛泛输出鸡汤。</td><td>大模型生成内容必须经过规则约束和敏感表述检查。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>FR-05　学校与月度简报</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>需求</th><th>验收标准</th><th>优先级</th></tr></thead>
+            <tbody>
+              <tr><td>目标学校信息页。</td><td>显示学校层次、性质、区域、历年位次、当年计划、与孩子当前差距；字段均带年份。</td><td class="must">MVP</td></tr>
+              <tr><td>月度升学简报。</td><td>每自然月有两次以上考试时自动生成；包含本月变化、当前区间、目标差距和下月关注点。</td><td class="must">MVP</td></tr>
+              <tr><td>政策相关提醒。</td><td>首版由运营配置规则，仅向命中城市、学校、资格或目标条件的家庭展示。</td><td class="later">下一阶段</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="mobile">
+        <h2>05　手机端信息与交互设计</h2>
+        <p class="section-intro">首版采用底部四个入口，首页只回答“现在怎么样”，录入入口始终触手可及。</p>
+        <div class="phone-flow" aria-label="手机端关键页面示意">
+          <div class="phone"><div class="phone-bar"></div><div class="phone-title">首页</div><div class="phone-block"><b>最近一次考试</b><br>总分 515　年级 428<br><span class="key">匹配：第二梯队高中</span></div><div class="phone-block"><b>目标差距</b><br>距目标学校约 180–260 位</div><div class="phone-block"><b>本次判断</b><br>排名进步，仍需观察下一次考试</div><div class="phone-cta">上传新成绩</div></div>
+          <div class="phone"><div class="phone-bar"></div><div class="phone-title">上传成绩</div><div class="phone-block" style="min-height:110px;text-align:center;padding-top:38px">选择截图 / 拍照</div><div class="phone-block">支持学校小程序、App、群通知截图</div><div class="phone-cta">开始识别</div></div>
+          <div class="phone"><div class="phone-bar"></div><div class="phone-title">确认识别结果</div><div class="phone-block">考试：三模<br>语文：92<br>数学：<mark>98?</mark><br>年级排名：428</div><div class="phone-block">黄色字段置信度较低，请确认</div><div class="phone-cta">确认并分析</div></div>
+          <div class="phone"><div class="phone-bar"></div><div class="phone-title">分析结果</div><div class="phone-block"><b>当前学校区间</b><br>冲刺 3 所｜匹配 5 所｜稳妥 4 所</div><div class="phone-block"><b>为什么</b><br>近三次年级排名中位数改善 7%</div><div class="phone-block"><b>下一步</b><br>补充参考人数可提高判断可信度</div></div>
+        </div>
+        <h3>底部导航</h3>
+        <div class="grid-4">
+          <div class="panel"><b>首页</b><p class="note">最新状态、目标差距、相关提醒</p></div>
+          <div class="panel"><b>成绩</b><p class="note">考试列表、趋势、上传与编辑</p></div>
+          <div class="panel"><b>学校</b><p class="note">目标学校、学校区间与详情</p></div>
+          <div class="panel"><b>我的</b><p class="note">孩子档案、城市、目标与数据管理</p></div>
+        </div>
+        <div class="callout">
+          <strong>交互指标</strong>
+          <p>常用任务单手完成；核心按钮高度不低于44px；成绩确认不使用横向大表格；所有模型结论先给一句结论，再允许展开查看依据。</p>
+        </div>
+      </section>
+
+      <section id="architecture">
+        <h2>06　系统架构设计</h2>
+        <p class="section-intro">采用<span class="key">模块化单体</span>作为 MVP 起点：一个后端应用按领域分模块，共用数据库，但接口和职责提前分开。它比微服务开发快，同时保留后期拆分能力。</p>
+        <div class="architecture" aria-label="系统架构图">
+          <div class="arch-row"><div class="arch-label">客户端</div><div class="arch-boxes"><span class="primary">原生微信小程序</span><span>运营管理后台</span><span>CDN / 静态资源</span></div></div>
+          <div class="arch-row"><div class="arch-label">接入层</div><div class="arch-boxes"><span>Nginx / 负载均衡</span><span>鉴权</span><span>限流</span><span>请求追踪</span></div></div>
+          <div class="arch-row"><div class="arch-label">业务 API</div><div class="arch-boxes"><span class="primary">家庭与用户</span><span class="primary">考试成绩</span><span class="primary">学校数据</span><span class="primary">预测编排</span><span>报告与提醒</span><span>运营配置</span></div></div>
+          <div class="arch-row"><div class="arch-label">异步任务</div><div class="arch-boxes"><span>截图识别</span><span>报告生成</span><span>批量数据更新</span><span>离线回测</span></div></div>
+          <div class="arch-row"><div class="arch-label">算法与AI</div><div class="arch-boxes"><span class="primary">规则引擎</span><span class="primary">预测服务</span><span>模型网关</span><span>提示词与模板库</span><span>模型评估</span></div></div>
+          <div class="arch-row"><div class="arch-label">数据层</div><div class="arch-boxes"><span class="primary">PostgreSQL</span><span>Redis缓存/队列</span><span>对象存储OSS</span><span>日志与指标</span></div></div>
+        </div>
+
+        <h3>建议技术栈</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>层</th><th>MVP建议</th><th>选择理由</th><th>扩展方式</th></tr></thead>
+            <tbody>
+              <tr><td>移动端</td><td>原生微信小程序</td><td>原生上传、扫码体验、家长常用入口、稳定的手机体验</td><td>复用统一 API 和业务模型；网页端后续作为运营后台</td></tr>
+              <tr><td>后端</td><td>FastAPI 模块化单体</td><td>延续Python能力，适合数据与模型服务，接口定义清晰</td><td>无状态部署，多实例水平扩容；高负载模块可单独拆出</td></tr>
+              <tr><td>数据库</td><td>PostgreSQL</td><td>事务、结构化数据、JSON扩展、分析能力兼顾</td><td>读副本、分区、连接池；按城市与学年归档</td></tr>
+              <tr><td>文件</td><td>阿里云OSS</td><td>截图不进入应用服务器磁盘，容量和并发独立扩展</td><td>CDN、生命周期、自动删除原图</td></tr>
+              <tr><td>异步任务</td><td>Redis + Worker</td><td>截图识别和报告生成不阻塞用户请求</td><td>增加Worker数量；后期可切换托管消息队列</td></tr>
+              <tr><td>部署</td><td>容器化 + Nginx</td><td>环境一致、可回滚、便于Codex维护</td><td>从单机Docker Compose升级到多实例或容器平台</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>为什么现在不做微服务</h3>
+        <ul class="checklist">
+          <li>MVP用户量和团队规模不足以抵消微服务的部署、监控和数据一致性成本。</li>
+          <li>通过模块边界、独立接口和异步任务，已经为后期拆分保留空间。</li>
+          <li>优先把复杂度留给数据质量和预测模型，而不是基础设施。</li>
+        </ul>
+      </section>
+
+      <section id="data">
+        <h2>07　核心数据设计</h2>
+        <p class="section-intro">正式数据与识别草稿必须分开；原始输入、确认数据、派生特征和预测结果必须可追溯。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>实体</th><th>核心字段</th><th>设计要点</th></tr></thead>
+            <tbody>
+              <tr><td><code>users</code></td><td>手机号、状态、同意版本</td><td>手机号加密或脱敏存储；记录监护人授权</td></tr>
+              <tr><td><code>students</code></td><td>用户、城市、初中、年级、入学年份</td><td>所有业务数据按学生隔离；预留多孩子</td></tr>
+              <tr><td><code>exam_records</code></td><td>考试名称、日期、类型、总分、排名、参考人数</td><td>保存用户确认值；支持不同考试口径</td></tr>
+              <tr><td><code>exam_subject_scores</code></td><td>科目、得分、满分、知识点标签</td><td>不把固定七科写死；适应城市和学年变化</td></tr>
+              <tr><td><code>upload_jobs</code></td><td>文件、识别状态、原始结果、置信度</td><td>草稿与正式成绩分离；失败可重试；保留供应商信息</td></tr>
+              <tr><td><code>schools</code></td><td>城市、名称、性质、层次、地址</td><td>稳定主数据，不按年份重复建学校</td></tr>
+              <tr><td><code>school_admission_years</code></td><td>学校、年份、计划、录取分/位次、批次</td><td>所有易变化信息均带城市、年份、来源和发布时间</td></tr>
+              <tr><td><code>student_targets</code></td><td>目标学校、优先级、建立时间</td><td>保留目标变化历史，不直接覆盖</td></tr>
+              <tr><td><code>prediction_runs</code></td><td>输入快照、特征、模型版本、数据版本、结果</td><td>任何结论可重放、可解释、可回测</td></tr>
+              <tr><td><code>reports</code></td><td>周期、结构化结论、展示文本、版本</td><td>结构化数据与大模型生成文案分离</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>数据版本规则</h3>
+        <ul class="checklist">
+          <li>学校、招生计划、位次表、政策规则均包含 <code>city_id</code>、<code>school_year</code>、<code>source_id</code> 和 <code>effective_at</code>。</li>
+          <li>修订数据不覆盖历史版本；预测结果始终关联当时使用的数据版本。</li>
+          <li>原始截图默认短期保存，确认后的结构化数据长期保存；用户可申请删除。</li>
+        </ul>
+      </section>
+
+      <section id="ai">
+        <h2>08　预测算法与大模型接入设计</h2>
+        <p class="section-intro">把AI拆成四条独立能力线，避免一个模型同时负责识别、计算、预测和解释。任何一条都可以单独升级或更换供应商。</p>
+        <div class="model-lanes">
+          <div><b>信息抽取</b>截图OCR、多模态识别、政策和学校资料结构化<br><span>输出字段、置信度和证据位置</span></div>
+          <div><b>确定性规则</b>总分校验、位次映射、招生资格、批次和定向规则<br><span>代码化、可单元测试，不交给大模型</span></div>
+          <div><b>统计预测</b>孩子位次分布、学校门槛分布、情景模拟<br><span>版本化、可回测、输出区间</span></div>
+          <div><b>解释生成</b>把结构化结果转成家长能理解的结论和行动建议<br><span>受模板、规则和禁用表述约束</span></div>
+        </div>
+
+        <h3>统一模型网关</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>设计</th><th>要求</th><th>带来的能力</th></tr></thead>
+            <tbody>
+              <tr><td>统一接口</td><td><code>extract()</code>、<code>generate()</code>、<code>embed()</code>按内部协议调用</td><td>业务代码不直接依赖某一家模型API</td></tr>
+              <tr><td>供应商适配器</td><td>每家模型只在适配器中处理参数、鉴权和响应差异</td><td>可以切换OpenAI、通义、DeepSeek或本地模型</td></tr>
+              <tr><td>任务路由</td><td>按任务、成本、延迟、准确率选择模型</td><td>截图识别和报告解释可使用不同模型</td></tr>
+              <tr><td>降级策略</td><td>超时、限流或低置信时自动换模型或进入手工录入</td><td>单一供应商故障不阻断核心流程</td></tr>
+              <tr><td>提示词版本</td><td>提示词、结构化Schema、模型参数均有版本号</td><td>可灰度、回滚和A/B测试</td></tr>
+              <tr><td>调用审计</td><td>记录任务类型、版本、耗时、费用、成功率，不记录不必要隐私</td><td>持续优化成本和质量</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>预测模型的迭代路径</h3>
+        <ol>
+          <li><b>M0 规则基线：</b>历史位次、线差、招生计划变化和简单趋势，先建立可解释基线。</li>
+          <li><b>M1 分层统计：</b>按城市、初中、考试类型和分数段估计孩子中考位次区间。</li>
+          <li><b>M2 概率模型：</b>同时估计孩子位次分布与学校门槛分布，计算冲稳保概率区间。</li>
+          <li><b>M3 个性化模型：</b>使用跨届纵向样本、学校校准系数和更细粒度特征持续优化。</li>
+        </ol>
+
+        <h3>持续优化闭环</h3>
+        <div class="journey">
+          <div><b>记录输入</b><span>考试、排名、目标和当时数据版本</span></div>
+          <div><b>冻结预测</b><span>中考前保存不可修改的预测快照</span></div>
+          <div><b>回收结果</b><span>中考位次、志愿顺序和录取结果</span></div>
+          <div><b>离线评估</b><span>覆盖率、误差、校准、滑档和后悔值</span></div>
+          <div><b>灰度升级</b><span>新旧模型并行，达到门槛后切换</span></div>
+        </div>
+        <div class="callout warn">
+          <strong>模型上线原则</strong>
+          <p>新模型先作为 Challenger 在后台并行运行，不直接影响用户；只有在离线回测和小流量灰度均优于当前 Champion 后，才切换默认版本，并保留快速回滚能力。</p>
+        </div>
+      </section>
+
+      <section id="quality">
+        <h2>09　性能、安全与可运维要求</h2>
+        <h3>性能与扩展目标</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>指标</th><th>MVP验收值</th><th>扩展设计</th></tr></thead>
+            <tbody>
+              <tr><td>普通API响应</td><td>P95 ≤ 500ms，错误率 &lt; 1%</td><td>无状态API、多实例、数据库连接池和缓存</td></tr>
+              <tr><td>首页打开</td><td>4G网络下首屏可用 ≤ 2.5秒</td><td>静态资源CDN、接口聚合、按需加载</td></tr>
+              <tr><td>截图上传</td><td>显示上传进度；上传接口不阻塞识别</td><td>客户端直传OSS，服务端签名；异步Worker识别</td></tr>
+              <tr><td>截图识别</td><td>80%任务30秒内完成，超时可重试或手工录入</td><td>任务队列、幂等、Worker水平扩容、供应商降级</td></tr>
+              <tr><td>初期并发</td><td>100并发用户下核心API稳定</td><td>通过增加API与Worker实例扩展到更高并发</td></tr>
+              <tr><td>可用性</td><td>月可用性≥99.5%</td><td>健康检查、自动重启、数据库备份和监控告警</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>安全与隐私</h3>
+        <ul class="checklist">
+          <li>监护人明确同意后采集未成年人信息，默认最小化采集。</li>
+          <li>全站HTTPS；鉴权令牌短期有效；敏感字段加密或脱敏；对象存储使用私有桶和临时URL。</li>
+          <li>用户只能访问自己孩子的数据；运营后台采用角色权限和操作审计。</li>
+          <li>向大模型发送截图前进行最小化处理，能裁剪就不发送整屏；供应商调用不用于训练。</li>
+          <li>支持导出和删除家庭数据；原始截图设置自动过期策略。</li>
+        </ul>
+
+        <h3>监控与质量</h3>
+        <div class="grid-3">
+          <div class="panel"><h4>系统指标</h4><p>请求量、P95延迟、错误率、队列长度、数据库连接和存储失败。</p></div>
+          <div class="panel"><h4>产品指标</h4><p>建档完成率、截图成功率、确认耗时、考试留存、报告查看和分享。</p></div>
+          <div class="panel"><h4>模型指标</h4><p>字段准确率、人工修改率、模型费用、预测覆盖率、误差与概率校准。</p></div>
+        </div>
+      </section>
+
+      <section id="delivery">
+        <h2>10　MVP开发顺序</h2>
+        <p class="section-intro">按可独立验收的纵向切片开发，优先完成一条真实可用路径，不先铺满所有页面。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>阶段</th><th>交付内容</th><th>完成定义</th></tr></thead>
+            <tbody>
+              <tr><td>迭代1<br><span class="tiny">基础闭环</span></td><td>登录建档、手工录入、考试列表、首页最近结果</td><td>一个真实家庭能连续录入并在不同设备看到同一数据</td></tr>
+              <tr><td>迭代2<br><span class="tiny">降低录入成本</span></td><td>截图上传、异步识别、确认页、识别质量记录</td><td>典型截图可完成“上传—确认—保存”，失败可降级手工</td></tr>
+              <tr><td>迭代3<br><span class="tiny">体现产品思想</span></td><td>趋势、规则基线预测、当前学校区间、目标差距、解释</td><td>每次考试保存后自动形成一份有依据的个性化判断</td></tr>
+              <tr><td>迭代4<br><span class="tiny">形成陪伴感</span></td><td>目标学校页、月度简报、分享、运营数据后台</td><td>家长可查看本月变化，项目方能观察留存与模型质量</td></tr>
+              <tr><td>迭代5<br><span class="tiny">小规模验证</span></td><td>种子家庭灰度、数据修正、性能压测、隐私与备份</td><td>达到验收指标后再决定是否扩大用户和接入完整志愿系统</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <strong>Codex使用方式</strong>
+          <p>Codex承担代码实现、测试、数据迁移脚本、接口文档、部署和重复性数据处理；创始人集中负责产品判断、数据口径、家长访谈、模型验收和市场验证。</p>
+        </div>
+      </section>
+
+      <section id="acceptance">
+        <h2>11　MVP总体验收清单</h2>
+        <p class="section-intro">满足以下条件，才算第一版真正体现产品思路，而不是两个旧系统的移动版拼接。</p>
+        <ul class="checklist">
+          <li><span class="status mvp">录入</span> 家长可通过截图完成成绩录入，识别后确认，典型流程中位耗时≤30秒。</li>
+          <li><span class="status mvp">持续</span> 同一孩子可记录多次不同口径考试，趋势正确处理缺失科目和排名。</li>
+          <li><span class="status mvp">判断</span> 首页明确展示当前学校区间、目标差距、本次变化和一条行动建议。</li>
+          <li><span class="status mvp">可信</span> 每个预测结果包含依据、可信等级、模型版本、数据版本和更新时间。</li>
+          <li><span class="status mvp">移动端</span> 390px宽度无页面溢出，核心操作可单手完成，关键按钮不小于44px。</li>
+          <li><span class="status mvp">性能</span> 普通API P95≤500ms；100并发用户下核心流程稳定；识别任务不阻塞API。</li>
+          <li><span class="status mvp">可切换</span> 大模型通过统一网关调用，更换识别或解释模型无需修改业务模块。</li>
+          <li><span class="status mvp">可迭代</span> 预测运行可重放、回测、灰度和回滚，历史结论不因模型升级而被覆盖。</li>
+          <li><span class="status mvp">隐私</span> 用户数据隔离，截图私有存储，具备监护人同意、导出和删除机制。</li>
+          <li><span class="status next">验证</span> 首批种子家庭达到连续录入、报告查看和真实结果回收的预设指标。</li>
+        </ul>
+
+        <h3>开发前仍需确认的产品参数</h3>
+        <ol>
+          <li>第一批种子家庭数量及覆盖的初中、分数段。</li>
+          <li>西安首版考试科目、满分和排名口径配置。</li>
+          <li>MVP默认使用的截图识别模型，以及可接受的单次识别成本。</li>
+          <li>首版“学校区间”和“目标差距”的规则基线具体口径。</li>
+          <li>月度简报的固定结构和家长可分享范围。</li>
+        </ol>
+      </section>
+    </main>
+  </div>
+
+  <footer><div class="page">NextPath 中考升学助手｜MVP需求与系统设计文档｜V1.0</div></footer>
+  <script>
+    const links = [...document.querySelectorAll('.sidebar a')];
+    const sections = [...document.querySelectorAll('main section')];
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.toggle('active', link.hash === '#' + entry.target.id));
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach((section) => observer.observe(section));
+  </script>
+</body>
+</html>

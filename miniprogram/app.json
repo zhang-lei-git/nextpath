@@ -1,0 +1,16 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/score-entry/index",
+    "pages/analysis/index"
+    ,"pages/profile/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "NextPath",
+    "navigationBarBackgroundColor": "#F5F7F5",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F5F7F5"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

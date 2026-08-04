@@ -1,0 +1,21 @@
+[Unit]
+Description=NextPath FastAPI service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/nextpath-api
+Environment=PYTHONUNBUFFERED=1
+Environment=DATABASE_URL=sqlite+aiosqlite:////var/lib/nextpath/nextpath.db
+Environment=UPLOAD_DIR=/var/lib/nextpath/uploads
+# SQLite is limited to one worker for internal testing. Use PostgreSQL before horizontal scaling.
+ExecStart=/opt/nextpath-api/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

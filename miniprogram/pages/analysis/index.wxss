@@ -1,0 +1,11 @@
+.page-title { margin: 12rpx 0 30rpx; color: #143F43; font-size: 44rpx; font-weight: 700; }
+.summary { padding: 30rpx; background: #EFF6F4; }
+.tier { margin: 10rpx 0 22rpx; color: #143F43; font-size: 39rpx; font-weight: 700; }
+.summary-line { padding-top: 20rpx; border-top: 1rpx solid #CFE0DB; color: #2B5452; font-size: 26rpx; }
+.basis, .boundary { padding: 8rpx 28rpx; }
+.basis-item { padding: 22rpx 0; border-bottom: 1rpx solid #E2E8E5; color: #1C2828; font-size: 28rpx; line-height: 1.65; }
+.basis-item:last-child { border-bottom: 0; }
+.boundary view:first-child { margin: 20rpx 0 8rpx; color: #9A6614; font-size: 28rpx; font-weight: 600; }
+.boundary .muted { padding-bottom: 22rpx; }
+.model { margin: 20rpx 4rpx 30rpx; color: #687574; font-size: 22rpx; }
+.report { padding: 4rpx 28rpx; }.report-headline { padding:24rpx 0; color:#143F43; font-size:31rpx; font-weight:700; }.report-block { padding:20rpx 0; border-top:1rpx solid #E2E8E5; color:#334542; font-size:26rpx; line-height:1.65; }.report-block.last { padding-bottom:24rpx; }.report-label { margin-bottom:6rpx; color:#16766D; font-size:23rpx; font-weight:700; }

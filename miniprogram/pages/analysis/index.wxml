@@ -1,0 +1,26 @@
+<view class="page" wx:if="{{forecast}}">
+  <view class="eyebrow">判断依据</view>
+  <view class="page-title">结论要看得懂</view>
+  <view class="summary card">
+    <view class="muted">当前层次</view><view class="tier">{{forecast.tier}}</view>
+    <view class="summary-line">依据最近一次 {{latest.name}} {{latest.total_score}} 分</view>
+  </view>
+  <view class="section-title">本期升学位置报告</view>
+  <view class="report card" wx:if="{{report}}">
+    <view class="report-headline">{{report.headline}}</view>
+    <view class="report-block"><view class="report-label">全区位置</view><view>{{report.current_position}}</view></view>
+    <view class="report-block"><view class="report-label">成绩趋势</view><view>{{report.trend_summary}}</view></view>
+    <view class="report-block"><view class="report-label">目标高中</view><view>{{report.target_summary}}</view></view>
+    <view class="report-block"><view class="report-label">所在初中</view><view>{{report.school_context}}</view></view>
+    <view class="report-block last"><view class="report-label">政策提示</view><view>{{report.policy_summary}}</view></view>
+  </view>
+  <view class="section-title">这项判断基于什么</view>
+  <view class="basis card"><view class="basis-item" wx:for="{{forecast.basis}}" wx:key="*this">{{item}}</view></view>
+  <view class="section-title">结论的边界</view>
+  <view class="boundary card">
+    <view>可信度：{{forecast.confidence === 'low' ? '初步判断' : forecast.confidence}}</view>
+    <view class="muted">当前缺少完整的本校历史位次与官方一分一段数据。系统会随着真实数据补齐持续更新，而不是给出一次性的“保证”。</view>
+  </view>
+  <view class="model">模型 {{forecast.model_version}} · 参考 {{forecast.reference_year}} 年数据</view>
+  <button class="primary-button" bindtap="goToEntry">更新成绩后重新判断</button>
+</view>
