@@ -19,4 +19,4 @@ def test_baseline_prediction_does_not_promise_admission() -> None:
 
     assert forecast.confidence == "low"
     assert forecast.target_gap is None
-    assert "承诺" in forecast.basis[1]
+    assert "全区参考位置" in forecast.basis[1]

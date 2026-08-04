@@ -38,7 +38,7 @@ class StudentService:
             report = self.predictor.build_report(prediction_input)
             actions.append(ActionItem(
                 title="补齐排名信息",
-                detail="补录年级排名后，系统才能开始建立个人位次映射。",
+                detail="补录年级排名后，孩子在全区的大致位置会更清楚。",
                 priority="high",
             ))
             actions.append(ActionItem(
@@ -49,13 +49,13 @@ class StudentService:
         elif not profile_complete:
             actions.append(ActionItem(
                 title="先完成孩子档案",
-                detail="只需姓名、初中和年级三项，完成后才会生成面向中考的判断。",
+                detail="只需姓名、初中和年级三项，完成后就能看到面向中考的位置判断。",
                 priority="high",
             ))
         else:
             actions.append(ActionItem(
                 title="录入最近一次考试",
-                detail="上传成绩截图或手动录入；先有一条准确成绩，才能生成判断。",
+                detail="上传成绩截图或手动录入。先有一条准确成绩，才能看清孩子现在的位置。",
                 priority="high",
             ))
         return DashboardResponse(
@@ -112,5 +112,5 @@ class StudentService:
             import_id=score_import.id,
             status=score_import.status,
             extraction=candidate,
-            message="截图已安全保存。识别服务接入后会在此返回候选成绩，提交前始终由家长确认。",
+            message="截图已收到。请核对并补全本次成绩，确认后再保存。",
         )

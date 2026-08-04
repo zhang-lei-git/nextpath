@@ -50,7 +50,7 @@ class BaselinePredictionEngine:
             confidence="low",
             basis=[
                 f"按 {RANK_REFERENCE_SOURCE} 折算当前总分的全区参考位置。",
-                "已纳入历次成绩变化；初中到全区的历史映射数据尚未接入，因此不输出录取承诺。",
+                "已参考历次成绩变化；所在初中的历史成绩样本还在积累中，本次以全区参考位置为主。",
             ],
             model_version=self.version,
             reference_year=RANK_REFERENCE_YEAR,
@@ -72,7 +72,7 @@ class BaselinePredictionEngine:
             current_position=(f"按 {RANK_REFERENCE_YEAR} 年参考表，当前约全区第 {rank:,} 名。" if rank else "本次总分不在当前参考表覆盖范围内，无法可靠折算全区位次。"),
             trend_summary=trend_summary,
             target_summary=target_summary,
-            school_context=(f"已记录初中：{input_data.junior_school}。当前尚无该校历史成绩到全区位次的映射样本，报告未虚构校内换算。" if input_data.junior_school else "尚未填写初中，无法纳入学校维度。"),
+            school_context=(f"已记录初中：{input_data.junior_school}。该校的历史成绩样本还在积累中，本次以全区参考位置为主。" if input_data.junior_school else "补充孩子所在初中后，判断会更贴近实际升学环境。"),
             policy_summary=POLICY_SUMMARY,
             key_points=[forecast.basis[0], forecast.basis[1], "下一步优先补录下一次考试的年级排名，使个人趋势与学校映射逐步收敛。"],
             data_sources=[RANK_REFERENCE_SOURCE, target.source if target else "尚未选择目标学校", "2026 年西安市城六区中招政策摘要"],

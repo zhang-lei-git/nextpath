@@ -19,8 +19,8 @@ class ProfileRepository:
             owner_id=owner_id,
             student_name="",
             city="西安",
-            junior_school="示例初中",
-            target_school="目标高中",
+            junior_school=None,
+            target_school=None,
         )
         self.session.add(profile)
         await self.session.flush()

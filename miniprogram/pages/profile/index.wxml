@@ -1,10 +1,10 @@
 <view class="page">
-  <view class="eyebrow">孩子档案</view><view class="page-title">只留判断必需的信息</view>
-  <view class="intro">姓名用于区分记录；初中用于后续建立校内成绩与全区位次的映射。目标高中可以后再填。</view>
+  <view class="eyebrow">孩子信息</view><view class="page-title">先认识一下孩子</view>
+  <view class="intro">填写这三项后，就能持续看到孩子在升学中的位置。目标高中以后想好了再补充。</view>
   <view class="form card">
     <view class="field"><view class="label">孩子称呼</view><input placeholder="例如：小远" value="{{form.student_name}}" data-key="student_name" bindinput="input" /></view>
     <view class="field"><view class="label">所在初中</view><input placeholder="例如：西安市某某中学" value="{{form.junior_school}}" data-key="junior_school" bindinput="input" /></view>
-    <view class="field"><view class="label">当前年级</view><picker range="{{grades}}" value="{{0}}" bindchange="gradeChange"><view class="picker-value">{{form.grade}}</view></picker></view>
+    <view class="field"><view class="label">当前年级</view><picker range="{{grades}}" value="{{gradeIndex}}" bindchange="gradeChange"><view class="picker-value">{{form.grade}}</view></picker></view>
     <view class="field last"><view class="label">目标高中 <text>选填</text></view><input placeholder="例如：西安高新第一中学" value="{{form.target_school}}" data-key="target_school" bindinput="input" /></view>
   </view>
   <button class="primary-button save" bindtap="save" loading="{{saving}}">保存并开始记录</button>

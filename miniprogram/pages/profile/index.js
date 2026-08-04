@@ -1,15 +1,24 @@
 const { request } = require('../../utils/request')
 
 Page({
-  data: { form: { student_name: '', junior_school: '', grade: '初三', target_school: '' }, grades: ['初一', '初二', '初三'], saving: false },
+  data: { form: { student_name: '', junior_school: '', grade: '初三', target_school: '' }, grades: ['初一', '初二', '初三'], gradeIndex: 2, saving: false },
   async onLoad() {
     try {
       const profile = await request({ path: '/profile' })
-      this.setData({ form: { ...this.data.form, ...profile } })
+      const form = {
+        student_name: profile.student_name || '',
+        junior_school: profile.junior_school || '',
+        grade: profile.grade || '初三',
+        target_school: profile.target_school || ''
+      }
+      this.setData({ form, gradeIndex: this.data.grades.indexOf(form.grade) })
     } catch (_) { wx.showToast({ title: '暂时无法读取档案', icon: 'none' }) }
   },
   input(event) { this.setData({ [`form.${event.currentTarget.dataset.key}`]: event.detail.value }) },
-  gradeChange(event) { this.setData({ 'form.grade': this.data.grades[event.detail.value] }) },
+  gradeChange(event) {
+    const gradeIndex = Number(event.detail.value)
+    this.setData({ 'form.grade': this.data.grades[gradeIndex], gradeIndex })
+  },
   async save() {
     const form = this.data.form
     if (!form.student_name.trim() || !form.junior_school.trim()) {

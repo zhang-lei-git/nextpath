@@ -28,3 +28,4 @@
 .trend-item:first-child { border-left: 0; }
 .trend-score { margin-top: 10rpx; color: #143F43; font-family: ui-monospace, Menlo, monospace; font-size: 38rpx; font-weight: 700; }
 .source-note { margin: 20rpx 4rpx; color: #687574; font-size: 21rpx; line-height: 1.65; }
+.loading,.error-title { margin-top:180rpx; color:#143F43; font-size:38rpx; font-weight:700; text-align:center; }.error-copy { margin:18rpx 0 44rpx; color:#687574; font-size:27rpx; text-align:center; }.error-copy + .primary-button { width:100%; }

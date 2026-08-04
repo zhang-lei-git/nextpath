@@ -19,8 +19,8 @@
   <view class="section-title">结论的边界</view>
   <view class="boundary card">
     <view>可信度：{{forecast.confidence === 'low' ? '初步判断' : forecast.confidence}}</view>
-    <view class="muted">当前缺少完整的本校历史位次与官方一分一段数据。系统会随着真实数据补齐持续更新，而不是给出一次性的“保证”。</view>
+    <view class="muted">当前缺少完整的本校历史位次与官方一分一段数据。本次先给出参考区间，成绩和公开数据补齐后会持续更新。</view>
   </view>
-  <view class="model">模型 {{forecast.model_version}} · 参考 {{forecast.reference_year}} 年数据</view>
+  <view class="model">本次判断参考 {{forecast.reference_year}} 年公开数据，录取结果以当年官方发布为准。</view>
   <button class="primary-button" bindtap="goToEntry">更新成绩后重新判断</button>
 </view>

@@ -22,6 +22,6 @@
     <view class="field"><view class="label">班级排名 <text>选填</text></view><input type="number" placeholder="例如：28" value="{{form.class_rank}}" data-key="class_rank" bindinput="updateField" /></view>
     <view class="field last"><view class="label">年级排名 <text>建议填写</text></view><input type="number" placeholder="例如：126" value="{{form.grade_rank}}" data-key="grade_rank" bindinput="updateField" /></view>
   </view>
-  <view class="privacy">成绩截图仅用于生成待确认记录。内部测试阶段不进行对外共享。</view>
+  <view class="privacy">每一项成绩都会先由你确认，再用于更新孩子的升学判断。</view>
   <button class="primary-button save" bindtap="submit" loading="{{saving}}">确认并保存</button>
 </view>
