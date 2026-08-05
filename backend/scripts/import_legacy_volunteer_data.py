@@ -19,7 +19,7 @@ from app.domain.models import Base, DataEvidence, DataFact, DataRelease, DataRel
 
 REGION = "西安"
 YEAR = 2026
-RELEASE_NAME = "2026 西安城六区升学参考数据（旧系统迁移测试版）"
+RELEASE_NAME = "2026 西安城六区升学参考数据（旧系统迁移测试版 v2）"
 
 NODE_EXTRACTOR = r"""
 const fs = require('fs');
@@ -31,7 +31,7 @@ vm.createContext(context);
 vm.runInContext(source, context);
 const keys = [
   'SOURCE_LINKS', 'RANK_REFERENCE_DATA', 'PUBLIC_2026_ESTIMATES',
-  'OFFICIAL_2026_ADMISSION_UPDATE', 'SCHOOL_DATA',
+  'OFFICIAL_2026_ADMISSION_UPDATE', 'SCHOOL_DATA', 'TARGET_QUOTA_DATA',
   'SCHOOL_ADMISSION_PLAN_COMPARISON_DATA'
 ];
 console.log(JSON.stringify(Object.fromEntries(keys.map((key) => [key, context[key]]))));
@@ -181,6 +181,13 @@ async def import_data(legacy_data: dict) -> dict[str, int]:
             url=source_url(links, "2026年普通高中分学校招生计划"),
             excerpt="旧系统按城六区普通高中招生计划原表整理。",
         )
+        junior_school_evidence = await create_evidence(
+            session,
+            official_source,
+            title="2026 年城六区省级标准化高中定向生分学校生源计划",
+            url=source_url(links, "定向生分学校生源计划"),
+            excerpt="覆盖城六区初中学校及对应定向招生名额，作为初中学校基础名录导入。",
+        )
 
         facts: list[DataFact] = []
         points = [[point["score"], point["rank"]] for point in rank_data["points"]]
@@ -230,6 +237,7 @@ async def import_data(legacy_data: dict) -> dict[str, int]:
                 field="学校档案",
                 scope={"school_code": school.get("code"), "campus": school.get("campus")},
                 value={
+                    "school_stage": "senior",
                     "short_name": school.get("shortName"),
                     "batch": school.get("batch"),
                     "level": school.get("level"),
@@ -240,6 +248,23 @@ async def import_data(legacy_data: dict) -> dict[str, int]:
                 },
                 evidence_id=school_evidence.id,
                 confidence="verified",
+            ))
+
+        for junior_school in legacy_data["TARGET_QUOTA_DATA"]["schools"]:
+            facts.append(await create_fact(
+                session,
+                fact_type="school",
+                entity_name=junior_school["name"],
+                field="学校档案",
+                scope={"district": junior_school.get("district")},
+                value={
+                    "school_stage": "junior",
+                    "district": junior_school.get("district"),
+                    "directional_quota_total": junior_school.get("totalQuota"),
+                    "source_year": legacy_data["TARGET_QUOTA_DATA"]["year"],
+                },
+                evidence_id=junior_school_evidence.id,
+                confidence="official",
             ))
 
         for school_id, estimate in legacy_data["PUBLIC_2026_ESTIMATES"].items():
@@ -288,7 +313,7 @@ async def import_data(legacy_data: dict) -> dict[str, int]:
         await session.flush()
         session.add_all([DataReleaseItem(release_id=release.id, fact_id=fact.id) for fact in facts])
         await session.commit()
-        return {"sources": 4, "evidence": 5, "facts": len(facts), "release_id": release.id}
+        return {"sources": 4, "evidence": 6, "facts": len(facts), "release_id": release.id}
 
 
 def main() -> None:

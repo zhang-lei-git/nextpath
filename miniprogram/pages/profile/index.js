@@ -1,7 +1,11 @@
 const { request } = require('../../utils/request')
 
 Page({
-  data: { form: { student_name: '', junior_school: '', grade: '初三', target_school: '' }, grades: ['初一', '初二', '初三'], gradeIndex: 2, saving: false },
+  data: {
+    form: { student_name: '', junior_school: '', grade: '初三', target_school: '' },
+    grades: ['初一', '初二', '初三'], gradeIndex: 2, saving: false,
+    juniorMatches: [], targetMatches: []
+  },
   async onLoad() {
     try {
       const profile = await request({ path: '/profile' })
@@ -14,7 +18,35 @@ Page({
       this.setData({ form, gradeIndex: this.data.grades.indexOf(form.grade) })
     } catch (_) { wx.showToast({ title: '暂时无法读取档案', icon: 'none' }) }
   },
-  input(event) { this.setData({ [`form.${event.currentTarget.dataset.key}`]: event.detail.value }) },
+  input(event) {
+    const key = event.currentTarget.dataset.key
+    const value = event.detail.value
+    this.setData({ [`form.${key}`]: value })
+    if (key === 'junior_school') this.searchSchool(value, 'junior', 'juniorMatches')
+    if (key === 'target_school') this.searchSchool(value, 'senior', 'targetMatches')
+  },
+  searchSchool(query, schoolStage, resultKey) {
+    clearTimeout(this.searchTimer)
+    if (query.trim().length < 2) {
+      this.setData({ [resultKey]: [] })
+      return
+    }
+    this.searchTimer = setTimeout(async () => {
+      try {
+        const result = await request({
+          path: '/data/consumer/school-search',
+          data: { region: '西安', reference_year: 2026, query: query.trim(), school_stage: schoolStage }
+        })
+        if (this.data.form[schoolStage === 'junior' ? 'junior_school' : 'target_school'] === query) {
+          this.setData({ [resultKey]: result.facts || [] })
+        }
+      } catch (_) { this.setData({ [resultKey]: [] }) }
+    }, 250)
+  },
+  selectSchool(event) {
+    const key = event.currentTarget.dataset.key
+    this.setData({ [`form.${key}`]: event.currentTarget.dataset.name, [key === 'junior_school' ? 'juniorMatches' : 'targetMatches']: [] })
+  },
   gradeChange(event) {
     const gradeIndex = Number(event.detail.value)
     this.setData({ 'form.grade': this.data.grades[gradeIndex], gradeIndex })

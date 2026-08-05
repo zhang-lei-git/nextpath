@@ -96,6 +96,12 @@ class DataService:
         releases = await self.repository.list_releases()
         return [self._release_read(release, await self.repository.release_fact_count(release.id)) for release in releases]
 
+    async def release_facts(self, release_id: str) -> list[DataFactRead]:
+        release = await self.session.get(DataRelease, release_id)
+        if not release:
+            raise HTTPException(status_code=404, detail="未找到发布版本")
+        return [DataFactRead.model_validate(fact) for fact in await self.repository.all_facts_in_release(release_id)]
+
     async def consume(
         self,
         fact_type: str,
@@ -111,6 +117,38 @@ class DataService:
         return ConsumerDataResponse(
             release=self._release_read(release, len(facts)),
             facts=consumer_facts,
+        )
+
+    async def search_schools(
+        self,
+        region: str,
+        reference_year: int,
+        query: str,
+        school_stage: str,
+    ) -> ConsumerDataResponse:
+        release = await self.repository.latest_release(region, reference_year)
+        if not release:
+            return ConsumerDataResponse(release=None, facts=[])
+
+        normalized_query = self._normalize_school_name(query)
+        facts = await self.repository.facts_in_release(release.id, "school")
+        candidates = []
+        for fact in facts:
+            if fact.value.get("school_stage") != school_stage:
+                continue
+            names = [fact.entity_name, fact.value.get("short_name", "")]
+            normalized_names = [self._normalize_school_name(name) for name in names if name]
+            if not any(normalized_query in name for name in normalized_names):
+                continue
+            ranking = min(
+                0 if normalized_query == name else 1 if name.startswith(normalized_query) else 2
+                for name in normalized_names
+            )
+            candidates.append((ranking, fact))
+        matched = [fact for _, fact in sorted(candidates, key=lambda item: (item[0], item[1].entity_name))[:12]]
+        return ConsumerDataResponse(
+            release=self._release_read(release, len(matched)),
+            facts=[await self._consumer_fact(fact) for fact in matched],
         )
 
     async def _consumer_fact(self, fact: DataFact) -> ConsumerFact:
@@ -141,6 +179,13 @@ class DataService:
             source_name=source.name if source else None,
             source_type=source.source_type if source else None,
         )
+
+    @staticmethod
+    def _normalize_school_name(value: str) -> str:
+        normalized = value.replace(" ", "").lower()
+        for source, target in (("第一", "一"), ("第二", "二"), ("第三", "三"), ("第四", "四"), ("第五", "五"), ("附属", "附")):
+            normalized = normalized.replace(source, target)
+        return normalized
 
     @staticmethod
     def _release_read(release: DataRelease, fact_count: int) -> DataReleaseRead:

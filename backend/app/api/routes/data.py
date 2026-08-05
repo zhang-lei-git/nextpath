@@ -100,6 +100,26 @@ async def list_releases(
     return await DataService(session).list_releases()
 
 
+@router.get("/releases/{release_id}/facts", response_model=list[DataFactRead])
+async def release_facts(
+    release_id: str,
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> list[DataFactRead]:
+    return await DataService(session).release_facts(release_id)
+
+
+@router.get("/consumer/school-search", response_model=ConsumerDataResponse)
+async def search_schools(
+    region: str,
+    reference_year: int,
+    query: str = Query(min_length=1, max_length=80),
+    school_stage: str = Query(pattern="^(junior|senior)$"),
+    session: AsyncSession = Depends(get_session),
+) -> ConsumerDataResponse:
+    return await DataService(session).search_schools(region, reference_year, query, school_stage)
+
+
 @router.get("/consumer/schools/{school_name}", response_model=ConsumerDataResponse)
 async def consume_school(
     school_name: str,

@@ -11,14 +11,16 @@
       <div class="brand"><strong>NextPath</strong><span>数据运营台</span></div>
       <nav>
         <button class="nav-item active" data-view="overview">总览</button>
+        <button class="nav-item" data-view="data">基础数据</button>
         <button class="nav-item" data-view="sources">数据来源</button>
         <button class="nav-item" data-view="capture">采集录入</button>
         <button class="nav-item" data-view="review">审核发布</button>
+        <button class="nav-item" data-view="users">用户管理</button>
       </nav>
       <p class="sidebar-note">未审核、未发布的数据不会进入家长端。</p>
     </aside>
     <main>
-      <header class="topbar"><div><p class="eyebrow">DATA OPERATIONS</p><h1 id="pageTitle">数据总览</h1></div><button id="refreshButton" class="button secondary">刷新</button></header>
+      <header class="topbar"><div><p class="eyebrow">DATA OPERATIONS</p><h1 id="pageTitle">数据总览</h1></div><div class="topbar-actions"><span id="currentUser" class="current-user"></span><button id="refreshButton" class="button secondary">刷新</button><button id="logoutButton" class="button secondary">退出</button></div></header>
       <div id="notice" class="notice hidden"></div>
 
       <section id="overview" class="view active">
@@ -27,6 +29,14 @@
           <section class="panel"><div class="panel-head"><h2>最近发布</h2><span>家长端正在使用</span></div><div id="releaseList" class="list"></div></section>
           <section class="panel"><div class="panel-head"><h2>待审核数据</h2><span>需要核对证据</span></div><div id="pendingPreview" class="list"></div></section>
         </div>
+      </section>
+
+      <section id="data" class="view">
+        <section class="panel">
+          <div class="panel-head"><div><h2>已发布基础数据</h2><span>仅显示家长端可读取的数据</span></div><select id="releaseSelect" class="release-select"></select></div>
+          <div class="data-filter"><input id="dataSearch" placeholder="搜索学校名称、字段或内容"><select id="dataType"><option value="all">全部类别</option><option value="school">学校</option><option value="admission">招生录取</option><option value="policy">中招政策</option></select></div>
+          <div id="publishedFactList" class="fact-list"></div>
+        </section>
       </section>
 
       <section id="sources" class="view">
@@ -74,6 +84,13 @@
             <div id="releaseSelection" class="selection-note">尚未选择可发布的数据。</div>
             <button class="button" type="submit">发布到家长端</button>
           </form></section>
+        </div>
+      </section>
+
+      <section id="users" class="view">
+        <div class="grid-two wide-left">
+          <section class="panel"><div class="panel-head"><h2>运营用户</h2><span>可登录数据运营台</span></div><div id="userList" class="list"></div></section>
+          <section class="panel form-panel"><h2>新增用户</h2><form id="userForm" class="form-stack"><label>用户名<input name="username" required pattern="[A-Za-z0-9_-]{3,32}" placeholder="3-32 位字母、数字、下划线或连字符"></label><label>初始密码<input name="password" type="password" minlength="8" required placeholder="至少 8 位"></label><button class="button" type="submit">添加用户</button></form></section>
         </div>
       </section>
     </main>

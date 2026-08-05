@@ -100,5 +100,14 @@ class DataRepository:
             statement = statement.where(DataFact.entity_name == entity_name)
         return list(await self.session.scalars(statement))
 
+    async def all_facts_in_release(self, release_id: str) -> list[DataFact]:
+        statement = (
+            select(DataFact)
+            .join(DataReleaseItem, DataReleaseItem.fact_id == DataFact.id)
+            .where(DataReleaseItem.release_id == release_id)
+            .order_by(DataFact.fact_type, DataFact.entity_name, DataFact.field)
+        )
+        return list(await self.session.scalars(statement))
+
     async def source_for_evidence(self, evidence: DataEvidence) -> DataSource | None:
         return await self.session.get(DataSource, evidence.source_id) if evidence.source_id else None
