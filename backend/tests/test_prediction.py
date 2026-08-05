@@ -1,4 +1,5 @@
 from app.services.prediction import BaselinePredictionEngine, PredictionInput
+from app.services.published_reference_data import PublishedReferenceData, PublishedSchoolReference
 
 
 def test_baseline_prediction_is_explainable() -> None:
@@ -20,3 +21,25 @@ def test_baseline_prediction_does_not_promise_admission() -> None:
     assert forecast.confidence == "low"
     assert forecast.target_gap is None
     assert "全区参考位置" in forecast.basis[1]
+
+
+def test_prediction_prefers_published_reference_data() -> None:
+    reference_data = PublishedReferenceData(
+        reference_year=2027,
+        rank_source="2027 年已发布一分一段表",
+        rank_points=((600, 1000), (590, 2000)),
+        school_references=(PublishedSchoolReference("测试高中", 596, "2027 年已发布招生参考"),),
+        policy_summary="2027 年已发布政策摘要。",
+    )
+    engine = BaselinePredictionEngine(reference_data)
+    prediction_input = PredictionInput(total_score=595, class_rank=None, target_school="测试高中")
+
+    forecast = engine.predict(prediction_input)
+    report = engine.build_report(prediction_input)
+
+    assert forecast.reference_year == 2027
+    assert forecast.estimated_rank_range == (700, 2300)
+    assert forecast.target_gap == 1
+    assert "2027 年已发布一分一段表" in forecast.basis[0]
+    assert "2027 年已发布招生参考" in report.target_summary
+    assert report.policy_summary == "2027 年已发布政策摘要。"

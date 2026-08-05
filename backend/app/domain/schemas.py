@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -80,3 +80,106 @@ class ImportResponse(BaseModel):
     status: str
     extraction: ExamCreate
     message: str
+
+
+SourceType = Literal["official", "school_official", "media", "expert", "parent", "manual"]
+Reliability = Literal["official", "verified", "observation"]
+FactType = Literal["school", "admission", "policy"]
+FactStatus = Literal["pending_review", "approved", "rejected"]
+
+
+class DataSourceCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    source_type: SourceType
+    reliability: Reliability = "observation"
+    homepage_url: str | None = Field(default=None, max_length=512)
+
+
+class DataSourceRead(DataSourceCreate):
+    id: str
+    is_active: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class EvidenceCreate(BaseModel):
+    source_id: str | None = None
+    title: str = Field(min_length=1, max_length=240)
+    url: str | None = Field(default=None, max_length=1024)
+    file_path: str | None = Field(default=None, max_length=512)
+    excerpt: str | None = Field(default=None, max_length=4000)
+
+
+class EvidenceRead(EvidenceCreate):
+    id: str
+    captured_at: datetime
+    source_name: str | None = None
+    source_type: SourceType | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class DataFactCreate(BaseModel):
+    fact_type: FactType
+    entity_name: str = Field(min_length=1, max_length=160)
+    field: str = Field(min_length=1, max_length=80)
+    region: str = Field(min_length=1, max_length=80)
+    reference_year: int = Field(ge=2020, le=2100)
+    scope: dict = Field(default_factory=dict)
+    value: dict = Field(default_factory=dict)
+    evidence_ids: list[str] = Field(default_factory=list)
+    confidence: Reliability = "observation"
+
+
+class DataFactReview(BaseModel):
+    decision: Literal["approved", "rejected"]
+    note: str | None = Field(default=None, max_length=2000)
+
+
+class DataFactRead(DataFactCreate):
+    id: str
+    status: FactStatus
+    review_note: str | None
+    created_at: datetime
+    reviewed_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class DataReleaseCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    region: str = Field(min_length=1, max_length=80)
+    reference_year: int = Field(ge=2020, le=2100)
+    fact_ids: list[str] = Field(min_length=1)
+    notes: str | None = Field(default=None, max_length=2000)
+
+
+class DataReleaseRead(BaseModel):
+    id: str
+    name: str
+    region: str
+    reference_year: int
+    notes: str | None
+    published_at: datetime
+    fact_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+class ConsumerFact(BaseModel):
+    id: str
+    fact_type: FactType
+    entity_name: str
+    field: str
+    region: str
+    reference_year: int
+    scope: dict
+    value: dict
+    confidence: Reliability
+    evidence: list[EvidenceRead]
+
+
+class ConsumerDataResponse(BaseModel):
+    release: DataReleaseRead | None
+    facts: list[ConsumerFact]

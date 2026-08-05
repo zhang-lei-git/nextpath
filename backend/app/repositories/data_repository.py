@@ -1,0 +1,87 @@
+from datetime import datetime, timezone
+
+from sqlalchemy import desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domain.models import DataEvidence, DataFact, DataRelease, DataReleaseItem, DataSource
+
+
+class DataRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def add_source(self, source: DataSource) -> DataSource:
+        self.session.add(source)
+        await self.session.flush()
+        await self.session.refresh(source)
+        return source
+
+    async def get_source(self, source_id: str) -> DataSource | None:
+        return await self.session.get(DataSource, source_id)
+
+    async def add_evidence(self, evidence: DataEvidence) -> DataEvidence:
+        self.session.add(evidence)
+        await self.session.flush()
+        await self.session.refresh(evidence)
+        return evidence
+
+    async def add_fact(self, fact: DataFact) -> DataFact:
+        self.session.add(fact)
+        await self.session.flush()
+        await self.session.refresh(fact)
+        return fact
+
+    async def get_fact(self, fact_id: str) -> DataFact | None:
+        return await self.session.get(DataFact, fact_id)
+
+    async def list_facts(self, status: str | None = None) -> list[DataFact]:
+        statement = select(DataFact).order_by(desc(DataFact.created_at))
+        if status:
+            statement = statement.where(DataFact.status == status)
+        return list(await self.session.scalars(statement))
+
+    async def review_fact(self, fact: DataFact, decision: str, note: str | None, reviewer: str) -> DataFact:
+        fact.status = decision
+        fact.review_note = note
+        fact.reviewed_by = reviewer
+        fact.reviewed_at = datetime.now(timezone.utc)
+        await self.session.flush()
+        await self.session.refresh(fact)
+        return fact
+
+    async def get_evidence(self, evidence_ids: list[str]) -> list[DataEvidence]:
+        if not evidence_ids:
+            return []
+        records = list(await self.session.scalars(select(DataEvidence).where(DataEvidence.id.in_(evidence_ids))))
+        by_id = {record.id: record for record in records}
+        return [by_id[evidence_id] for evidence_id in evidence_ids if evidence_id in by_id]
+
+    async def add_release(self, release: DataRelease, facts: list[DataFact]) -> DataRelease:
+        self.session.add(release)
+        await self.session.flush()
+        self.session.add_all([DataReleaseItem(release_id=release.id, fact_id=fact.id) for fact in facts])
+        await self.session.flush()
+        await self.session.refresh(release)
+        return release
+
+    async def latest_release(self, region: str, reference_year: int) -> DataRelease | None:
+        return await self.session.scalar(
+            select(DataRelease)
+            .where(DataRelease.region == region, DataRelease.reference_year == reference_year)
+            .order_by(desc(DataRelease.published_at))
+            .limit(1)
+        )
+
+    async def facts_in_release(self, release_id: str, fact_type: str, entity_name: str | None = None) -> list[DataFact]:
+        statement = (
+            select(DataFact)
+            .join(DataReleaseItem, DataReleaseItem.fact_id == DataFact.id)
+            .where(DataReleaseItem.release_id == release_id, DataFact.fact_type == fact_type)
+            .order_by(DataFact.entity_name, DataFact.field)
+        )
+        if entity_name:
+            statement = statement.where(DataFact.entity_name == entity_name)
+        return list(await self.session.scalars(statement))
+
+    async def source_for_evidence(self, evidence: DataEvidence) -> DataSource | None:
+        return await self.session.get(DataSource, evidence.source_id) if evidence.source_id else None

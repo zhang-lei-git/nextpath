@@ -12,6 +12,7 @@ from app.domain.schemas import (
 from app.repositories.exam_repository import ExamRepository
 from app.repositories.profile_repository import ProfileRepository
 from app.services.prediction import BaselinePredictionEngine, PredictionEngine, PredictionInput
+from app.services.published_reference_data import PublishedReferenceDataService
 
 
 class StudentService:
@@ -19,7 +20,7 @@ class StudentService:
         self.session = session
         self.profiles = ProfileRepository(session)
         self.exams = ExamRepository(session)
-        self.predictor = predictor or BaselinePredictionEngine()
+        self.predictor = predictor
 
     async def dashboard(self, owner_id: str) -> DashboardResponse:
         profile = await self.profiles.get_or_create_demo(owner_id)
@@ -31,11 +32,13 @@ class StudentService:
         report = None
         if latest and profile_complete:
             trend_delta = (latest.total_score - exams[1].total_score) if len(exams) > 1 else None
+            reference_data = await PublishedReferenceDataService(self.session).load(profile.city, 2026)
+            predictor = self.predictor or BaselinePredictionEngine(reference_data)
             prediction_input = PredictionInput(
                 latest.total_score, latest.class_rank, profile.target_school, profile.junior_school, trend_delta,
             )
-            forecast = self.predictor.predict(prediction_input)
-            report = self.predictor.build_report(prediction_input)
+            forecast = predictor.predict(prediction_input)
+            report = predictor.build_report(prediction_input)
             actions.append(ActionItem(
                 title="补齐排名信息",
                 detail="补录年级排名后，孩子在全区的大致位置会更清楚。",

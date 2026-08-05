@@ -13,6 +13,7 @@ class Settings:
     upload_dir = Path(os.getenv("UPLOAD_DIR", data_dir / "uploads"))
     max_upload_size = 10 * 1024 * 1024
     allowed_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+    data_admin_key = os.getenv("DATA_ADMIN_KEY")
 
 
 settings = Settings()
