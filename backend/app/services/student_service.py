@@ -14,6 +14,7 @@ from app.repositories.profile_repository import ProfileRepository
 from app.services.prediction import BaselinePredictionEngine, PredictionEngine, PredictionInput
 from app.services.published_reference_data import PublishedReferenceDataService
 from app.services.analysis_model_service import AnalysisModelService
+from app.services.position_engine import CalibrationPoint
 
 
 class StudentService:
@@ -34,18 +35,37 @@ class StudentService:
         if latest and profile_complete:
             trend_delta = (latest.total_score - exams[1].total_score) if len(exams) > 1 else None
             reference_data = await PublishedReferenceDataService(self.session).load(profile.city, 2026)
-            position_model = await AnalysisModelService(self.session).active_position_model(profile.city)
+            analysis_models = AnalysisModelService(self.session)
+            position_model = await analysis_models.active_position_model(profile.city)
+            assessment_stage = analysis_models.assessment_stage(latest.name)
+            samples = await analysis_models.calibration_samples(
+                region=profile.city,
+                junior_school=profile.junior_school,
+                assessment_stage=assessment_stage,
+                approved_only=True,
+            ) if assessment_stage else []
             predictor = self.predictor or BaselinePredictionEngine(
                 reference_data,
                 position_parameters=position_model.parameters,
                 model_version=position_model.version,
+                calibration_points=tuple(
+                    CalibrationPoint(item.grade_rank, item.grade_size, item.final_city_rank)
+                    for item in samples
+                ),
             )
             prediction_input = PredictionInput(
-                latest.total_score, latest.class_rank, profile.target_school, profile.junior_school, trend_delta,
+                latest.total_score,
+                latest.class_rank,
+                profile.target_school,
+                profile.junior_school,
+                trend_delta,
+                latest.grade_rank,
+                latest.grade_size,
+                assessment_stage,
             )
             forecast = predictor.predict(prediction_input)
             report = predictor.build_report(prediction_input)
-            await AnalysisModelService(self.session).record_run(
+            await analysis_models.record_run(
                 profile_id=profile.id,
                 exam_id=latest.id,
                 data_release_id=reference_data.release_id if reference_data else None,
@@ -53,8 +73,13 @@ class StudentService:
                 input_snapshot={
                     "total_score": latest.total_score,
                     "grade_rank": latest.grade_rank,
+                    "grade_size": latest.grade_size,
+                    "assessment_stage": assessment_stage,
                     "junior_school": profile.junior_school,
                     "target_school": profile.target_school,
+                    "model_version": position_model.version,
+                    "model_parameters": position_model.parameters,
+                    "calibration_sample_ids": [item.id for item in samples],
                 },
                 result={"forecast": forecast.model_dump(), "report": report.model_dump()},
             )

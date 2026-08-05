@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ExamCreate(BaseModel):
@@ -10,7 +10,14 @@ class ExamCreate(BaseModel):
     total_score: float = Field(ge=0, le=1000)
     class_rank: int | None = Field(default=None, ge=1)
     grade_rank: int | None = Field(default=None, ge=1)
+    grade_size: int | None = Field(default=None, ge=1)
     scores: dict[str, float] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def grade_rank_is_within_grade_size(self) -> "ExamCreate":
+        if self.grade_rank and self.grade_size and self.grade_rank > self.grade_size:
+            raise ValueError("年级排名不能大于年级人数")
+        return self
 
 
 class ExamRead(ExamCreate):
@@ -220,5 +227,41 @@ class AnalysisValidationRead(AnalysisValidationCreate):
     id: str
     model_id: str
     created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+CalibrationStatus = Literal["pending_review", "approved", "rejected"]
+
+
+class PositionCalibrationSampleCreate(BaseModel):
+    region: str = Field(default="西安", min_length=1, max_length=80)
+    junior_school: str = Field(min_length=1, max_length=128)
+    assessment_stage: str = Field(min_length=1, max_length=32)
+    cohort_year: int = Field(ge=2020, le=2100)
+    grade_rank: int = Field(ge=1)
+    grade_size: int = Field(ge=1)
+    final_city_rank: int = Field(ge=1)
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_note: str | None = Field(default=None, max_length=1000)
+
+    @model_validator(mode="after")
+    def rank_is_within_grade_size(self) -> "PositionCalibrationSampleCreate":
+        if self.grade_rank > self.grade_size:
+            raise ValueError("年级排名不能大于年级人数")
+        return self
+
+
+class PositionCalibrationSampleReview(BaseModel):
+    decision: Literal["approved", "rejected"]
+    note: str | None = Field(default=None, max_length=1000)
+
+
+class PositionCalibrationSampleRead(PositionCalibrationSampleCreate):
+    id: str
+    status: CalibrationStatus
+    review_note: str | None
+    created_at: datetime
+    reviewed_at: datetime | None
 
     model_config = {"from_attributes": True}

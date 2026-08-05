@@ -32,6 +32,7 @@ class Exam(Base):
     total_score: Mapped[float] = mapped_column(Float)
     class_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
     grade_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    grade_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
     scores: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -153,3 +154,24 @@ class AnalysisRun(Base):
     input_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
     result: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PositionCalibrationSample(Base):
+    """An anonymized historical mapping from a junior-school rank to city rank."""
+
+    __tablename__ = "position_calibration_samples"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    region: Mapped[str] = mapped_column(String(80), index=True)
+    junior_school: Mapped[str] = mapped_column(String(128), index=True)
+    assessment_stage: Mapped[str] = mapped_column(String(32), index=True)
+    cohort_year: Mapped[int] = mapped_column(Integer, index=True)
+    grade_rank: Mapped[int] = mapped_column(Integer)
+    grade_size: Mapped[int] = mapped_column(Integer)
+    final_city_rank: Mapped[int] = mapped_column(Integer)
+    evidence_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    source_note: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    status: Mapped[str] = mapped_column(String(24), default="pending_review", index=True)
+    review_note: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

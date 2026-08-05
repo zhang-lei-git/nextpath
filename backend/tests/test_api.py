@@ -26,6 +26,8 @@ def test_exam_creation_and_dashboard() -> None:
                 "exam_date": "2026-08-03",
                 "total_score": 615,
                 "class_rank": 28,
+                "grade_rank": 28,
+                "grade_size": 680,
                 "scores": {"math": 96},
             },
         )
@@ -34,4 +36,5 @@ def test_exam_creation_and_dashboard() -> None:
     assert created.status_code == 201
     assert dashboard.status_code == 200
     assert dashboard.json()["latest_exam"]["total_score"] == 615
+    assert dashboard.json()["latest_exam"]["grade_size"] == 680
     assert dashboard.json()["forecast"]["target_gap"] == 0

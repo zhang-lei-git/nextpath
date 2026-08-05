@@ -1,7 +1,7 @@
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.models import AnalysisModelVersion, AnalysisRun, AnalysisValidationRun
+from app.domain.models import AnalysisModelVersion, AnalysisRun, AnalysisValidationRun, PositionCalibrationSample
 
 
 class AnalysisRepository:
@@ -53,3 +53,32 @@ class AnalysisRepository:
         await self.session.flush()
         await self.session.refresh(run)
         return run
+
+    async def add_calibration_sample(self, sample: PositionCalibrationSample) -> PositionCalibrationSample:
+        self.session.add(sample)
+        await self.session.flush()
+        await self.session.refresh(sample)
+        return sample
+
+    async def calibration_sample_by_id(self, sample_id: str) -> PositionCalibrationSample | None:
+        return await self.session.get(PositionCalibrationSample, sample_id)
+
+    async def list_calibration_samples(
+        self,
+        *,
+        region: str | None = None,
+        junior_school: str | None = None,
+        assessment_stage: str | None = None,
+        approved_only: bool = False,
+    ) -> list[PositionCalibrationSample]:
+        query = select(PositionCalibrationSample)
+        if region:
+            query = query.where(PositionCalibrationSample.region == region)
+        if junior_school:
+            query = query.where(PositionCalibrationSample.junior_school == junior_school)
+        if assessment_stage:
+            query = query.where(PositionCalibrationSample.assessment_stage == assessment_stage)
+        if approved_only:
+            query = query.where(PositionCalibrationSample.status == "approved")
+        query = query.order_by(desc(PositionCalibrationSample.cohort_year), desc(PositionCalibrationSample.created_at))
+        return list(await self.session.scalars(query))

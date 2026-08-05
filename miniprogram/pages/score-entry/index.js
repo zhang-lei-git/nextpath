@@ -2,7 +2,7 @@ const { request, uploadScoreImage } = require('../../utils/request')
 
 Page({
   data: {
-    form: { name: '', exam_date: '', total_score: '', class_rank: '', grade_rank: '', scores: {} },
+    form: { name: '', exam_date: '', total_score: '', class_rank: '', grade_rank: '', grade_size: '', scores: {} },
     subjects: [{ key: 'chinese', name: '语文' }, { key: 'math', name: '数学' }, { key: 'english', name: '英语' }, { key: 'physics', name: '物理' }, { key: 'history', name: '历史' }, { key: 'politics', name: '道法' }, { key: 'pe', name: '体育' }],
     uploading: false,
     saving: false,
@@ -95,6 +95,7 @@ Page({
           total_score: Number(form.total_score),
           class_rank: form.class_rank ? Number(form.class_rank) : null,
           grade_rank: form.grade_rank ? Number(form.grade_rank) : null,
+          grade_size: form.grade_size ? Number(form.grade_size) : null,
           scores: Object.fromEntries(Object.entries(form.scores).filter(([, value]) => value !== '').map(([key, value]) => [key, Number(value)]))
         }
       })

@@ -1,11 +1,15 @@
 import hashlib
 import json
+from datetime import datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.models import AnalysisModelVersion, AnalysisRun, AnalysisValidationRun
-from app.domain.schemas import AnalysisModelRead, AnalysisModelUpdate, AnalysisValidationCreate, AnalysisValidationRead
+from app.domain.models import AnalysisModelVersion, AnalysisRun, AnalysisValidationRun, PositionCalibrationSample
+from app.domain.schemas import (
+    AnalysisModelRead, AnalysisModelUpdate, AnalysisValidationCreate, AnalysisValidationRead,
+    PositionCalibrationSampleCreate, PositionCalibrationSampleRead, PositionCalibrationSampleReview,
+)
 from app.repositories.analysis_repository import AnalysisRepository
 
 
@@ -14,6 +18,8 @@ DEFAULT_POSITION_PARAMETERS = {
     "minimum_rank_interval": 400,
     "grade_rank_weight": 0,
     "trend_weight": 0,
+    "school_mapping_min_samples": 15,
+    "school_mapping_weight": 0.35,
 }
 
 
@@ -44,11 +50,33 @@ class AnalysisModelService:
         model = await self.repository.model_by_id(model_id)
         if not model:
             raise HTTPException(status_code=404, detail="未找到分析模型")
-        model.parameters = {**model.parameters, **payload.parameters}
-        model.status = payload.status
+        merged_parameters = {**model.parameters, **payload.parameters}
+        if merged_parameters == model.parameters and payload.status == model.status:
+            return AnalysisModelRead.model_validate(model)
+        version = await self._next_revision(model.version)
+        if model.status == "active":
+            model.status = "inactive"
+        successor = await self.repository.add_model(AnalysisModelVersion(
+            name=model.name,
+            version=version,
+            analysis_type=model.analysis_type,
+            region=model.region,
+            status=payload.status,
+            parameters=merged_parameters,
+            quality_metrics={**model.quality_metrics, "parent_version": model.version},
+        ))
         await self.session.commit()
-        await self.session.refresh(model)
-        return AnalysisModelRead.model_validate(model)
+        return AnalysisModelRead.model_validate(successor)
+
+    async def _next_revision(self, version: str) -> str:
+        base_version = version.rsplit(".r", 1)[0]
+        existing_versions = {item.version for item in await self.repository.list_models()}
+        revision = 2
+        candidate = f"{base_version}.r{revision}"
+        while candidate in existing_versions:
+            revision += 1
+            candidate = f"{base_version}.r{revision}"
+        return candidate
 
     async def validations(self, model_id: str) -> list[AnalysisValidationRead]:
         if not await self.repository.model_by_id(model_id):
@@ -61,6 +89,50 @@ class AnalysisModelService:
         record = await self.repository.add_validation(AnalysisValidationRun(model_id=model_id, **payload.model_dump()))
         await self.session.commit()
         return AnalysisValidationRead.model_validate(record)
+
+    async def calibration_samples(
+        self,
+        *,
+        region: str | None = None,
+        junior_school: str | None = None,
+        assessment_stage: str | None = None,
+        approved_only: bool = False,
+    ) -> list[PositionCalibrationSampleRead]:
+        items = await self.repository.list_calibration_samples(
+            region=region,
+            junior_school=junior_school,
+            assessment_stage=assessment_stage,
+            approved_only=approved_only,
+        )
+        return [PositionCalibrationSampleRead.model_validate(item) for item in items]
+
+    async def add_calibration_sample(
+        self, payload: PositionCalibrationSampleCreate
+    ) -> PositionCalibrationSampleRead:
+        record = await self.repository.add_calibration_sample(PositionCalibrationSample(**payload.model_dump()))
+        await self.session.commit()
+        return PositionCalibrationSampleRead.model_validate(record)
+
+    async def review_calibration_sample(
+        self, sample_id: str, payload: PositionCalibrationSampleReview
+    ) -> PositionCalibrationSampleRead:
+        sample = await self.repository.calibration_sample_by_id(sample_id)
+        if not sample:
+            raise HTTPException(status_code=404, detail="未找到校准样本")
+        sample.status = payload.decision
+        sample.review_note = payload.note
+        sample.reviewed_at = datetime.now(timezone.utc)
+        await self.session.commit()
+        await self.session.refresh(sample)
+        return PositionCalibrationSampleRead.model_validate(sample)
+
+    @staticmethod
+    def assessment_stage(exam_name: str) -> str | None:
+        normalized = exam_name.replace(" ", "")
+        for stage in ("一模", "二模", "三模", "期中", "期末", "月考", "周测"):
+            if stage in normalized:
+                return stage
+        return None
 
     async def record_run(
         self,

@@ -6,7 +6,7 @@ from app.services.admission_data import (
     POLICY_SUMMARY, RANK_REFERENCE_SOURCE, RANK_REFERENCE_YEAR, estimate_city_rank, find_school_reference,
 )
 from app.services.published_reference_data import PublishedReferenceData
-from app.services.position_engine import PositionEngine
+from app.services.position_engine import CalibrationPoint, PositionEngine
 
 
 @dataclass(frozen=True)
@@ -16,6 +16,9 @@ class PredictionInput:
     target_school: str | None
     junior_school: str | None = None
     trend_delta: float | None = None
+    grade_rank: int | None = None
+    grade_size: int | None = None
+    assessment_stage: str | None = None
 
 
 class PredictionEngine(Protocol):
@@ -35,15 +38,17 @@ class BaselinePredictionEngine:
         reference_data: PublishedReferenceData | None = None,
         position_parameters: dict | None = None,
         model_version: str | None = None,
+        calibration_points: tuple[CalibrationPoint, ...] = (),
     ) -> None:
         self.reference_data = reference_data
         self.position_parameters = position_parameters or {}
+        self.calibration_points = calibration_points
         if model_version:
             self.version = model_version
 
     def predict(self, input_data: PredictionInput) -> Forecast:
         score = input_data.total_score
-        position = self._position_engine().estimate(score)
+        position = self._position_engine().estimate(score, input_data.grade_rank, input_data.grade_size)
         city_rank = position.rank
         if city_rank is None:
             tier, rank = "当前分数暂无法映射全区位次", (0, 0)
@@ -67,7 +72,7 @@ class BaselinePredictionEngine:
             confidence="low",
             basis=[
                 f"按 {self._rank_reference_source()} 折算当前总分的全区参考位置。",
-                "已参考历次成绩变化；所在初中的历史成绩样本还在积累中，本次以全区参考位置为主。",
+                self._position_basis(position.method, position.calibration_sample_count),
             ],
             model_version=self.version,
             reference_year=self._reference_year(),
@@ -92,9 +97,9 @@ class BaselinePredictionEngine:
             current_position=(f"按 {self._reference_year()} 年参考表，当前约全区第 {rank:,} 名。" if rank else "本次总分不在当前参考表覆盖范围内，无法可靠折算全区位次。"),
             trend_summary=trend_summary,
             target_summary=target_summary,
-            school_context=(f"已记录初中：{input_data.junior_school}。该校的历史成绩样本还在积累中，本次以全区参考位置为主。" if input_data.junior_school else "补充孩子所在初中后，判断会更贴近实际升学环境。"),
+            school_context=self._school_context(input_data, forecast),
             policy_summary=self._policy_summary(),
-            key_points=[forecast.basis[0], forecast.basis[1], "下一步优先补录下一次考试的年级排名，使个人趋势与学校映射逐步收敛。"],
+            key_points=[forecast.basis[0], forecast.basis[1], "下次录入时补全年级排名和年级人数，判断会更贴近孩子所在初中的实际位置。"],
             data_sources=[self._rank_reference_source(), target[2] if target else "尚未选择目标学校", self._policy_source()],
         )
 
@@ -106,7 +111,20 @@ class BaselinePredictionEngine:
         if not points:
             from app.services.admission_data import RANK_POINTS
             points = RANK_POINTS
-        return PositionEngine(points, self.position_parameters)
+        return PositionEngine(points, self.position_parameters, self.calibration_points)
+
+    @staticmethod
+    def _position_basis(method: str, sample_count: int) -> str:
+        if method == "rank_curve_with_school_mapping":
+            return f"已将同校同阶段的 {sample_count} 条审核通过历史样本，与全区参考位置共同校准。"
+        return "已参考历次成绩变化；所在初中的可用历史样本不足时，以全区参考位置为主。"
+
+    def _school_context(self, input_data: PredictionInput, forecast: Forecast) -> str:
+        if not input_data.junior_school:
+            return "补充孩子所在初中后，判断会更贴近实际升学环境。"
+        if input_data.grade_rank and input_data.grade_size and forecast.current_rank:
+            return f"已记录初中：{input_data.junior_school}。本次年级第 {input_data.grade_rank:,}/{input_data.grade_size:,} 名已纳入孩子的成绩档案。"
+        return f"已记录初中：{input_data.junior_school}。补全年级排名和年级人数后，可进一步贴近实际升学环境。"
 
     @staticmethod
     def _target_summary(

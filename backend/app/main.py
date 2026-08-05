@@ -17,11 +17,14 @@ async def lifespan(_: FastAPI):
         await connection.run_sync(Base.metadata.create_all)
         # MVP development migration. Production schema changes move to Alembic before public release.
         if settings.database_url.startswith("sqlite"):
-            columns = (await connection.exec_driver_sql("PRAGMA table_info(student_profiles)")).fetchall()
-            if "grade" not in {column[1] for column in columns}:
+            profile_columns = (await connection.exec_driver_sql("PRAGMA table_info(student_profiles)")).fetchall()
+            if "grade" not in {column[1] for column in profile_columns}:
                 await connection.exec_driver_sql(
                     "ALTER TABLE student_profiles ADD COLUMN grade VARCHAR(16) NOT NULL DEFAULT '初三'"
                 )
+            exam_columns = (await connection.exec_driver_sql("PRAGMA table_info(exams)")).fetchall()
+            if "grade_size" not in {column[1] for column in exam_columns}:
+                await connection.exec_driver_sql("ALTER TABLE exams ADD COLUMN grade_size INTEGER")
     yield
     await engine.dispose()
 
