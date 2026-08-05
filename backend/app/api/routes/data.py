@@ -29,6 +29,14 @@ async def create_source(
     return await DataService(session).create_source(payload)
 
 
+@router.get("/sources", response_model=list[DataSourceRead])
+async def list_sources(
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> list[DataSourceRead]:
+    return await DataService(session).list_sources()
+
+
 @router.post("/evidence", response_model=EvidenceRead, status_code=201)
 async def create_evidence(
     payload: EvidenceCreate,
@@ -36,6 +44,15 @@ async def create_evidence(
     session: AsyncSession = Depends(get_session),
 ) -> EvidenceRead:
     return await DataService(session).create_evidence(payload, actor)
+
+
+@router.get("/evidence", response_model=list[EvidenceRead])
+async def list_evidence(
+    source_id: str | None = Query(default=None),
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> list[EvidenceRead]:
+    return await DataService(session).list_evidence(source_id)
 
 
 @router.post("/facts", response_model=DataFactRead, status_code=201)
@@ -73,6 +90,14 @@ async def publish_release(
     session: AsyncSession = Depends(get_session),
 ) -> DataReleaseRead:
     return await DataService(session).publish_release(payload, actor)
+
+
+@router.get("/releases", response_model=list[DataReleaseRead])
+async def list_releases(
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> list[DataReleaseRead]:
+    return await DataService(session).list_releases()
 
 
 @router.get("/consumer/schools/{school_name}", response_model=ConsumerDataResponse)

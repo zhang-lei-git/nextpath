@@ -25,6 +25,10 @@ def test_only_reviewed_and_released_facts_are_consumable(monkeypatch) -> None:
         )
         assert source.status_code == 201
 
+        sources = client.get("/api/v1/data/sources", headers=headers)
+        assert sources.status_code == 200
+        assert any(item["id"] == source.json()["id"] for item in sources.json())
+
         evidence = client.post(
             "/api/v1/data/evidence",
             headers=headers,
@@ -36,6 +40,10 @@ def test_only_reviewed_and_released_facts_are_consumable(monkeypatch) -> None:
             },
         )
         assert evidence.status_code == 201
+
+        evidence_list = client.get("/api/v1/data/evidence", headers=headers)
+        assert evidence_list.status_code == 200
+        assert any(item["id"] == evidence.json()["id"] for item in evidence_list.json())
 
         fact = client.post(
             "/api/v1/data/facts",
@@ -95,6 +103,10 @@ def test_only_reviewed_and_released_facts_are_consumable(monkeypatch) -> None:
         )
         assert release.status_code == 201
         assert release.json()["fact_count"] == 1
+
+        releases = client.get("/api/v1/data/releases", headers=headers)
+        assert releases.status_code == 200
+        assert any(item["id"] == release.json()["id"] for item in releases.json())
 
         consumed = client.get(
             "/api/v1/data/consumer/admissions",

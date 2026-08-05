@@ -10,6 +10,7 @@ WorkingDirectory=/opt/nextpath-api
 Environment=PYTHONUNBUFFERED=1
 Environment=DATABASE_URL=sqlite+aiosqlite:////var/lib/nextpath/nextpath.db
 Environment=UPLOAD_DIR=/var/lib/nextpath/uploads
+EnvironmentFile=-/etc/nextpath/nextpath-api.env
 # SQLite is limited to one worker for internal testing. Use PostgreSQL before horizontal scaling.
 ExecStart=/opt/nextpath-api/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers
 Restart=always

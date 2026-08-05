@@ -28,12 +28,19 @@ class DataService:
         await self.session.commit()
         return DataSourceRead.model_validate(source)
 
+    async def list_sources(self) -> list[DataSourceRead]:
+        return [DataSourceRead.model_validate(source) for source in await self.repository.list_sources()]
+
     async def create_evidence(self, payload: EvidenceCreate, actor: str) -> EvidenceRead:
         if payload.source_id and not await self.repository.get_source(payload.source_id):
             raise HTTPException(status_code=404, detail="未找到数据来源")
         evidence = await self.repository.add_evidence(DataEvidence(**payload.model_dump(), created_by=actor))
         await self.session.commit()
         return await self._evidence_read(evidence)
+
+    async def list_evidence(self, source_id: str | None = None) -> list[EvidenceRead]:
+        evidence = await self.repository.list_evidence(source_id)
+        return [await self._evidence_read(record) for record in evidence]
 
     async def create_fact(self, payload: DataFactCreate, actor: str) -> DataFactRead:
         evidence = await self.repository.get_evidence(payload.evidence_ids)
@@ -84,6 +91,10 @@ class DataService:
         )
         await self.session.commit()
         return self._release_read(release, len(facts))
+
+    async def list_releases(self) -> list[DataReleaseRead]:
+        releases = await self.repository.list_releases()
+        return [self._release_read(release, await self.repository.release_fact_count(release.id)) for release in releases]
 
     async def consume(
         self,

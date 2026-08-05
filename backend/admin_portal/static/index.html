@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NextPath 数据运营台</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand"><strong>NextPath</strong><span>数据运营台</span></div>
+      <nav>
+        <button class="nav-item active" data-view="overview">总览</button>
+        <button class="nav-item" data-view="sources">数据来源</button>
+        <button class="nav-item" data-view="capture">采集录入</button>
+        <button class="nav-item" data-view="review">审核发布</button>
+      </nav>
+      <p class="sidebar-note">未审核、未发布的数据不会进入家长端。</p>
+    </aside>
+    <main>
+      <header class="topbar"><div><p class="eyebrow">DATA OPERATIONS</p><h1 id="pageTitle">数据总览</h1></div><button id="refreshButton" class="button secondary">刷新</button></header>
+      <div id="notice" class="notice hidden"></div>
+
+      <section id="overview" class="view active">
+        <div class="metrics" id="metrics"></div>
+        <div class="grid-two">
+          <section class="panel"><div class="panel-head"><h2>最近发布</h2><span>家长端正在使用</span></div><div id="releaseList" class="list"></div></section>
+          <section class="panel"><div class="panel-head"><h2>待审核数据</h2><span>需要核对证据</span></div><div id="pendingPreview" class="list"></div></section>
+        </div>
+      </section>
+
+      <section id="sources" class="view">
+        <div class="grid-two wide-left">
+          <section class="panel"><div class="panel-head"><h2>已登记来源</h2><span id="sourceCount"></span></div><div id="sourceList" class="list"></div></section>
+          <section class="panel form-panel"><h2>登记数据来源</h2><form id="sourceForm" class="form-stack">
+            <label>来源名称<input name="name" required placeholder="例如：西安市教育局"></label>
+            <label>来源类别<select name="source_type"><option value="official">教育主管部门</option><option value="school_official">学校官方</option><option value="media">媒体公开信息</option><option value="expert">专家/机构</option><option value="parent">家长反馈</option><option value="manual">人工整理</option></select></label>
+            <label>可信等级<select name="reliability"><option value="official">官方</option><option value="verified">已核验</option><option value="observation">待核验</option></select></label>
+            <label>主页或原文链接<input name="homepage_url" type="url" placeholder="https://"></label>
+            <button class="button" type="submit">保存来源</button>
+          </form></section>
+        </div>
+      </section>
+
+      <section id="capture" class="view">
+        <div class="grid-two">
+          <section class="panel form-panel"><h2>登记证据</h2><form id="evidenceForm" class="form-stack">
+            <label>数据来源<select name="source_id" id="evidenceSource" required></select></label>
+            <label>证据标题<input name="title" required placeholder="例如：2026 年高中招生录取工作方案"></label>
+            <label>原文链接<input name="url" type="url" placeholder="https://"></label>
+            <label>摘录<textarea name="excerpt" rows="4" placeholder="粘贴能够支持该事实的原文或关键说明"></textarea></label>
+            <button class="button" type="submit">保存证据</button>
+          </form></section>
+          <section class="panel form-panel"><h2>录入候选数据</h2><form id="factForm" class="form-stack">
+            <label>证据<select name="evidence_id" id="factEvidence" required></select></label>
+            <div class="form-row"><label>数据类别<select name="fact_type"><option value="school">学校信息</option><option value="admission">招生录取</option><option value="policy">中招政策</option></select></label><label>参考年度<input name="reference_year" type="number" value="2026" min="2020" max="2100" required></label></div>
+            <label>对象名称<input name="entity_name" required placeholder="例如：西安高新第一中学"></label>
+            <label>字段名称<input name="field" required placeholder="例如：录取参考线"></label>
+            <label>适用范围（JSON，可留空）<textarea name="scope" rows="2" placeholder='例如：{"batch":"第一批次"}'></textarea></label>
+            <label>数据内容（JSON）<textarea name="value" rows="4" required placeholder='例如：{"score":600,"source":"官方公告"}'></textarea></label>
+            <label>可信等级<select name="confidence"><option value="official">官方</option><option value="verified">已核验</option><option value="observation">待核验</option></select></label>
+            <button class="button" type="submit">提交审核</button>
+          </form></section>
+        </div>
+      </section>
+
+      <section id="review" class="view">
+        <div class="grid-two wide-left">
+          <section class="panel"><div class="panel-head"><h2>候选数据</h2><div class="segmented"><button data-status="pending_review" class="selected">待审核</button><button data-status="approved">已通过</button><button data-status="rejected">已拒绝</button></div></div><div id="factList" class="fact-list"></div></section>
+          <section class="panel form-panel"><h2>发布数据版本</h2><p class="muted">仅会发布当前“已通过”列表中勾选的数据。</p><form id="releaseForm" class="form-stack">
+            <label>版本名称<input name="name" required value="2026 西安城六区测试发布"></label>
+            <div class="form-row"><label>地区<input name="region" value="西安" required></label><label>参考年度<input name="reference_year" type="number" value="2026" required></label></div>
+            <label>发布说明<textarea name="notes" rows="4" placeholder="说明本次数据覆盖范围和注意事项"></textarea></label>
+            <div id="releaseSelection" class="selection-note">尚未选择可发布的数据。</div>
+            <button class="button" type="submit">发布到家长端</button>
+          </form></section>
+        </div>
+      </section>
+    </main>
+    <script src="/assets/app.js"></script>
+  </body>
+</html>

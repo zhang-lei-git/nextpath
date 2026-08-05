@@ -19,11 +19,20 @@ class DataRepository:
     async def get_source(self, source_id: str) -> DataSource | None:
         return await self.session.get(DataSource, source_id)
 
+    async def list_sources(self) -> list[DataSource]:
+        return list(await self.session.scalars(select(DataSource).order_by(desc(DataSource.created_at))))
+
     async def add_evidence(self, evidence: DataEvidence) -> DataEvidence:
         self.session.add(evidence)
         await self.session.flush()
         await self.session.refresh(evidence)
         return evidence
+
+    async def list_evidence(self, source_id: str | None = None) -> list[DataEvidence]:
+        statement = select(DataEvidence).order_by(desc(DataEvidence.captured_at))
+        if source_id:
+            statement = statement.where(DataEvidence.source_id == source_id)
+        return list(await self.session.scalars(statement))
 
     async def add_fact(self, fact: DataFact) -> DataFact:
         self.session.add(fact)
@@ -71,6 +80,14 @@ class DataRepository:
             .order_by(desc(DataRelease.published_at))
             .limit(1)
         )
+
+    async def list_releases(self) -> list[DataRelease]:
+        return list(await self.session.scalars(select(DataRelease).order_by(desc(DataRelease.published_at))))
+
+    async def release_fact_count(self, release_id: str) -> int:
+        return len(list(await self.session.scalars(
+            select(DataReleaseItem.id).where(DataReleaseItem.release_id == release_id)
+        )))
 
     async def facts_in_release(self, release_id: str, fact_type: str, entity_name: str | None = None) -> list[DataFact]:
         statement = (

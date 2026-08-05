@@ -1,0 +1,19 @@
+[Unit]
+Description=NextPath data operations portal
+After=network.target nextpath-api.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/nextpath-api
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/etc/nextpath/nextpath-admin.env
+ExecStart=/opt/nextpath-api/.venv/bin/uvicorn admin_portal.main:app --host 0.0.0.0 --port 5006 --workers 1 --proxy-headers
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
