@@ -1,0 +1,11 @@
+<view class="page">
+  <view class="eyebrow">成绩记录</view>
+  <view class="page-title">每次考试都留一份</view>
+  <view class="intro">保存后会自动更新分析，并保留当时的报告。</view>
+  <view class="empty card" wx:if="{{!loading && !exams.length}}">还没有成绩记录</view>
+  <view class="score-card card" wx:for="{{exams}}" wx:key="id">
+    <view><view class="score-name">{{item.name}}</view><view class="muted">{{item.exam_date}} · 年级第 {{item.grade_rank || '—'}} 名</view></view>
+    <view class="score-side"><view class="score-total">{{item.total_score}}</view><button class="text-button" data-id="{{item.id}}" bindtap="edit">修改</button></view>
+  </view>
+  <button class="primary-button" bindtap="add">录入一次成绩</button>
+</view>

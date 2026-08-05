@@ -8,5 +8,6 @@ Page({
     } catch (_) { wx.showToast({ title: '暂时无法获取分析', icon: 'none' }) }
     finally { this.setData({ loading: false }) }
   },
-  goToEntry() { wx.navigateTo({ url: '/pages/score-entry/index' }) }
+  goToEntry() { wx.navigateTo({ url: '/pages/score-entry/index' }) },
+  goToReports() { wx.navigateTo({ url: '/pages/reports/index' }) }
 })

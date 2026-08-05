@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import current_data_admin
@@ -14,6 +14,9 @@ from app.domain.schemas import (
     DataSourceRead,
     EvidenceCreate,
     EvidenceRead,
+    CollectionJobCreate,
+    CollectionJobRead,
+    DataIngestionRead,
 )
 from app.services.data_service import DataService
 
@@ -53,6 +56,51 @@ async def list_evidence(
     session: AsyncSession = Depends(get_session),
 ) -> list[EvidenceRead]:
     return await DataService(session).list_evidence(source_id)
+
+
+@router.post("/ingestions/documents", response_model=DataIngestionRead, status_code=201)
+async def ingest_document(
+    title: str = Form(min_length=1, max_length=240),
+    file: UploadFile = File(...),
+    source_id: str | None = Form(default=None),
+    actor: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> DataIngestionRead:
+    return await DataService(session).ingest_document(source_id=source_id, title=title, file=file, actor=actor)
+
+
+@router.get("/ingestions", response_model=list[DataIngestionRead])
+async def list_ingestions(
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> list[DataIngestionRead]:
+    return await DataService(session).list_ingestions()
+
+
+@router.post("/collection-jobs", response_model=CollectionJobRead, status_code=201)
+async def create_collection_job(
+    payload: CollectionJobCreate,
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> CollectionJobRead:
+    return await DataService(session).create_collection_job(payload)
+
+
+@router.get("/collection-jobs", response_model=list[CollectionJobRead])
+async def list_collection_jobs(
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> list[CollectionJobRead]:
+    return await DataService(session).list_collection_jobs()
+
+
+@router.post("/collection-jobs/{job_id}/run", response_model=DataIngestionRead)
+async def run_collection_job(
+    job_id: str,
+    actor: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> DataIngestionRead:
+    return await DataService(session).run_collection_job(job_id, actor)
 
 
 @router.post("/facts", response_model=DataFactRead, status_code=201)

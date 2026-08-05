@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import uuid4
 
-from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, JSON, String, func
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, JSON, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -30,6 +30,7 @@ class Exam(Base):
     name: Mapped[str] = mapped_column(String(80))
     exam_date: Mapped[date] = mapped_column(Date)
     total_score: Mapped[float] = mapped_column(Float)
+    total_full_mark: Mapped[float | None] = mapped_column(Float, nullable=True)
     class_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
     grade_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
     grade_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -45,6 +46,20 @@ class ScoreImport(Base):
     file_path: Mapped[str] = mapped_column(String(256))
     status: Mapped[str] = mapped_column(String(24), default="pending")
     extracted_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class StudentReport(Base):
+    __tablename__ = "student_reports"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    profile_id: Mapped[str] = mapped_column(ForeignKey("student_profiles.id"), index=True)
+    exam_id: Mapped[str] = mapped_column(ForeignKey("exams.id"), index=True)
+    analysis_run_id: Mapped[str | None] = mapped_column(ForeignKey("analysis_runs.id"), nullable=True, index=True)
+    title: Mapped[str] = mapped_column(String(160))
+    status: Mapped[str] = mapped_column(String(24), default="published", index=True)
+    report_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    html_content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -71,6 +86,41 @@ class DataEvidence(Base):
     excerpt: Mapped[str | None] = mapped_column(String(4000), nullable=True)
     captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     created_by: Mapped[str] = mapped_column(String(64))
+
+
+class DataIngestion(Base):
+    __tablename__ = "data_ingestions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    source_id: Mapped[str | None] = mapped_column(ForeignKey("data_sources.id"), nullable=True, index=True)
+    evidence_id: Mapped[str | None] = mapped_column(ForeignKey("data_evidence.id"), nullable=True, index=True)
+    ingestion_type: Mapped[str] = mapped_column(String(32), index=True)
+    title: Mapped[str] = mapped_column(String(240))
+    original_filename: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    file_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    extraction_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    suggested_facts: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(24), default="captured", index=True)
+    error_message: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CollectionJob(Base):
+    __tablename__ = "collection_jobs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    source_id: Mapped[str | None] = mapped_column(ForeignKey("data_sources.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    target_url: Mapped[str] = mapped_column(String(1024))
+    extraction_hint: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    interval_minutes: Mapped[int] = mapped_column(Integer, default=1440)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_status: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    last_message: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class DataFact(Base):

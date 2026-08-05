@@ -4,6 +4,7 @@
   <view class="summary card">
     <view class="muted">当前层次</view><view class="tier">{{forecast.tier}}</view>
     <view class="summary-line">依据最近一次 {{latest.name}} {{latest.total_score}} 分</view>
+    <view class="muted" wx:if="{{forecast.position_note}}">{{forecast.position_note}}</view>
   </view>
   <view class="section-title">本期升学位置报告</view>
   <view class="report card" wx:if="{{report}}">
@@ -23,4 +24,5 @@
   </view>
   <view class="model">本次判断参考 {{forecast.reference_year}} 年公开数据，录取结果以当年官方发布为准。</view>
   <button class="primary-button" bindtap="goToEntry">更新成绩后重新判断</button>
+  <button class="secondary-button report-history" bindtap="goToReports">查看历次报告</button>
 </view>

@@ -1,4 +1,4 @@
-const state = { sources: [], evidence: [], facts: [], releases: [], publishedFacts: [], users: [], models: [], validations: [], calibrationSamples: [], activeStatus: "pending_review", selectedReleaseId: "", selectedModelId: "" };
+const state = { sources: [], evidence: [], facts: [], releases: [], publishedFacts: [], users: [], models: [], validations: [], calibrationSamples: [], ingestions: [], collectionJobs: [], activeStatus: "pending_review", selectedReleaseId: "", selectedModelId: "" };
 const titles = { overview: "数据总览", data: "基础数据", sources: "数据来源", capture: "采集录入", review: "审核发布", models: "分析模型", users: "用户管理" };
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -18,8 +18,8 @@ function formatDate(value) { return value ? new Date(typeof value === "number" ?
 function badge(status) { return `<span class="badge ${status}">${({pending_review:"待审核",approved:"已通过",rejected:"已拒绝"})[status] || status}</span>`; }
 
 async function load() {
-  const [sources, evidence, facts, releases, me, users, models, calibrationSamples] = await Promise.all([dataApi("sources"), dataApi("evidence"), dataApi("facts"), dataApi("releases"), api("auth/me"), api("users"), analysisApi("models"), analysisApi("calibration-samples")]);
-  Object.assign(state, { sources, evidence, facts, releases, users, models, calibrationSamples, selectedReleaseId: state.selectedReleaseId || releases[0]?.id || "", selectedModelId: state.selectedModelId || models[0]?.id || "" });
+  const [sources, evidence, facts, releases, me, users, models, calibrationSamples, ingestions, collectionJobs] = await Promise.all([dataApi("sources"), dataApi("evidence"), dataApi("facts"), dataApi("releases"), api("auth/me"), api("users"), analysisApi("models"), analysisApi("calibration-samples"), dataApi("ingestions"), dataApi("collection-jobs")]);
+  Object.assign(state, { sources, evidence, facts, releases, users, models, calibrationSamples, ingestions, collectionJobs, selectedReleaseId: state.selectedReleaseId || releases[0]?.id || "", selectedModelId: state.selectedModelId || models[0]?.id || "" });
   $("#currentUser").textContent = me.username;
   await loadPublishedFacts();
   await loadValidations();
@@ -27,7 +27,7 @@ async function load() {
 }
 async function loadPublishedFacts() { state.publishedFacts = state.selectedReleaseId ? await dataApi(`releases/${state.selectedReleaseId}/facts`) : []; }
 async function loadValidations() { state.validations = state.selectedModelId ? await analysisApi(`models/${state.selectedModelId}/validations`) : []; }
-function render() { renderOverview(); renderSources(); renderSelectors(); renderFacts(); renderPublishedFacts(); renderModels(); renderUsers(); }
+function render() { renderOverview(); renderSources(); renderSelectors(); renderFacts(); renderPublishedFacts(); renderIngestions(); renderCollectionJobs(); renderModels(); renderUsers(); }
 function renderOverview() {
   const pending = state.facts.filter((fact) => fact.status === "pending_review").length;
   $("#metrics").innerHTML = [["数据来源",state.sources.length,"已登记"],["证据材料",state.evidence.length,"可追溯"],["待审核",pending,"暂未进入家长端"],["已发布版本",state.releases.length,"家长端可读取"]].map(([label,value,note]) => `<div class="metric"><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join("");
@@ -38,9 +38,20 @@ function renderOverview() {
 function renderSources() { $("#sourceCount").textContent = `${state.sources.length} 个来源`; $("#sourceList").innerHTML = state.sources.length ? state.sources.map((source) => `<div class="list-item"><strong>${text(source.name)}</strong><p>${text(source.source_type)} · ${text(source.reliability)}${source.homepage_url ? ` · <a href="${text(source.homepage_url)}" target="_blank" rel="noreferrer">查看链接</a>` : ""}</p></div>`).join("") : '<div class="empty">请先登记第一个数据来源</div>'; }
 function renderSelectors() {
   $("#evidenceSource").innerHTML = `<option value="">请选择</option>${state.sources.map((source) => `<option value="${source.id}">${text(source.name)}</option>`).join("")}`;
+  $("#documentSource").innerHTML = `<option value="">未指定来源</option>${state.sources.map((source) => `<option value="${source.id}">${text(source.name)}</option>`).join("")}`;
+  $("#collectionSource").innerHTML = `<option value="">未指定来源</option>${state.sources.map((source) => `<option value="${source.id}">${text(source.name)}</option>`).join("")}`;
   $("#factEvidence").innerHTML = `<option value="">请选择</option>${state.evidence.map((item) => `<option value="${item.id}">${text(item.title)}${item.source_name ? `（${text(item.source_name)}）` : ""}</option>`).join("")}`;
   $("#releaseSelect").innerHTML = state.releases.map((release) => `<option value="${release.id}">${text(release.name)} · ${release.fact_count} 条</option>`).join("");
   $("#releaseSelect").value = state.selectedReleaseId;
+}
+function renderIngestions() {
+  $("#ingestionCount").textContent = `${state.ingestions.length} 份`;
+  $("#ingestionList").innerHTML = state.ingestions.length ? state.ingestions.slice(0,8).map((item) => `<div class="list-item"><strong>${text(item.title)}</strong><p>${text(item.ingestion_type)} · ${text(item.status)} · ${formatDate(item.created_at)}</p>${item.suggested_facts?.length ? `<p>待治理提示：${text(item.suggested_facts.map((fact) => fact.field).join("、"))}</p>` : ""}${item.error_message ? `<p>${text(item.error_message)}</p>` : ""}</div>`).join("") : '<div class="empty">上传文件或运行采集任务后，资料会在这里等待治理</div>';
+}
+function renderCollectionJobs() {
+  $("#collectionCount").textContent = `${state.collectionJobs.length} 个`;
+  $("#collectionList").innerHTML = state.collectionJobs.length ? state.collectionJobs.map((job) => `<div class="list-item"><strong>${text(job.name)}</strong><p>${text(job.target_url)} · 每 ${job.interval_minutes} 分钟</p><p>${job.last_status ? `最近：${text(job.last_status)}` : "尚未运行"}${job.last_message ? ` · ${text(job.last_message)}` : ""}</p><div class="actions"><button class="button small secondary" data-run-collection="${job.id}">立即采集</button></div></div>`).join("") : '<div class="empty">还没有采集任务</div>';
+  $$("[data-run-collection]").forEach((button) => button.addEventListener("click", () => runCollection(button.dataset.runCollection)));
 }
 function renderFacts() {
   const visible = state.facts.filter((fact) => fact.status === state.activeStatus);
@@ -73,10 +84,13 @@ function renderModels() {
 function updateReleaseSelection() { const selected = $$(".release-check:checked").length; $("#releaseSelection").textContent = selected ? `已选择 ${selected} 条已审核数据，发布后家长端即可读取。` : "尚未选择可发布的数据。"; }
 async function reviewFact(id, decision) { const note = window.prompt(decision === "approved" ? "审核说明（可留空）" : "拒绝原因", ""); if (note === null) return; try { await dataApi(`facts/${id}/review`, { method:"POST", body:JSON.stringify({decision,note}) }); notice("审核结果已保存"); await load(); } catch (error) { notice(error.message, true); } }
 async function reviewCalibrationSample(id, decision) { const note = window.prompt(decision === "approved" ? "审核说明（可留空）" : "拒绝原因", ""); if (note === null) return; try { await analysisApi(`calibration-samples/${id}/review`, { method:"POST", body:JSON.stringify({decision,note}) }); notice("校准样本审核结果已保存"); await load(); } catch (error) { notice(error.message, true); } }
+async function runCollection(id) { try { await dataApi(`collection-jobs/${id}/run`, { method:"POST" }); notice("采集完成，已进入待治理资料"); await load(); } catch(error) { notice(error.message,true); } }
 async function resetPassword(userId, username) { const password = window.prompt(`为 ${username} 设置新密码（至少 8 位）`); if (!password) return; try { await api(`users/${userId}/password`, { method:"POST", body:JSON.stringify({password}) }); notice("密码已重置"); await load(); } catch (error) { notice(error.message, true); } }
 function formData(form) { return Object.fromEntries(new FormData(form).entries()); }
 $("#sourceForm").addEventListener("submit", async (event) => { event.preventDefault(); const body=formData(event.currentTarget); if (!body.homepage_url) body.homepage_url=null; try { await dataApi("sources", {method:"POST",body:JSON.stringify(body)}); event.currentTarget.reset(); notice("数据来源已登记"); await load(); } catch(error) { notice(error.message,true); } });
 $("#evidenceForm").addEventListener("submit", async (event) => { event.preventDefault(); const body=formData(event.currentTarget); ["url","excerpt"].forEach((key) => { if (!body[key]) body[key]=null; }); try { await dataApi("evidence", {method:"POST",body:JSON.stringify(body)}); event.currentTarget.reset(); notice("证据已保存，可继续录入候选数据"); await load(); } catch(error) { notice(error.message,true); } });
+$("#documentForm").addEventListener("submit", async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); if (!form.get("source_id")) form.delete("source_id"); try { const response = await fetch("/api/data/ingestions/documents", { method:"POST", body:form }); const payload = await response.json(); if (!response.ok) throw new Error(payload.detail || "上传失败"); event.currentTarget.reset(); notice("资料已保存，等待治理"); await load(); } catch(error) { notice(error.message,true); } });
+$("#collectionForm").addEventListener("submit", async (event) => { event.preventDefault(); const body=formData(event.currentTarget); body.interval_minutes=Number(body.interval_minutes); if (!body.source_id) body.source_id=null; if (!body.extraction_hint) body.extraction_hint=null; try { await dataApi("collection-jobs", {method:"POST",body:JSON.stringify(body)}); event.currentTarget.reset(); notice("采集任务已保存"); await load(); } catch(error) { notice(error.message,true); } });
 $("#factForm").addEventListener("submit", async (event) => { event.preventDefault(); const body=formData(event.currentTarget); try { body.scope = body.scope ? JSON.parse(body.scope) : {}; body.value = JSON.parse(body.value); body.reference_year = Number(body.reference_year); body.evidence_ids = [body.evidence_id]; delete body.evidence_id; await dataApi("facts", {method:"POST",body:JSON.stringify(body)}); event.currentTarget.reset(); notice("候选数据已提交，等待审核"); await load(); } catch(error) { notice(error.message.includes("JSON") ? "适用范围或数据内容不是有效 JSON" : error.message,true); } });
 $("#releaseForm").addEventListener("submit", async (event) => { event.preventDefault(); const fact_ids=$$(".release-check:checked").map((box)=>box.value); if (!fact_ids.length) return notice("请先在“已通过”数据中选择要发布的内容",true); const body=formData(event.currentTarget); body.reference_year=Number(body.reference_year); body.fact_ids=fact_ids; if (!body.notes) body.notes=null; try { await dataApi("releases", {method:"POST",body:JSON.stringify(body)}); notice("版本已发布，家长端将读取这份数据"); await load(); } catch(error) { notice(error.message,true); } });
 $("#userForm").addEventListener("submit", async (event) => { event.preventDefault(); try { await api("users", { method:"POST", body:JSON.stringify(formData(event.currentTarget)) }); event.currentTarget.reset(); notice("用户已添加"); await load(); } catch(error) { notice(error.message,true); } });

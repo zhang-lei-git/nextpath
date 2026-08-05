@@ -14,7 +14,8 @@
   <view class="forecast card" wx:if="{{dashboard.forecast}}">
     <view class="forecast-label">基于最近一次成绩</view>
     <view class="forecast-tier">{{dashboard.forecast.tier}}</view>
-    <view class="forecast-meta">预估区间：全区约 {{dashboard.forecast.estimated_rank_range[0]}} - {{dashboard.forecast.estimated_rank_range[1]}} 名</view>
+    <view class="forecast-meta" wx:if="{{dashboard.forecast.current_rank}}">预估区间：全区约 {{dashboard.forecast.estimated_rank_range[0]}} - {{dashboard.forecast.estimated_rank_range[1]}} 名</view>
+    <view class="forecast-meta" wx:else>{{dashboard.forecast.position_note}}</view>
     <view class="forecast-bottom">
       <view wx:if="{{dashboard.forecast.target_gap !== null}}">
         <text class="gap-number">{{dashboard.forecast.target_gap}}</text><text class="gap-unit"> 分</text>
@@ -57,7 +58,7 @@
 
 <view class="nav">
   <view class="nav-item active"><view>首页</view><view class="nav-marker"></view></view>
-  <view class="nav-item" bindtap="goToEntry"><view>成绩</view><view class="nav-marker"></view></view>
+  <view class="nav-item" bindtap="goToScores"><view>成绩</view><view class="nav-marker"></view></view>
   <view class="nav-item" bindtap="showProfile"><view>我的</view><view class="nav-marker"></view></view>
 </view>
 </block>

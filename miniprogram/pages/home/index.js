@@ -18,5 +18,6 @@ Page({
     wx.navigateTo({ url: '/pages/score-entry/index' })
   },
   goToAnalysis() { wx.navigateTo({ url: '/pages/analysis/index' }) },
+  goToScores() { wx.navigateTo({ url: '/pages/scores/index' }) },
   showProfile() { wx.navigateTo({ url: '/pages/profile/index' }) }
 })

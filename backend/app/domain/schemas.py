@@ -8,6 +8,7 @@ class ExamCreate(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     exam_date: date
     total_score: float = Field(ge=0, le=1000)
+    total_full_mark: float | None = Field(default=None, gt=0, le=1000)
     class_rank: int | None = Field(default=None, ge=1)
     grade_rank: int | None = Field(default=None, ge=1)
     grade_size: int | None = Field(default=None, ge=1)
@@ -24,6 +25,10 @@ class ExamRead(ExamCreate):
     id: str
 
     model_config = {"from_attributes": True}
+
+
+class ExamUpdate(ExamCreate):
+    pass
 
 
 class ActionItem(BaseModel):
@@ -43,6 +48,7 @@ class Forecast(BaseModel):
     current_rank: int | None = None
     target_rank: int | None = None
     target_rank_gap: int | None = None
+    position_note: str | None = None
 
 
 class DashboardResponse(BaseModel):
@@ -83,6 +89,16 @@ class AdmissionReport(BaseModel):
     policy_summary: str
     key_points: list[str]
     data_sources: list[str]
+
+
+class StudentReportRead(BaseModel):
+    id: str
+    exam_id: str
+    title: str
+    status: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class ImportResponse(BaseModel):
@@ -126,6 +142,43 @@ class EvidenceRead(EvidenceCreate):
     captured_at: datetime
     source_name: str | None = None
     source_type: SourceType | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class DataIngestionRead(BaseModel):
+    id: str
+    source_id: str | None
+    evidence_id: str | None
+    ingestion_type: str
+    title: str
+    original_filename: str | None
+    file_path: str | None
+    source_url: str | None
+    extraction_text: str | None
+    suggested_facts: list
+    status: str
+    error_message: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CollectionJobCreate(BaseModel):
+    source_id: str | None = None
+    name: str = Field(min_length=1, max_length=160)
+    target_url: str = Field(min_length=8, max_length=1024, pattern=r"^https?://")
+    extraction_hint: str | None = Field(default=None, max_length=1000)
+    interval_minutes: int = Field(default=1440, ge=15, le=10080)
+    is_active: bool = True
+
+
+class CollectionJobRead(CollectionJobCreate):
+    id: str
+    last_run_at: datetime | None
+    last_status: str | None
+    last_message: str | None
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 

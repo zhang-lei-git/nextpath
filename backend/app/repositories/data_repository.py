@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.models import DataEvidence, DataFact, DataRelease, DataReleaseItem, DataSource
+from app.domain.models import CollectionJob, DataEvidence, DataFact, DataIngestion, DataRelease, DataReleaseItem, DataSource
 
 
 class DataRepository:
@@ -111,3 +111,24 @@ class DataRepository:
 
     async def source_for_evidence(self, evidence: DataEvidence) -> DataSource | None:
         return await self.session.get(DataSource, evidence.source_id) if evidence.source_id else None
+
+    async def add_ingestion(self, ingestion: DataIngestion) -> DataIngestion:
+        self.session.add(ingestion)
+        await self.session.flush()
+        await self.session.refresh(ingestion)
+        return ingestion
+
+    async def list_ingestions(self) -> list[DataIngestion]:
+        return list(await self.session.scalars(select(DataIngestion).order_by(desc(DataIngestion.created_at))))
+
+    async def add_collection_job(self, job: CollectionJob) -> CollectionJob:
+        self.session.add(job)
+        await self.session.flush()
+        await self.session.refresh(job)
+        return job
+
+    async def get_collection_job(self, job_id: str) -> CollectionJob | None:
+        return await self.session.get(CollectionJob, job_id)
+
+    async def list_collection_jobs(self) -> list[CollectionJob]:
+        return list(await self.session.scalars(select(CollectionJob).order_by(desc(CollectionJob.created_at))))

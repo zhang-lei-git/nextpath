@@ -8,4 +8,4 @@
 .boundary view:first-child { margin: 20rpx 0 8rpx; color: #9A6614; font-size: 28rpx; font-weight: 600; }
 .boundary .muted { padding-bottom: 22rpx; }
 .model { margin: 20rpx 4rpx 30rpx; color: #687574; font-size: 22rpx; }
-.report { padding: 4rpx 28rpx; }.report-headline { padding:24rpx 0; color:#143F43; font-size:31rpx; font-weight:700; }.report-block { padding:20rpx 0; border-top:1rpx solid #E2E8E5; color:#334542; font-size:26rpx; line-height:1.65; }.report-block.last { padding-bottom:24rpx; }.report-label { margin-bottom:6rpx; color:#16766D; font-size:23rpx; font-weight:700; }
+.report { padding: 4rpx 28rpx; }.report-headline { padding:24rpx 0; color:#143F43; font-size:31rpx; font-weight:700; }.report-block { padding:20rpx 0; border-top:1rpx solid #E2E8E5; color:#334542; font-size:26rpx; line-height:1.65; }.report-block.last { padding-bottom:24rpx; }.report-label { margin-bottom:6rpx; color:#16766D; font-size:23rpx; font-weight:700; }.report-history { width:100%; margin-top:18rpx; }

@@ -2,17 +2,25 @@ const { request, uploadScoreImage } = require('../../utils/request')
 
 Page({
   data: {
-    form: { name: '', exam_date: '', total_score: '', class_rank: '', grade_rank: '', grade_size: '', scores: {} },
+    form: { name: '', exam_date: '', total_score: '', total_full_mark: '', class_rank: '', grade_rank: '', grade_size: '', scores: {} },
     subjects: [{ key: 'chinese', name: '语文' }, { key: 'math', name: '数学' }, { key: 'english', name: '英语' }, { key: 'physics', name: '物理' }, { key: 'history', name: '历史' }, { key: 'politics', name: '道法' }, { key: 'pe', name: '体育' }],
     uploading: false,
     saving: false,
     recording: false,
-    voiceText: ''
+    voiceText: '',
+    examId: ''
   },
-  onLoad() {
+  async onLoad(options) {
     const now = new Date()
     const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     this.setData({ 'form.exam_date': date })
+    if (options.id) {
+      try {
+        const exam = await request({ path: `/exams/${options.id}` })
+        this.setData({ examId: exam.id, form: { ...exam, scores: exam.scores || {}, class_rank: exam.class_rank || '', grade_rank: exam.grade_rank || '', grade_size: exam.grade_size || '' } })
+        wx.setNavigationBarTitle({ title: '修改成绩' })
+      } catch (error) { wx.showToast({ title: error.message, icon: 'none' }) }
+    }
   },
   updateField(event) {
     const key = event.currentTarget.dataset.key
@@ -89,17 +97,18 @@ Page({
     this.setData({ saving: true })
     try {
       await request({
-        path: '/exams', method: 'POST',
+        path: this.data.examId ? `/exams/${this.data.examId}` : '/exams', method: this.data.examId ? 'PUT' : 'POST',
         data: {
           ...form,
           total_score: Number(form.total_score),
+          total_full_mark: form.total_full_mark ? Number(form.total_full_mark) : null,
           class_rank: form.class_rank ? Number(form.class_rank) : null,
           grade_rank: form.grade_rank ? Number(form.grade_rank) : null,
           grade_size: form.grade_size ? Number(form.grade_size) : null,
           scores: Object.fromEntries(Object.entries(form.scores).filter(([, value]) => value !== '').map(([key, value]) => [key, Number(value)]))
         }
       })
-      wx.showToast({ title: '成绩已保存', icon: 'success' })
+      wx.showToast({ title: this.data.examId ? '成绩已更新' : '成绩已保存', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 500)
     } catch (error) { wx.showToast({ title: error.message, icon: 'none' }) }
     finally { this.setData({ saving: false }) }

@@ -50,8 +50,10 @@ class BaselinePredictionEngine:
         score = input_data.total_score
         position = self._position_engine().estimate(score, input_data.grade_rank, input_data.grade_size)
         city_rank = position.rank
+        position_note = None
         if city_rank is None:
-            tier, rank = "当前分数暂无法映射全区位次", (0, 0)
+            tier, rank = "先以校内位置持续观察", (0, 0)
+            position_note = self._position_note(score)
         elif score >= 600:
             tier, rank = "省示范高中层", position.rank_range
         elif score >= 570:
@@ -79,6 +81,7 @@ class BaselinePredictionEngine:
             current_rank=city_rank,
             target_rank=target_rank,
             target_rank_gap=target_rank_gap,
+            position_note=position_note,
         )
 
     def build_report(self, input_data: PredictionInput) -> AdmissionReport:
@@ -94,7 +97,10 @@ class BaselinePredictionEngine:
         )
         return AdmissionReport(
             headline=f"当前更适合关注：{forecast.tier}",
-            current_position=(f"按 {self._reference_year()} 年参考表，当前约全区第 {rank:,} 名。" if rank else "本次总分不在当前参考表覆盖范围内，无法可靠折算全区位次。"),
+            current_position=(
+                f"按 {self._reference_year()} 年参考表，当前约全区第 {rank:,} 名。"
+                if rank else forecast.position_note or "当前缺少可用于折算全区位次的公开参考数据。"
+            ),
             trend_summary=trend_summary,
             target_summary=target_summary,
             school_context=self._school_context(input_data, forecast),
@@ -165,3 +171,10 @@ class BaselinePredictionEngine:
 
     def _policy_source(self) -> str:
         return "已发布中招政策数据" if self.reference_data and self.reference_data.policy_summary else "2026 年西安市城六区中招政策摘要"
+
+    def _position_note(self, score: float) -> str:
+        points = self._position_engine().rank_points
+        if points:
+            lower, upper = points[-1][0], points[0][0]
+            return f"本次总分不在已发布一分一段表的 {lower:g}–{upper:g} 分范围内。请结合年级排名、年级人数和试卷满分继续观察。"
+        return "尚未发布可用的一分一段数据。请结合年级排名、年级人数和试卷满分继续观察。"

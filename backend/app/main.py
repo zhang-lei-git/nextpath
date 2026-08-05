@@ -25,6 +25,8 @@ async def lifespan(_: FastAPI):
             exam_columns = (await connection.exec_driver_sql("PRAGMA table_info(exams)")).fetchall()
             if "grade_size" not in {column[1] for column in exam_columns}:
                 await connection.exec_driver_sql("ALTER TABLE exams ADD COLUMN grade_size INTEGER")
+            if "total_full_mark" not in {column[1] for column in exam_columns}:
+                await connection.exec_driver_sql("ALTER TABLE exams ADD COLUMN total_full_mark FLOAT")
     yield
     await engine.dispose()
 
@@ -34,7 +36,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin for origin in settings.allowed_origins if origin],
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Content-Type", "X-Demo-User"],
 )
 app.include_router(health_router, prefix="/api")

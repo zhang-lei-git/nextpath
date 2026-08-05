@@ -21,3 +21,15 @@ class ExamRepository:
         await self.session.flush()
         await self.session.refresh(exam)
         return exam
+
+    async def get(self, profile_id: str, exam_id: str) -> Exam | None:
+        return await self.session.scalar(
+            select(Exam).where(Exam.profile_id == profile_id, Exam.id == exam_id).limit(1)
+        )
+
+    async def update(self, exam: Exam, values: dict) -> Exam:
+        for key, value in values.items():
+            setattr(exam, key, value)
+        await self.session.flush()
+        await self.session.refresh(exam)
+        return exam

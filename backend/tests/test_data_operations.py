@@ -115,3 +115,24 @@ def test_only_reviewed_and_released_facts_are_consumable(monkeypatch) -> None:
     assert consumed.status_code == 200
     assert consumed.json()["facts"][0]["value"]["count"] == 800
     assert consumed.json()["facts"][0]["evidence"][0]["source_type"] == "official"
+
+
+def test_document_ingestion_creates_traceable_evidence(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "data_admin_key", "data-ingestion-test-key")
+    headers = {"X-Data-Admin-Key": "data-ingestion-test-key"}
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/data/ingestions/documents",
+            headers=headers,
+            data={"title": "招生计划整理"},
+            files={"file": ("招生计划.txt", "2026 年普通高中招生计划。包含招生计划和志愿规则。", "text/plain")},
+        )
+        assert response.status_code == 201, response.text
+        ingestion = response.json()
+        assert ingestion["status"] == "extracted"
+        assert ingestion["evidence_id"]
+        assert "招生计划" in ingestion["extraction_text"]
+        assert ingestion["suggested_facts"]
+
+        evidence = client.get("/api/v1/data/evidence", headers=headers)
+        assert any(item["id"] == ingestion["evidence_id"] for item in evidence.json())

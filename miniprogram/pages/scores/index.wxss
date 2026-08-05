@@ -1,0 +1,8 @@
+.page-title { margin: 12rpx 0; color: #143F43; font-size: 44rpx; font-weight: 700; }
+.intro { margin-bottom: 30rpx; color: #687574; font-size: 27rpx; line-height: 1.7; }
+.score-card { display:flex; align-items:center; justify-content:space-between; margin-bottom:16rpx; padding:26rpx; }
+.score-name { margin-bottom:8rpx; color:#143F43; font-size:30rpx; font-weight:650; }
+.score-side { display:flex; flex-direction:column; align-items:flex-end; gap:8rpx; }
+.score-total { color:#143F43; font-size:40rpx; font-weight:700; }
+.text-button { color:#16766D; font-size:25rpx; }
+.empty { margin-bottom:20rpx; padding:34rpx 28rpx; color:#687574; font-size:27rpx; text-align:center; }

@@ -143,12 +143,13 @@ class AnalysisModelService:
         model_id: str,
         input_snapshot: dict,
         result: dict,
-    ) -> None:
+    ) -> AnalysisRun:
         fingerprint_source = {"profile": profile_id, "exam": exam_id, "release": data_release_id, "model": model_id, "input": input_snapshot}
         fingerprint = hashlib.sha256(json.dumps(fingerprint_source, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
-        if await self.repository.run_by_fingerprint(fingerprint):
-            return
-        await self.repository.add_run(AnalysisRun(
+        existing = await self.repository.run_by_fingerprint(fingerprint)
+        if existing:
+            return existing
+        run = await self.repository.add_run(AnalysisRun(
             fingerprint=fingerprint,
             profile_id=profile_id,
             exam_id=exam_id,
@@ -158,3 +159,4 @@ class AnalysisModelService:
             result=result,
         ))
         await self.session.commit()
+        return run

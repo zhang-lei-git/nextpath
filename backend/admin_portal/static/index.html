@@ -73,6 +73,26 @@
             <button class="button" type="submit">提交审核</button>
           </form></section>
         </div>
+        <div class="grid-two top-gap">
+          <section class="panel form-panel"><h2>上传资料</h2><form id="documentForm" class="form-stack" enctype="multipart/form-data">
+            <label>数据来源<select name="source_id" id="documentSource"></select></label>
+            <label>资料标题<input name="title" required placeholder="例如：2026 年高中招生计划 PDF"></label>
+            <label>选择文件<input name="file" type="file" accept=".txt,.md,.csv,.json,.docx,.pdf" required></label>
+            <button class="button secondary" type="submit">上传并提取</button>
+          </form></section>
+          <section class="panel"><div class="panel-head"><h2>待治理资料</h2><span id="ingestionCount"></span></div><div id="ingestionList" class="list"></div></section>
+        </div>
+        <div class="grid-two top-gap">
+          <section class="panel"><div class="panel-head"><h2>采集任务</h2><span id="collectionCount"></span></div><div id="collectionList" class="list"></div></section>
+          <section class="panel form-panel"><h2>新增网页采集</h2><form id="collectionForm" class="form-stack">
+            <label>数据来源<select name="source_id" id="collectionSource"></select></label>
+            <label>任务名称<input name="name" required placeholder="例如：教育局中招通知"></label>
+            <label>网页地址<input name="target_url" type="url" required placeholder="https://"></label>
+            <label>采集间隔（分钟）<input name="interval_minutes" type="number" min="15" value="1440" required></label>
+            <label>治理提示<textarea name="extraction_hint" rows="3" placeholder="例如：重点核验招生计划和志愿规则"></textarea></label>
+            <button class="button secondary" type="submit">保存任务</button>
+          </form></section>
+        </div>
       </section>
 
       <section id="review" class="view">

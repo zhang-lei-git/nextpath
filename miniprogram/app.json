@@ -1,9 +1,12 @@
 {
   "pages": [
     "pages/home/index",
+    "pages/scores/index",
     "pages/score-entry/index",
-    "pages/analysis/index"
-    ,"pages/profile/index"
+    "pages/analysis/index",
+    "pages/reports/index",
+    "pages/report-web/index",
+    "pages/profile/index"
   ],
   "window": {
     "navigationBarTitleText": "NextPath",

@@ -1,0 +1,8 @@
+<view class="page">
+  <view class="eyebrow">升学报告</view>
+  <view class="page-title">每次判断都能回看</view>
+  <view class="empty card" wx:if="{{!loading && !reports.length}}">保存一次成绩后，会在这里生成报告</view>
+  <button class="report-card card" wx:for="{{reports}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+    <view><view class="report-title">{{item.title}}</view><view class="muted">{{item.created_at}}</view></view><view class="arrow">查看</view>
+  </button>
+</view>

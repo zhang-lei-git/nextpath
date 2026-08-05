@@ -15,6 +15,7 @@ from app.services.prediction import BaselinePredictionEngine, PredictionEngine, 
 from app.services.published_reference_data import PublishedReferenceDataService
 from app.services.analysis_model_service import AnalysisModelService
 from app.services.position_engine import CalibrationPoint
+from app.services.report_service import ReportContext, StudentReportService
 
 
 class StudentService:
@@ -33,59 +34,10 @@ class StudentService:
         profile_complete = bool(profile.student_name and profile.junior_school and profile.grade)
         report = None
         if latest and profile_complete:
-            trend_delta = (latest.total_score - exams[1].total_score) if len(exams) > 1 else None
-            reference_data = await PublishedReferenceDataService(self.session).load(profile.city, 2026)
-            analysis_models = AnalysisModelService(self.session)
-            position_model = await analysis_models.active_position_model(profile.city)
-            assessment_stage = analysis_models.assessment_stage(latest.name)
-            samples = await analysis_models.calibration_samples(
-                region=profile.city,
-                junior_school=profile.junior_school,
-                assessment_stage=assessment_stage,
-                approved_only=True,
-            ) if assessment_stage else []
-            predictor = self.predictor or BaselinePredictionEngine(
-                reference_data,
-                position_parameters=position_model.parameters,
-                model_version=position_model.version,
-                calibration_points=tuple(
-                    CalibrationPoint(item.grade_rank, item.grade_size, item.final_city_rank)
-                    for item in samples
-                ),
-            )
-            prediction_input = PredictionInput(
-                latest.total_score,
-                latest.class_rank,
-                profile.target_school,
-                profile.junior_school,
-                trend_delta,
-                latest.grade_rank,
-                latest.grade_size,
-                assessment_stage,
-            )
-            forecast = predictor.predict(prediction_input)
-            report = predictor.build_report(prediction_input)
-            await analysis_models.record_run(
-                profile_id=profile.id,
-                exam_id=latest.id,
-                data_release_id=reference_data.release_id if reference_data else None,
-                model_id=position_model.id,
-                input_snapshot={
-                    "total_score": latest.total_score,
-                    "grade_rank": latest.grade_rank,
-                    "grade_size": latest.grade_size,
-                    "assessment_stage": assessment_stage,
-                    "junior_school": profile.junior_school,
-                    "target_school": profile.target_school,
-                    "model_version": position_model.version,
-                    "model_parameters": position_model.parameters,
-                    "calibration_sample_ids": [item.id for item in samples],
-                },
-                result={"forecast": forecast.model_dump(), "report": report.model_dump()},
-            )
+            forecast, report = await self._analyze_exam(profile, latest, exams, publish_report=False)
             actions.append(ActionItem(
                 title="补齐排名信息",
-                detail="补录年级排名后，孩子在全区的大致位置会更清楚。",
+                detail="补录年级排名和年级人数后，孩子在全区的大致位置会更清楚。",
                 priority="high",
             ))
             actions.append(ActionItem(
@@ -117,6 +69,83 @@ class StudentService:
             report=report,
         )
 
+    async def _analyze_exam(
+        self,
+        profile,
+        exam: Exam,
+        exams: list[Exam],
+        *,
+        publish_report: bool,
+    ):
+            trend_delta = self._trend_delta(exam, exams)
+            reference_data = await PublishedReferenceDataService(self.session).load(profile.city, 2026)
+            analysis_models = AnalysisModelService(self.session)
+            position_model = await analysis_models.active_position_model(profile.city)
+            assessment_stage = analysis_models.assessment_stage(exam.name)
+            samples = await analysis_models.calibration_samples(
+                region=profile.city,
+                junior_school=profile.junior_school,
+                assessment_stage=assessment_stage,
+                approved_only=True,
+            ) if assessment_stage else []
+            predictor = self.predictor or BaselinePredictionEngine(
+                reference_data,
+                position_parameters=position_model.parameters,
+                model_version=position_model.version,
+                calibration_points=tuple(
+                    CalibrationPoint(item.grade_rank, item.grade_size, item.final_city_rank)
+                    for item in samples
+                ),
+            )
+            prediction_input = PredictionInput(
+                exam.total_score,
+                exam.class_rank,
+                profile.target_school,
+                profile.junior_school,
+                trend_delta,
+                exam.grade_rank,
+                exam.grade_size,
+                assessment_stage,
+            )
+            forecast = predictor.predict(prediction_input)
+            report = predictor.build_report(prediction_input)
+            analysis_run = await analysis_models.record_run(
+                profile_id=profile.id,
+                exam_id=exam.id,
+                data_release_id=reference_data.release_id if reference_data else None,
+                model_id=position_model.id,
+                input_snapshot={
+                    "total_score": exam.total_score,
+                    "total_full_mark": exam.total_full_mark,
+                    "grade_rank": exam.grade_rank,
+                    "grade_size": exam.grade_size,
+                    "assessment_stage": assessment_stage,
+                    "junior_school": profile.junior_school,
+                    "target_school": profile.target_school,
+                    "model_version": position_model.version,
+                    "model_parameters": position_model.parameters,
+                    "calibration_sample_ids": [item.id for item in samples],
+                },
+                result={"forecast": forecast.model_dump(), "report": report.model_dump()},
+            )
+            if publish_report:
+                await StudentReportService(self.session).publish(ReportContext(
+                    profile=profile,
+                    exam=exam,
+                    exams=exams,
+                    forecast=forecast,
+                    admission_report=report,
+                    reference_data=reference_data,
+                    analysis_run_id=analysis_run.id,
+                ))
+            return forecast, report
+
+    @staticmethod
+    def _trend_delta(exam: Exam, exams: list[Exam]) -> float | None:
+        earlier = [item for item in exams if item.id != exam.id and item.exam_date <= exam.exam_date]
+        previous = sorted(earlier, key=lambda item: item.exam_date, reverse=True)
+        return exam.total_score - previous[0].total_score if previous else None
+
     async def get_profile(self, owner_id: str) -> StudentProfileRead:
         profile = await self.profiles.get_or_create_demo(owner_id)
         return StudentProfileRead.model_validate(profile)
@@ -131,7 +160,42 @@ class StudentService:
         profile = await self.profiles.get_or_create_demo(owner_id)
         exam = await self.exams.add(Exam(profile_id=profile.id, **payload.model_dump()))
         await self.session.commit()
+        if profile.student_name and profile.junior_school and profile.grade:
+            exams = await self.exams.list(profile.id)
+            await self._analyze_exam(profile, exam, exams, publish_report=True)
         return ExamRead.model_validate(exam)
+
+    async def update_exam(self, owner_id: str, exam_id: str, payload: ExamCreate) -> ExamRead:
+        profile = await self.profiles.get_or_create_demo(owner_id)
+        exam = await self.exams.get(profile.id, exam_id)
+        if not exam:
+            raise HTTPException(status_code=404, detail="未找到这次成绩")
+        exam = await self.exams.update(exam, payload.model_dump())
+        await self.session.commit()
+        if profile.student_name and profile.junior_school and profile.grade:
+            exams = await self.exams.list(profile.id)
+            await self._analyze_exam(profile, exam, exams, publish_report=True)
+        return ExamRead.model_validate(exam)
+
+    async def list_exams(self, owner_id: str) -> list[ExamRead]:
+        profile = await self.profiles.get_or_create_demo(owner_id)
+        return [ExamRead.model_validate(item) for item in await self.exams.list(profile.id)]
+
+    async def get_exam(self, owner_id: str, exam_id: str) -> ExamRead:
+        profile = await self.profiles.get_or_create_demo(owner_id)
+        exam = await self.exams.get(profile.id, exam_id)
+        if not exam:
+            raise HTTPException(status_code=404, detail="未找到这次成绩")
+        return ExamRead.model_validate(exam)
+
+    async def reports(self, owner_id: str):
+        profile = await self.profiles.get_or_create_demo(owner_id)
+        return await StudentReportService(self.session).list_for_profile(profile.id)
+
+    async def report_html(self, owner_id: str, report_id: str) -> str:
+        profile = await self.profiles.get_or_create_demo(owner_id)
+        report = await StudentReportService(self.session).get_for_profile(profile.id, report_id)
+        return report.html_content
 
     async def create_score_import(self, owner_id: str, file: UploadFile) -> ImportResponse:
         if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
