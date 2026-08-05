@@ -15,6 +15,7 @@ class PublishedSchoolReference:
 @dataclass(frozen=True)
 class PublishedReferenceData:
     reference_year: int
+    release_id: str | None = None
     rank_source: str | None = None
     rank_points: tuple[tuple[float, int], ...] = ()
     school_references: tuple[PublishedSchoolReference, ...] = ()
@@ -70,6 +71,7 @@ class PublishedReferenceDataService:
         )
         data = PublishedReferenceData(
             reference_year=reference_year,
+            release_id=release.id,
             rank_source=rank_source,
             rank_points=rank_points,
             school_references=tuple(school_references),

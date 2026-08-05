@@ -210,7 +210,16 @@ async def reset_password(user_id: int, payload: PasswordReset, _: str = Depends(
 
 @app.api_route("/api/data/{path:path}", methods=["GET", "POST"])
 async def proxy_data(path: str, request: Request, _: str = Depends(current_user)) -> JSONResponse:
-    api_base = os.getenv("NEXT_PATH_API_BASE", "http://127.0.0.1:8000/api/v1/data").rstrip("/")
+    return await proxy_to_nextpath(os.getenv("NEXT_PATH_API_BASE", "http://127.0.0.1:8000/api/v1/data"), path, request)
+
+
+@app.api_route("/api/analysis/{path:path}", methods=["GET", "POST", "PUT"])
+async def proxy_analysis(path: str, request: Request, _: str = Depends(current_user)) -> JSONResponse:
+    return await proxy_to_nextpath(os.getenv("NEXT_PATH_ANALYSIS_API_BASE", "http://127.0.0.1:8000/api/v1/analysis"), path, request)
+
+
+async def proxy_to_nextpath(api_base: str, path: str, request: Request) -> JSONResponse:
+    api_base = api_base.rstrip("/")
     data_key = os.getenv("DATA_ADMIN_KEY")
     if not data_key:
         raise HTTPException(status_code=503, detail="运营台尚未配置数据管理员密钥")

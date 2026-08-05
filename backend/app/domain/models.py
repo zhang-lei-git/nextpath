@@ -111,3 +111,45 @@ class DataReleaseItem(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     release_id: Mapped[str] = mapped_column(ForeignKey("data_releases.id"), index=True)
     fact_id: Mapped[str] = mapped_column(ForeignKey("data_facts.id"), index=True)
+
+
+class AnalysisModelVersion(Base):
+    __tablename__ = "analysis_model_versions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    name: Mapped[str] = mapped_column(String(80), index=True)
+    version: Mapped[str] = mapped_column(String(48), unique=True, index=True)
+    analysis_type: Mapped[str] = mapped_column(String(32), default="position", index=True)
+    region: Mapped[str] = mapped_column(String(80), default="西安", index=True)
+    status: Mapped[str] = mapped_column(String(24), default="active", index=True)
+    parameters: Mapped[dict] = mapped_column(JSON, default=dict)
+    quality_metrics: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AnalysisValidationRun(Base):
+    __tablename__ = "analysis_validation_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    model_id: Mapped[str] = mapped_column(ForeignKey("analysis_model_versions.id"), index=True)
+    data_release_id: Mapped[str | None] = mapped_column(ForeignKey("data_releases.id"), nullable=True, index=True)
+    validation_year: Mapped[int] = mapped_column(Integer)
+    sample_size: Mapped[int] = mapped_column(Integer, default=0)
+    median_absolute_rank_error: Mapped[float | None] = mapped_column(Float, nullable=True)
+    interval_coverage: Mapped[float | None] = mapped_column(Float, nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AnalysisRun(Base):
+    __tablename__ = "analysis_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    fingerprint: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    profile_id: Mapped[str] = mapped_column(ForeignKey("student_profiles.id"), index=True)
+    exam_id: Mapped[str] = mapped_column(ForeignKey("exams.id"), index=True)
+    data_release_id: Mapped[str | None] = mapped_column(ForeignKey("data_releases.id"), nullable=True, index=True)
+    model_id: Mapped[str] = mapped_column(ForeignKey("analysis_model_versions.id"), index=True)
+    input_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    result: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

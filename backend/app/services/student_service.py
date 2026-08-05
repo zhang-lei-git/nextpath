@@ -13,6 +13,7 @@ from app.repositories.exam_repository import ExamRepository
 from app.repositories.profile_repository import ProfileRepository
 from app.services.prediction import BaselinePredictionEngine, PredictionEngine, PredictionInput
 from app.services.published_reference_data import PublishedReferenceDataService
+from app.services.analysis_model_service import AnalysisModelService
 
 
 class StudentService:
@@ -33,12 +34,30 @@ class StudentService:
         if latest and profile_complete:
             trend_delta = (latest.total_score - exams[1].total_score) if len(exams) > 1 else None
             reference_data = await PublishedReferenceDataService(self.session).load(profile.city, 2026)
-            predictor = self.predictor or BaselinePredictionEngine(reference_data)
+            position_model = await AnalysisModelService(self.session).active_position_model(profile.city)
+            predictor = self.predictor or BaselinePredictionEngine(
+                reference_data,
+                position_parameters=position_model.parameters,
+                model_version=position_model.version,
+            )
             prediction_input = PredictionInput(
                 latest.total_score, latest.class_rank, profile.target_school, profile.junior_school, trend_delta,
             )
             forecast = predictor.predict(prediction_input)
             report = predictor.build_report(prediction_input)
+            await AnalysisModelService(self.session).record_run(
+                profile_id=profile.id,
+                exam_id=latest.id,
+                data_release_id=reference_data.release_id if reference_data else None,
+                model_id=position_model.id,
+                input_snapshot={
+                    "total_score": latest.total_score,
+                    "grade_rank": latest.grade_rank,
+                    "junior_school": profile.junior_school,
+                    "target_school": profile.target_school,
+                },
+                result={"forecast": forecast.model_dump(), "report": report.model_dump()},
+            )
             actions.append(ActionItem(
                 title="补齐排名信息",
                 detail="补录年级排名后，孩子在全区的大致位置会更清楚。",

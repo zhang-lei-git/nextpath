@@ -38,7 +38,7 @@ def test_prediction_prefers_published_reference_data() -> None:
     report = engine.build_report(prediction_input)
 
     assert forecast.reference_year == 2027
-    assert forecast.estimated_rank_range == (700, 2300)
+    assert forecast.estimated_rank_range == (1100, 1900)
     assert forecast.target_gap == 1
     assert "2027 年已发布一分一段表" in forecast.basis[0]
     assert "2027 年已发布招生参考" in report.target_summary

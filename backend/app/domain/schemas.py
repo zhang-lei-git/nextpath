@@ -33,6 +33,9 @@ class Forecast(BaseModel):
     basis: list[str]
     model_version: str
     reference_year: int
+    current_rank: int | None = None
+    target_rank: int | None = None
+    target_rank_gap: int | None = None
 
 
 class DashboardResponse(BaseModel):
@@ -183,3 +186,39 @@ class ConsumerFact(BaseModel):
 class ConsumerDataResponse(BaseModel):
     release: DataReleaseRead | None
     facts: list[ConsumerFact]
+
+
+class AnalysisModelUpdate(BaseModel):
+    parameters: dict = Field(default_factory=dict)
+    status: Literal["active", "inactive"] = "active"
+
+
+class AnalysisModelRead(BaseModel):
+    id: str
+    name: str
+    version: str
+    analysis_type: str
+    region: str
+    status: str
+    parameters: dict
+    quality_metrics: dict
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AnalysisValidationCreate(BaseModel):
+    data_release_id: str | None = None
+    validation_year: int = Field(ge=2020, le=2100)
+    sample_size: int = Field(default=0, ge=0)
+    median_absolute_rank_error: float | None = Field(default=None, ge=0)
+    interval_coverage: float | None = Field(default=None, ge=0, le=1)
+    notes: str | None = Field(default=None, max_length=2000)
+
+
+class AnalysisValidationRead(AnalysisValidationCreate):
+    id: str
+    model_id: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

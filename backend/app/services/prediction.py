@@ -6,6 +6,7 @@ from app.services.admission_data import (
     POLICY_SUMMARY, RANK_REFERENCE_SOURCE, RANK_REFERENCE_YEAR, estimate_city_rank, find_school_reference,
 )
 from app.services.published_reference_data import PublishedReferenceData
+from app.services.position_engine import PositionEngine
 
 
 @dataclass(frozen=True)
@@ -29,23 +30,35 @@ class BaselinePredictionEngine:
     version = "baseline-2026.1"
     reference_year = 2026
 
-    def __init__(self, reference_data: PublishedReferenceData | None = None) -> None:
+    def __init__(
+        self,
+        reference_data: PublishedReferenceData | None = None,
+        position_parameters: dict | None = None,
+        model_version: str | None = None,
+    ) -> None:
         self.reference_data = reference_data
+        self.position_parameters = position_parameters or {}
+        if model_version:
+            self.version = model_version
 
     def predict(self, input_data: PredictionInput) -> Forecast:
         score = input_data.total_score
-        city_rank = self._estimate_city_rank(score)
+        position = self._position_engine().estimate(score)
+        city_rank = position.rank
         if city_rank is None:
             tier, rank = "当前分数暂无法映射全区位次", (0, 0)
         elif score >= 600:
-            tier, rank = "省示范高中层", (max(1, city_rank - 500), city_rank + 500)
+            tier, rank = "省示范高中层", position.rank_range
         elif score >= 570:
-            tier, rank = "省级标准化高中层", (max(1, city_rank - 800), city_rank + 800)
+            tier, rank = "省级标准化高中层", position.rank_range
         else:
-            tier, rank = "普通高中与综合高中班层", (max(1, city_rank - 1200), city_rank + 1200)
+            tier, rank = "普通高中与综合高中班层", position.rank_range
 
         target = self._find_school_reference(input_data.target_school)
         target_gap = max(0, target[1] - score) if target else None
+        target_position = self._position_engine().estimate(target[1]) if target else None
+        target_rank = target_position.rank if target_position else None
+        target_rank_gap = max(0, city_rank - target_rank) if city_rank and target_rank else None
 
         return Forecast(
             tier=tier,
@@ -58,18 +71,21 @@ class BaselinePredictionEngine:
             ],
             model_version=self.version,
             reference_year=self._reference_year(),
+            current_rank=city_rank,
+            target_rank=target_rank,
+            target_rank_gap=target_rank_gap,
         )
 
     def build_report(self, input_data: PredictionInput) -> AdmissionReport:
         forecast = self.predict(input_data)
-        rank = self._estimate_city_rank(input_data.total_score)
+        rank = forecast.current_rank
         target = self._find_school_reference(input_data.target_school)
         trend = input_data.trend_delta
         trend_summary = "成绩记录不足两次，暂不判断趋势。" if trend is None else (
             f"最近两次总分变化 {trend:+.1f} 分，已计入本次位置判断。"
         )
-        target_summary = "尚未设定目标高中，可先看当前层次，再在档案中补充。" if not target else (
-            f"目标 {target[0]} 的公开参考线约 {target[1]:.0f} 分；当前参考差距 {max(0, target[1] - input_data.total_score):.0f} 分。{target[2]}。"
+        target_summary = "尚未设定目标高中，可先看当前层次，再在档案中补充。" if not target else self._target_summary(
+            target, forecast.current_rank, forecast.target_rank, forecast.target_rank_gap, input_data.total_score
         )
         return AdmissionReport(
             headline=f"当前更适合关注：{forecast.tier}",
@@ -83,18 +99,27 @@ class BaselinePredictionEngine:
         )
 
     def _estimate_city_rank(self, score: float) -> int | None:
-        points = self.reference_data.rank_points if self.reference_data and self.reference_data.rank_points else None
+        return self._position_engine().estimate(score).rank
+
+    def _position_engine(self) -> PositionEngine:
+        points = self.reference_data.rank_points if self.reference_data and self.reference_data.rank_points else ()
         if not points:
-            return estimate_city_rank(score)
-        if score < points[-1][0] or score > points[0][0]:
-            return None
-        for high, low in zip(points, points[1:]):
-            high_score, high_rank = high
-            low_score, low_rank = low
-            if low_score <= score <= high_score:
-                ratio = (high_score - score) / (high_score - low_score)
-                return round(high_rank + (low_rank - high_rank) * ratio)
-        return points[-1][1]
+            from app.services.admission_data import RANK_POINTS
+            points = RANK_POINTS
+        return PositionEngine(points, self.position_parameters)
+
+    @staticmethod
+    def _target_summary(
+        target: tuple[str, float, str],
+        current_rank: int | None,
+        target_rank: int | None,
+        target_rank_gap: int | None,
+        score: float,
+    ) -> str:
+        if current_rank and target_rank:
+            gap = f"需前移约 {target_rank_gap:,} 名" if target_rank_gap else "已处于参考边界内"
+            return f"目标 {target[0]} 的参考录取位置约全区第 {target_rank:,} 名；孩子当前约第 {current_rank:,} 名，{gap}。{target[2]}。"
+        return f"目标 {target[0]} 的公开参考线约 {target[1]:.0f} 分；当前参考差距 {max(0, target[1] - score):.0f} 分。{target[2]}。"
 
     def _find_school_reference(self, name: str | None) -> tuple[str, float, str] | None:
         if self.reference_data and self.reference_data.school_references and name:
