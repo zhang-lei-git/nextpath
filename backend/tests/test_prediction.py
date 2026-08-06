@@ -2,6 +2,7 @@ from datetime import date
 
 from app.services.prediction import BaselinePredictionEngine, PredictionInput
 from app.services.published_reference_data import PublishedReferenceData, PublishedSchoolReference
+from app.services.position_engine import CalibrationPoint
 
 
 def test_baseline_prediction_is_explainable() -> None:
@@ -20,7 +21,7 @@ def test_baseline_prediction_is_explainable() -> None:
     assert forecast.current_percentile is not None
     assert forecast.target_percentile is not None
     assert forecast.target_gap is None
-    assert forecast.model_version == "historical-preexam-2026.2"
+    assert forecast.model_version == "historical-preexam-2026.3"
     assert "不使用本年度一分一段表" in forecast.basis[0]
 
 
@@ -58,6 +59,45 @@ def test_pre_exam_prediction_uses_historical_reference_data() -> None:
     assert forecast.historical_equivalent_score_range == (731.6, 739.3)
     assert forecast.score_bridge_method == "subject_bridge_rate_projection"
     assert forecast.current_percentile is not None
+    assert forecast.position_method == "score_only"
+    assert "score" in forecast.position_channels
     assert "2025 年已发布一分一段表" in forecast.basis[0]
     assert "2025 年已发布招生参考" in report.target_summary
     assert "中考前只使用" in report.policy_summary
+
+
+def test_prediction_preserves_both_position_channels_for_auditing() -> None:
+    reference_data = PublishedReferenceData(
+        reference_year=2025,
+        rank_source="2025 年一分一段表",
+        rank_points=((820, 1), (780, 2000), (700, 15000), (610, 49900)),
+        rank_full_mark=820,
+        candidate_count=49900,
+    )
+    engine = BaselinePredictionEngine(
+        reference_data,
+        position_parameters={"rank_channel_min_samples": 2},
+        calibration_points=(
+            CalibrationPoint(10, 100, 3000, 50000),
+            CalibrationPoint(20, 100, 6000, 50000),
+        ),
+    )
+
+    forecast = engine.predict(PredictionInput(
+        total_score=520,
+        total_full_mark=580,
+        physical_estimate=54,
+        class_rank=None,
+        grade_rank=20,
+        grade_size=100,
+        target_school=None,
+        junior_school="测试初中",
+        assessment_stage="一模",
+        analysis_year=2026,
+        analysis_date=date(2026, 3, 15),
+    ))
+
+    assert forecast.position_method in {"dual_channel_fusion", "dual_channel_conflict_review"}
+    assert set(forecast.position_channels) == {"score", "rank"}
+    assert forecast.position_channels["rank"]["sample_count"] == 2
+    assert forecast.position_conflict_pp is not None

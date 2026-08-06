@@ -95,7 +95,7 @@ class StudentService:
                 position_parameters=position_model.parameters,
                 model_version=position_model.version,
                 calibration_points=tuple(
-                    CalibrationPoint(item.grade_rank, item.grade_size, item.final_city_rank)
+                    CalibrationPoint(item.grade_rank, item.grade_size, item.final_city_rank, item.final_candidate_count)
                     for item in samples
                 ),
             )

@@ -14,6 +14,7 @@ class CalibrationPoint:
     grade_rank: int
     grade_size: int
     final_city_rank: int
+    final_candidate_count: int | None = None
 
 
 class PositionEngine:

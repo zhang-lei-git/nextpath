@@ -221,6 +221,7 @@ class PositionCalibrationSample(Base):
     grade_rank: Mapped[int] = mapped_column(Integer)
     grade_size: Mapped[int] = mapped_column(Integer)
     final_city_rank: Mapped[int] = mapped_column(Integer)
+    final_candidate_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     evidence_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
     source_note: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     status: Mapped[str] = mapped_column(String(24), default="pending_review", index=True)

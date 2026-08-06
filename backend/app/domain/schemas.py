@@ -59,6 +59,9 @@ class Forecast(BaseModel):
     historical_equivalent_score_range: tuple[float, float] | None = None
     score_bridge_method: str | None = None
     score_bridge_source: str | None = None
+    position_method: str | None = None
+    position_channels: dict[str, dict] = Field(default_factory=dict)
+    position_conflict_pp: float | None = None
 
 
 class DashboardResponse(BaseModel):
@@ -305,6 +308,7 @@ class PositionCalibrationSampleCreate(BaseModel):
     grade_rank: int = Field(ge=1)
     grade_size: int = Field(ge=1)
     final_city_rank: int = Field(ge=1)
+    final_candidate_count: int | None = Field(default=None, ge=1)
     evidence_ids: list[str] = Field(default_factory=list)
     source_note: str | None = Field(default=None, max_length=1000)
 

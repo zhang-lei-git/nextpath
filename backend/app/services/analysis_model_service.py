@@ -20,6 +20,16 @@ DEFAULT_POSITION_PARAMETERS = {
     "trend_weight": 0,
     "school_mapping_min_samples": 15,
     "school_mapping_weight": 0.35,
+    "score_channel_base_uncertainty_pp": 8.0,
+    "rank_channel_prior_uncertainty_pp": 12.0,
+    "rank_channel_calibrated_uncertainty_pp": 5.0,
+    "rank_channel_min_samples": 15,
+    "fusion_conflict_threshold_pp": 8.0,
+    "fusion_conflict_uncertainty_multiplier": 1.35,
+    "fusion_correlation_inflation": 1.25,
+    "difficulty_stage_uncertainty_pp": {"一模": 6.0, "二模": 5.0, "三模": 4.0, "月考": 8.0, "期中": 8.0, "期末": 7.0, "周测": 10.0},
+    "school_difficulty_profiles": {},
+    "difficulty_profile_min_samples": 20,
 }
 
 

@@ -5,6 +5,7 @@ from typing import Protocol
 from app.domain.schemas import AdmissionReport, Forecast
 from app.services.published_reference_data import PublishedReferenceData
 from app.services.position_engine import CalibrationPoint, PositionEngine
+from app.services.position_fusion import PositionFusionEngine
 from app.services.scoring_scheme import ScoreBridgeModel, ScoreBridgeResult, scoring_scheme
 
 
@@ -46,7 +47,7 @@ class BaselinePredictionEngine:
     admission percentiles.  It never reads a rank table from the analysis year.
     """
 
-    version = "historical-preexam-2026.2"
+    version = "historical-preexam-2026.3"
 
     def __init__(
         self,
@@ -59,17 +60,31 @@ class BaselinePredictionEngine:
         self.position_parameters = position_parameters or {}
         self.calibration_points = calibration_points
         self.score_bridge = ScoreBridgeModel()
+        self.position_fusion = PositionFusionEngine(self.position_parameters)
         if model_version:
             self.version = model_version
 
     def predict(self, input_data: PredictionInput) -> Forecast:
         projected_total = self._projected_total_range(input_data)
         bridge = self._score_bridge(input_data, projected_total)
-        percentile_range, method = self._estimate_percentile(input_data, bridge)
+        raw_score_percentile = self._score_percentile(bridge)
+        score_channel = self.position_fusion.score_channel(
+            raw_score_percentile,
+            junior_school=input_data.junior_school,
+            assessment_stage=input_data.assessment_stage,
+        )
         historical_base = self.reference_data.candidate_count if self.reference_data else None
+        rank_channel = self.position_fusion.rank_channel(
+            grade_rank=input_data.grade_rank,
+            grade_size=input_data.grade_size,
+            candidate_count=historical_base,
+            calibration_points=self.calibration_points,
+        )
+        fused_position = self.position_fusion.fuse(score_channel, rank_channel)
+        percentile_range, method = fused_position.percentile_range, fused_position.method
         rank_range = self._project_rank_range(percentile_range, historical_base)
         current_rank = round(sum(rank_range) / 2) if rank_range != (0, 0) else None
-        current_percentile = round(sum(percentile_range) / 2, 2) if percentile_range else None
+        current_percentile = fused_position.center
         target = self._find_school_reference(input_data.target_school)
         target_rank = self._rank_for_score(target[1]) if target else None
         target_percentile = self._rank_percentile(target_rank) if target_rank else None
@@ -98,7 +113,7 @@ class BaselinePredictionEngine:
             tier=tier,
             estimated_rank_range=rank_range,
             target_gap=None,
-            confidence="medium" if method == "school_percentile" and target_percentile is not None else "low",
+            confidence=fused_position.confidence,
             basis=basis,
             model_version=self.version,
             reference_year=self._reference_year(),
@@ -114,6 +129,12 @@ class BaselinePredictionEngine:
             historical_equivalent_score_range=bridge.target_equivalent_range if bridge else None,
             score_bridge_method=bridge.method if bridge else None,
             score_bridge_source=bridge.source if bridge else None,
+            position_method=method,
+            position_channels={
+                **({"score": score_channel.as_dict()} if score_channel else {}),
+                **({"rank": rank_channel.as_dict()} if rank_channel else {}),
+            },
+            position_conflict_pp=fused_position.conflict_pp,
         )
 
     def build_report(self, input_data: PredictionInput) -> AdmissionReport:
@@ -167,24 +188,17 @@ class BaselinePredictionEngine:
             low, high = 0, PHYSICAL_EDUCATION_FULL_MARK
         return (round(academic_score + low, 1), round(academic_score + high, 1))
 
-    def _estimate_percentile(
-        self, input_data: PredictionInput, bridge: ScoreBridgeResult | None
-    ) -> tuple[tuple[float, float] | None, str]:
-        if input_data.grade_rank and input_data.grade_size:
-            center = input_data.grade_rank / input_data.grade_size * 100
-            spread = max(0.6, min(4.0, center * 0.16))
-            return (round(max(0.1, center - spread), 2), round(min(99.9, center + spread), 2)), "school_percentile"
+    def _score_percentile(self, bridge: ScoreBridgeResult | None) -> tuple[float, float] | None:
         if not self.reference_data or not self.reference_data.rank_points or not bridge:
-            return None, "insufficient_data"
+            return None
         ranks = [self._rank_for_score(total) for total in bridge.target_equivalent_range]
         ranks = [rank for rank in ranks if rank is not None]
         if not ranks:
-            return None, "insufficient_data"
+            return None
         base = self.reference_data.candidate_count or self.reference_data.rank_points[-1][1]
         values = [rank / base * 100 for rank in ranks]
         lower, upper = min(values), max(values)
-        uncertainty = float(self.position_parameters.get("score_bridge_uncertainty_pp", 8.0))
-        return (round(max(0.1, lower - uncertainty), 2), round(min(99.9, upper + uncertainty), 2)), "score_scheme_bridge"
+        return (round(max(0.1, lower), 2), round(min(99.9, upper), 2))
 
     def _score_bridge(
         self, input_data: PredictionInput, projected_total: tuple[float, float]
@@ -244,18 +258,24 @@ class BaselinePredictionEngine:
 
     @staticmethod
     def _position_basis(method: str) -> str:
-        if method == "school_percentile":
-            return "以孩子在所在初中的年级位置为主，再映射到往年全区位置；这比直接比较不同年份总分更可靠。"
-        if method == "score_scheme_bridge":
-            return "年级排名暂缺，已按两年教育局公布的计分科目进行科目桥接，并扩大误差区间；补全年级排名后会自动替换。"
+        if method == "dual_channel_fusion":
+            return "本次同时参考了计分方案换算后的成绩位置和所在初中年级位置；两条信息相互校验后再给出范围。"
+        if method == "dual_channel_conflict_review":
+            return "成绩换算与年级位置给出的范围暂不一致，系统已保留更宽的判断范围；后续同类考试会持续校准。"
+        if method == "rank_only":
+            return "当前以所在初中的年级位置为主，并保留学校层次差异带来的不确定性。"
+        if method == "score_only":
+            return "年级排名暂缺，已按两年教育局公布的计分科目进行科目桥接，并保留试卷难度带来的不确定性。"
         return "缺少年级位置或可用历史曲线，暂不输出区域位次。"
 
     def _position_note(self, percentile_range: tuple[float, float] | None, method: str, input_data: PredictionInput) -> str:
         if not percentile_range:
             return "当前缺少年级位置和可用历史参考曲线，暂不换算全区位置。"
-        if method == "school_percentile":
+        if method in {"dual_channel_fusion", "dual_channel_conflict_review"}:
+            return f"综合本次成绩和年级第 {input_data.grade_rank}/{input_data.grade_size} 名，预估全区前 {percentile_range[0]:.1f}%–{percentile_range[1]:.1f}%。"
+        if method == "rank_only":
             return f"根据年级第 {input_data.grade_rank}/{input_data.grade_size} 名，预估全区前 {percentile_range[0]:.1f}%–{percentile_range[1]:.1f}%。"
-        return f"按年度计分科目桥接后的往年曲线，预估全区前 {percentile_range[0]:.1f}%–{percentile_range[1]:.1f}%；请补全年级位置。"
+        return f"按年度计分科目桥接后的往年曲线，预估全区前 {percentile_range[0]:.1f}%–{percentile_range[1]:.1f}%；补全年级位置后可相互校验。"
 
     def _school_context(self, input_data: PredictionInput) -> str:
         if not input_data.junior_school:
