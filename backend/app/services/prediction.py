@@ -1,9 +1,11 @@
 from dataclasses import dataclass
+from datetime import date
 from typing import Protocol
 
 from app.domain.schemas import AdmissionReport, Forecast
 from app.services.published_reference_data import PublishedReferenceData
 from app.services.position_engine import CalibrationPoint, PositionEngine
+from app.services.scoring_scheme import ScoreBridgeModel, ScoreBridgeResult, scoring_scheme
 
 
 PHYSICAL_EDUCATION_FULL_MARK = 60
@@ -26,6 +28,8 @@ class PredictionInput:
     physical_score: float | None = None
     physical_estimate: float | None = None
     analysis_year: int | None = None
+    analysis_date: date | None = None
+    subject_scores: dict[str, float] | None = None
 
 
 class PredictionEngine(Protocol):
@@ -42,7 +46,7 @@ class BaselinePredictionEngine:
     admission percentiles.  It never reads a rank table from the analysis year.
     """
 
-    version = "historical-preexam-2026.1"
+    version = "historical-preexam-2026.2"
 
     def __init__(
         self,
@@ -54,12 +58,14 @@ class BaselinePredictionEngine:
         self.reference_data = reference_data
         self.position_parameters = position_parameters or {}
         self.calibration_points = calibration_points
+        self.score_bridge = ScoreBridgeModel()
         if model_version:
             self.version = model_version
 
     def predict(self, input_data: PredictionInput) -> Forecast:
         projected_total = self._projected_total_range(input_data)
-        percentile_range, method = self._estimate_percentile(input_data, projected_total)
+        bridge = self._score_bridge(input_data, projected_total)
+        percentile_range, method = self._estimate_percentile(input_data, bridge)
         historical_base = self.reference_data.candidate_count if self.reference_data else None
         rank_range = self._project_rank_range(percentile_range, historical_base)
         current_rank = round(sum(rank_range) / 2) if rank_range != (0, 0) else None
@@ -105,6 +111,9 @@ class BaselinePredictionEngine:
             target_percentile=target_percentile,
             target_percentile_gap=target_percentile_gap,
             projected_total_range=projected_total,
+            historical_equivalent_score_range=bridge.target_equivalent_range if bridge else None,
+            score_bridge_method=bridge.method if bridge else None,
+            score_bridge_source=bridge.source if bridge else None,
         )
 
     def build_report(self, input_data: PredictionInput) -> AdmissionReport:
@@ -138,11 +147,17 @@ class BaselinePredictionEngine:
             school_context=self._school_context(input_data),
             policy_summary="中考前只使用已经发布的往年政策和数据；当年政策、计划和录取结果发布后再分阶段纳入判断。",
             key_points=basis_with_next_step(forecast.basis),
-            data_sources=[self._rank_reference_source(), target[2] if target else "尚未选择目标学校"],
+            data_sources=[
+                self._rank_reference_source(),
+                forecast.score_bridge_source or "年度计分方案待补充",
+                target[2] if target else "尚未选择目标学校",
+            ],
         )
 
     def _projected_total_range(self, input_data: PredictionInput) -> tuple[float, float]:
-        academic_full_mark = input_data.total_full_mark or DEFAULT_ACADEMIC_FULL_MARK
+        scheme = scoring_scheme(input_data.analysis_year) if input_data.analysis_year else None
+        scheme_academic_full_mark = scheme.total_full_mark - scheme.counted_subjects.get("pe", 0) if scheme else None
+        academic_full_mark = input_data.total_full_mark or scheme_academic_full_mark or DEFAULT_ACADEMIC_FULL_MARK
         academic_score = min(input_data.total_score, academic_full_mark)
         if input_data.physical_score is not None:
             low = high = input_data.physical_score
@@ -153,22 +168,36 @@ class BaselinePredictionEngine:
         return (round(academic_score + low, 1), round(academic_score + high, 1))
 
     def _estimate_percentile(
-        self, input_data: PredictionInput, projected_total: tuple[float, float]
+        self, input_data: PredictionInput, bridge: ScoreBridgeResult | None
     ) -> tuple[tuple[float, float] | None, str]:
         if input_data.grade_rank and input_data.grade_size:
             center = input_data.grade_rank / input_data.grade_size * 100
             spread = max(0.6, min(4.0, center * 0.16))
             return (round(max(0.1, center - spread), 2), round(min(99.9, center + spread), 2)), "school_percentile"
-        if not self.reference_data or not self.reference_data.rank_points or not self.reference_data.rank_full_mark:
+        if not self.reference_data or not self.reference_data.rank_points or not bridge:
             return None, "insufficient_data"
-        current_full_mark = (input_data.total_full_mark or DEFAULT_ACADEMIC_FULL_MARK) + PHYSICAL_EDUCATION_FULL_MARK
-        ranks = [self._rank_for_score(total / current_full_mark * self.reference_data.rank_full_mark) for total in projected_total]
+        ranks = [self._rank_for_score(total) for total in bridge.target_equivalent_range]
         ranks = [rank for rank in ranks if rank is not None]
         if not ranks:
             return None, "insufficient_data"
         base = self.reference_data.candidate_count or self.reference_data.rank_points[-1][1]
         values = [rank / base * 100 for rank in ranks]
-        return (round(min(values), 2), round(max(values), 2)), "normalized_score_curve"
+        lower, upper = min(values), max(values)
+        uncertainty = float(self.position_parameters.get("score_bridge_uncertainty_pp", 8.0))
+        return (round(max(0.1, lower - uncertainty), 2), round(min(99.9, upper + uncertainty), 2)), "score_scheme_bridge"
+
+    def _score_bridge(
+        self, input_data: PredictionInput, projected_total: tuple[float, float]
+    ) -> ScoreBridgeResult | None:
+        if not self.reference_data or not input_data.analysis_year:
+            return None
+        return self.score_bridge.bridge(
+            projected_total,
+            source_year=input_data.analysis_year,
+            target_year=self.reference_data.reference_year,
+            subject_scores=input_data.subject_scores,
+            as_of_date=input_data.analysis_date,
+        )
 
     def _rank_for_score(self, score: float) -> int | None:
         if not self.reference_data or not self.reference_data.rank_points:
@@ -217,8 +246,8 @@ class BaselinePredictionEngine:
     def _position_basis(method: str) -> str:
         if method == "school_percentile":
             return "以孩子在所在初中的年级位置为主，再映射到往年全区位置；这比直接比较不同年份总分更可靠。"
-        if method == "normalized_score_curve":
-            return "年级排名暂缺，按总分满分比例映射到往年曲线，置信度较低；补全年级排名后会自动替换。"
+        if method == "score_scheme_bridge":
+            return "年级排名暂缺，已按两年教育局公布的计分科目进行科目桥接，并扩大误差区间；补全年级排名后会自动替换。"
         return "缺少年级位置或可用历史曲线，暂不输出区域位次。"
 
     def _position_note(self, percentile_range: tuple[float, float] | None, method: str, input_data: PredictionInput) -> str:
@@ -226,7 +255,7 @@ class BaselinePredictionEngine:
             return "当前缺少年级位置和可用历史参考曲线，暂不换算全区位置。"
         if method == "school_percentile":
             return f"根据年级第 {input_data.grade_rank}/{input_data.grade_size} 名，预估全区前 {percentile_range[0]:.1f}%–{percentile_range[1]:.1f}%。"
-        return f"按往年标准化曲线，预估全区前 {percentile_range[0]:.1f}%–{percentile_range[1]:.1f}%；请补全年级位置。"
+        return f"按年度计分科目桥接后的往年曲线，预估全区前 {percentile_range[0]:.1f}%–{percentile_range[1]:.1f}%；请补全年级位置。"
 
     def _school_context(self, input_data: PredictionInput) -> str:
         if not input_data.junior_school:

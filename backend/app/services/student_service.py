@@ -112,6 +112,8 @@ class StudentService:
                 physical_score=exam.physical_score or exam.scores.get("pe"),
                 physical_estimate=exam.physical_estimate,
                 analysis_year=exam.exam_date.year,
+                analysis_date=exam.exam_date,
+                subject_scores=exam.scores,
             )
             forecast = predictor.predict(prediction_input)
             report = predictor.build_report(prediction_input)

@@ -56,6 +56,9 @@ class Forecast(BaseModel):
     target_percentile: float | None = None
     target_percentile_gap: float | None = None
     projected_total_range: tuple[float, float] | None = None
+    historical_equivalent_score_range: tuple[float, float] | None = None
+    score_bridge_method: str | None = None
+    score_bridge_source: str | None = None
 
 
 class DashboardResponse(BaseModel):
