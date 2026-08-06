@@ -41,7 +41,24 @@ class AnalysisModelService:
     async def active_position_model(self, region: str) -> AnalysisModelVersion:
         model = await self.repository.active_position_model(region)
         if model:
-            return model
+            merged_parameters = {**DEFAULT_POSITION_PARAMETERS, **model.parameters}
+            if merged_parameters == model.parameters:
+                return model
+            # An algorithm default is part of the model contract.  Migrate legacy
+            # active configurations by creating a successor instead of silently
+            # changing the meaning of old analysis runs.
+            model.status = "inactive"
+            successor = await self.repository.add_model(AnalysisModelVersion(
+                name=model.name,
+                version=await self._next_revision(model.version),
+                analysis_type=model.analysis_type,
+                region=model.region,
+                status="active",
+                parameters=merged_parameters,
+                quality_metrics={**model.quality_metrics, "parent_version": model.version},
+            ))
+            await self.session.commit()
+            return successor
         model = await self.repository.add_model(AnalysisModelVersion(
             name="一分一段位置模型",
             version=f"position-rank-curve-v1-{region}",
