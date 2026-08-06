@@ -20,6 +20,8 @@ class PublishedReferenceData:
     rank_points: tuple[tuple[float, int], ...] = ()
     school_references: tuple[PublishedSchoolReference, ...] = ()
     policy_summary: str | None = None
+    rank_full_mark: float | None = None
+    candidate_count: int | None = None
 
     @property
     def has_any_fact(self) -> bool:
@@ -34,13 +36,20 @@ class PublishedReferenceDataService:
 
     async def load(self, region: str, reference_year: int) -> PublishedReferenceData | None:
         release = await self.repository.latest_release(region, reference_year)
-        if not release:
-            return None
+        return await self._from_release(release, reference_year) if release else None
 
+    async def load_latest_historical(self, region: str, before_year: int) -> PublishedReferenceData | None:
+        """Only returns data that existed before the student's target examination year."""
+        release = await self.repository.latest_release_before(region, before_year)
+        return await self._from_release(release, release.reference_year) if release else None
+
+    async def _from_release(self, release, reference_year: int) -> PublishedReferenceData | None:
         admissions = await self.repository.facts_in_release(release.id, "admission")
         policies = await self.repository.facts_in_release(release.id, "policy")
         rank_points: tuple[tuple[float, int], ...] = ()
         rank_source: str | None = None
+        rank_full_mark: float | None = None
+        candidate_count: int | None = None
         school_references: list[PublishedSchoolReference] = []
 
         for fact in admissions:
@@ -52,6 +61,10 @@ class PublishedReferenceDataService:
                         parsed_points.append((float(point[0]), int(point[1])))
                 rank_points = tuple(sorted(parsed_points, reverse=True))
                 rank_source = fact.value.get("source") or "已发布一分一段参考数据"
+                max_score = fact.value.get("max_score")
+                rank_full_mark = float(max_score) if isinstance(max_score, (float, int)) else None
+                base = fact.value.get("candidate_count")
+                candidate_count = int(base) if isinstance(base, (float, int)) else None
             elif fact.field == "录取参考线" and "score" in fact.value:
                 school_references.append(
                     PublishedSchoolReference(
@@ -76,5 +89,7 @@ class PublishedReferenceDataService:
             rank_points=rank_points,
             school_references=tuple(school_references),
             policy_summary=policy_summary,
+            rank_full_mark=rank_full_mark,
+            candidate_count=candidate_count,
         )
         return data if data.has_any_fact else None

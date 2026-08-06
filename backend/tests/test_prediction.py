@@ -3,14 +3,23 @@ from app.services.published_reference_data import PublishedReferenceData, Publis
 
 
 def test_baseline_prediction_is_explainable() -> None:
-    forecast = BaselinePredictionEngine().predict(
-        PredictionInput(total_score=615, class_rank=28, target_school="西安高新第一中学")
+    reference_data = PublishedReferenceData(
+        reference_year=2025,
+        rank_source="2025 年一分一段表",
+        rank_points=((820, 1), (780, 2000), (700, 15000), (610, 49900)),
+        rank_full_mark=820,
+        candidate_count=49900,
+        school_references=(PublishedSchoolReference("测试高中", 780, "2025 年历史录取参考"),),
+    )
+    forecast = BaselinePredictionEngine(reference_data).predict(
+        PredictionInput(total_score=520, total_full_mark=580, class_rank=28, grade_rank=28, grade_size=680, target_school="测试高中")
     )
 
-    assert forecast.tier == "省示范高中层"
-    assert forecast.target_gap == 0
-    assert forecast.model_version == "baseline-2026.1"
-    assert len(forecast.basis) == 2
+    assert forecast.current_percentile is not None
+    assert forecast.target_percentile is not None
+    assert forecast.target_gap is None
+    assert forecast.model_version == "historical-preexam-2026.1"
+    assert "不使用本年度一分一段表" in forecast.basis[0]
 
 
 def test_baseline_prediction_does_not_promise_admission() -> None:
@@ -20,26 +29,28 @@ def test_baseline_prediction_does_not_promise_admission() -> None:
 
     assert forecast.confidence == "low"
     assert forecast.target_gap is None
-    assert "全区参考位置" in forecast.basis[1]
+    assert "体育" in forecast.basis[1]
 
 
-def test_prediction_prefers_published_reference_data() -> None:
+def test_pre_exam_prediction_uses_historical_reference_data() -> None:
     reference_data = PublishedReferenceData(
-        reference_year=2027,
-        rank_source="2027 年已发布一分一段表",
-        rank_points=((600, 1000), (590, 2000)),
-        school_references=(PublishedSchoolReference("测试高中", 596, "2027 年已发布招生参考"),),
-        policy_summary="2027 年已发布政策摘要。",
+        reference_year=2025,
+        rank_source="2025 年已发布一分一段表",
+        rank_points=((820, 1), (780, 2000), (700, 15000), (610, 49900)),
+        rank_full_mark=820,
+        candidate_count=49900,
+        school_references=(PublishedSchoolReference("测试高中", 780, "2025 年已发布招生参考"),),
+        policy_summary="2025 年已发布政策摘要。",
     )
     engine = BaselinePredictionEngine(reference_data)
-    prediction_input = PredictionInput(total_score=595, class_rank=None, target_school="测试高中")
+    prediction_input = PredictionInput(total_score=520, total_full_mark=580, physical_estimate=54, class_rank=None, target_school="测试高中", analysis_year=2026)
 
     forecast = engine.predict(prediction_input)
     report = engine.build_report(prediction_input)
 
-    assert forecast.reference_year == 2027
-    assert forecast.estimated_rank_range == (1100, 1900)
-    assert forecast.target_gap == 1
-    assert "2027 年已发布一分一段表" in forecast.basis[0]
-    assert "2027 年已发布招生参考" in report.target_summary
-    assert report.policy_summary == "2027 年已发布政策摘要。"
+    assert forecast.reference_year == 2025
+    assert forecast.projected_total_range == (571, 577)
+    assert forecast.current_percentile is not None
+    assert "2025 年已发布一分一段表" in forecast.basis[0]
+    assert "2025 年已发布招生参考" in report.target_summary
+    assert "中考前只使用" in report.policy_summary

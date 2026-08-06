@@ -77,7 +77,7 @@ class StudentReportService:
         class_size = self._rank_size(context.exams)
         target = context.profile.target_school or "尚未设置目标高中"
         position = self._position_text(context.forecast)
-        source = context.reference_data.rank_source if context.reference_data and context.reference_data.rank_source else "当前已发布升学参考数据"
+        source = context.reference_data.rank_source if context.reference_data and context.reference_data.rank_source else "尚未发布可用的历史升学参考数据"
         evidence_level = "third_party" if "待核验" in source or "网传" in source else "official"
         report = context.admission_report
         score_note = "" if sum(item["finalScore"] for item in subjects if item.get("table", True)) == context.exam.total_score else "科目分数未完整录入，总分以本次确认记录为准。"
@@ -90,20 +90,20 @@ class StudentReportService:
                 "year": context.forecast.reference_year,
                 "eyebrow": "中考升学位置分析",
                 "title": f"{context.exam.name}升学分析报告",
-                "description": "基于本次成绩、历次记录和已发布升学数据形成；录取以当年官方结果为准。",
+                "description": "基于本次成绩、历次记录和考试当时已经发布的历史数据形成；录取以当年官方结果为准。",
                 "studentLabel": "孩子",
                 "admissionLabel": context.profile.junior_school or "初中信息待补充",
                 "targetLabel": target,
                 "reportedTotal": context.exam.total_score,
                 "totalNote": score_note,
                 "outputTitle": f"nextpath-{context.exam.id}",
-                "scoreLabel": "本次总分",
+                "scoreLabel": "本次学科总分",
             },
             "validation": {"allowTotalMismatch": True, "totalTolerance": 0.01},
             "glance": {
                 "verdictHtml": f"<strong>{context.forecast.tier}</strong><br>{position}",
                 "kpis": [
-                    {"label": "本次总分", "value": f"{context.exam.total_score:g}", "note": context.exam.name, "tone": "blue"},
+                    {"label": "学科总分", "value": f"{context.exam.total_score:g}", "note": "不含体育", "tone": "blue"},
                     {"label": "参考位置", "value": self._rank_value(context.forecast), "note": "以区间呈现", "tone": "teal"},
                     {"label": "目标差距", "value": self._gap_value(context.forecast), "note": target, "tone": "green"},
                     {"label": "已记录考试", "value": str(len(exams)), "note": "持续更新", "tone": "blue"},
@@ -137,7 +137,7 @@ class StudentReportService:
             },
             "school": {
                 "title": "目标高中与政策环境",
-                "lead": "学校入口位置与政策信息只使用已发布数据。",
+                "lead": "中考前的学校入口位置只使用往年已发布数据。",
                 "entrance": {
                     "cityLine": None, "cityLabel": "", "schoolLine": None, "schoolLabel": "",
                     "studentScore": context.exam.total_score, "studentLabel": "本次成绩",
@@ -157,7 +157,7 @@ class StudentReportService:
                 "milestones": [
                     {"time": "本次", "goalHtml": position, "tone": "now"},
                     {"time": "下一次模考", "goalHtml": "补全<strong>年级排名与年级人数</strong>，观察位置变化。", "tone": "next"},
-                    {"time": "志愿阶段", "goalHtml": "用当年已发布的<strong>政策、计划和录取数据</strong>生成志愿组合。", "tone": "mid"},
+                    {"time": "志愿阶段", "goalHtml": "用当年已发布的<strong>政策、计划和中考成绩</strong>生成志愿组合。", "tone": "mid"},
                 ],
                 "scenarios": [
                     {"title": "位置前移", "text": "目标高中可进入更积极的观察范围。", "tone": "good"},
@@ -234,12 +234,14 @@ class StudentReportService:
 
     @staticmethod
     def _rank_value(forecast: Forecast) -> str:
-        if forecast.current_rank:
-            return f"约 {forecast.current_rank:,} 名"
+        if forecast.current_percentile is not None:
+            return f"前 {forecast.current_percentile:.1f}%"
         return "待补数据"
 
     @staticmethod
     def _gap_value(forecast: Forecast) -> str:
+        if forecast.target_percentile_gap is not None:
+            return f"{forecast.target_percentile_gap:.1f} 个百分点"
         if forecast.target_rank_gap is not None:
             return f"{forecast.target_rank_gap:,} 名"
         if forecast.target_gap is not None:
@@ -248,10 +250,10 @@ class StudentReportService:
 
     @staticmethod
     def _position_text(forecast: Forecast) -> str:
-        if forecast.current_rank:
-            lower, upper = forecast.estimated_rank_range
-            return f"当前参考位置约全区第 {forecast.current_rank:,} 名，区间 {lower:,}–{upper:,} 名。"
-        return "当前总分与已发布一分一段表口径不完全匹配，暂不直接换算区域位次。请补全年级排名与年级人数。"
+        if forecast.current_percentile is not None and forecast.estimated_percentile_range:
+            lower, upper = forecast.estimated_percentile_range
+            return f"当前预估处于全区前 {forecast.current_percentile:.1f}%，区间前 {lower:.1f}%–{upper:.1f}%。"
+        return "当前缺少年级位置或可用历史参考曲线，暂不直接换算区域位次。"
 
     @staticmethod
     def _render_html(report_json: dict) -> str:

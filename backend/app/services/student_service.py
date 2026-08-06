@@ -78,7 +78,9 @@ class StudentService:
         publish_report: bool,
     ):
             trend_delta = self._trend_delta(exam, exams)
-            reference_data = await PublishedReferenceDataService(self.session).load(profile.city, 2026)
+            reference_data = await PublishedReferenceDataService(self.session).load_latest_historical(
+                profile.city, exam.exam_date.year
+            )
             analysis_models = AnalysisModelService(self.session)
             position_model = await analysis_models.active_position_model(profile.city)
             assessment_stage = analysis_models.assessment_stage(exam.name)
@@ -98,14 +100,18 @@ class StudentService:
                 ),
             )
             prediction_input = PredictionInput(
-                exam.total_score,
-                exam.class_rank,
-                profile.target_school,
-                profile.junior_school,
-                trend_delta,
-                exam.grade_rank,
-                exam.grade_size,
-                assessment_stage,
+                total_score=exam.total_score,
+                class_rank=exam.class_rank,
+                target_school=profile.target_school,
+                junior_school=profile.junior_school,
+                trend_delta=trend_delta,
+                grade_rank=exam.grade_rank,
+                grade_size=exam.grade_size,
+                assessment_stage=assessment_stage,
+                total_full_mark=exam.total_full_mark,
+                physical_score=exam.physical_score or exam.scores.get("pe"),
+                physical_estimate=exam.physical_estimate,
+                analysis_year=exam.exam_date.year,
             )
             forecast = predictor.predict(prediction_input)
             report = predictor.build_report(prediction_input)
@@ -117,6 +123,8 @@ class StudentService:
                 input_snapshot={
                     "total_score": exam.total_score,
                     "total_full_mark": exam.total_full_mark,
+                    "physical_score": exam.physical_score,
+                    "physical_estimate": exam.physical_estimate,
                     "grade_rank": exam.grade_rank,
                     "grade_size": exam.grade_size,
                     "assessment_stage": assessment_stage,

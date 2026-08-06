@@ -27,6 +27,10 @@ async def lifespan(_: FastAPI):
                 await connection.exec_driver_sql("ALTER TABLE exams ADD COLUMN grade_size INTEGER")
             if "total_full_mark" not in {column[1] for column in exam_columns}:
                 await connection.exec_driver_sql("ALTER TABLE exams ADD COLUMN total_full_mark FLOAT")
+            if "physical_score" not in {column[1] for column in exam_columns}:
+                await connection.exec_driver_sql("ALTER TABLE exams ADD COLUMN physical_score FLOAT")
+            if "physical_estimate" not in {column[1] for column in exam_columns}:
+                await connection.exec_driver_sql("ALTER TABLE exams ADD COLUMN physical_estimate FLOAT")
     yield
     await engine.dispose()
 

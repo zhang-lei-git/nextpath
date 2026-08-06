@@ -81,6 +81,14 @@ class DataRepository:
             .limit(1)
         )
 
+    async def latest_release_before(self, region: str, before_year: int) -> DataRelease | None:
+        return await self.session.scalar(
+            select(DataRelease)
+            .where(DataRelease.region == region, DataRelease.reference_year < before_year)
+            .order_by(desc(DataRelease.reference_year), desc(DataRelease.published_at))
+            .limit(1)
+        )
+
     async def list_releases(self) -> list[DataRelease]:
         return list(await self.session.scalars(select(DataRelease).order_by(desc(DataRelease.published_at))))
 

@@ -39,7 +39,7 @@ def test_exam_creation_and_dashboard() -> None:
     assert dashboard.status_code == 200
     assert dashboard.json()["latest_exam"]["total_score"] == 615
     assert dashboard.json()["latest_exam"]["grade_size"] == 680
-    assert dashboard.json()["forecast"]["target_gap"] == 0
+    assert dashboard.json()["forecast"]["target_gap"] is None
     assert reports.status_code == 200
     assert reports.json()
     html = client.get(f"/api/v1/reports/{reports.json()[0]['id']}/html", headers=headers)

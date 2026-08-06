@@ -9,6 +9,8 @@ class ExamCreate(BaseModel):
     exam_date: date
     total_score: float = Field(ge=0, le=1000)
     total_full_mark: float | None = Field(default=None, gt=0, le=1000)
+    physical_score: float | None = Field(default=None, ge=0, le=60)
+    physical_estimate: float | None = Field(default=None, ge=0, le=60)
     class_rank: int | None = Field(default=None, ge=1)
     grade_rank: int | None = Field(default=None, ge=1)
     grade_size: int | None = Field(default=None, ge=1)
@@ -49,6 +51,11 @@ class Forecast(BaseModel):
     target_rank: int | None = None
     target_rank_gap: int | None = None
     position_note: str | None = None
+    estimated_percentile_range: tuple[float, float] | None = None
+    current_percentile: float | None = None
+    target_percentile: float | None = None
+    target_percentile_gap: float | None = None
+    projected_total_range: tuple[float, float] | None = None
 
 
 class DashboardResponse(BaseModel):

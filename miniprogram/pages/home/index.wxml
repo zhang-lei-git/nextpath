@@ -14,12 +14,12 @@
   <view class="forecast card" wx:if="{{dashboard.forecast}}">
     <view class="forecast-label">基于最近一次成绩</view>
     <view class="forecast-tier">{{dashboard.forecast.tier}}</view>
-    <view class="forecast-meta" wx:if="{{dashboard.forecast.current_rank}}">预估区间：全区约 {{dashboard.forecast.estimated_rank_range[0]}} - {{dashboard.forecast.estimated_rank_range[1]}} 名</view>
+    <view class="forecast-meta" wx:if="{{dashboard.forecast.current_percentile !== null}}">预估位置：全区前 {{dashboard.forecast.estimated_percentile_range[0]}}% - {{dashboard.forecast.estimated_percentile_range[1]}}%</view>
     <view class="forecast-meta" wx:else>{{dashboard.forecast.position_note}}</view>
     <view class="forecast-bottom">
-      <view wx:if="{{dashboard.forecast.target_gap !== null}}">
-        <text class="gap-number">{{dashboard.forecast.target_gap}}</text><text class="gap-unit"> 分</text>
-        <view class="gap-copy">距当前目标的参考差距</view>
+      <view wx:if="{{dashboard.forecast.target_percentile_gap !== null}}">
+        <text class="gap-number">{{dashboard.forecast.target_percentile_gap}}</text><text class="gap-unit"> 个百分点</text>
+        <view class="gap-copy">距当前目标的历史位置差</view>
       </view>
       <button class="basis-link" bindtap="goToAnalysis">查看判断依据</button>
     </view>

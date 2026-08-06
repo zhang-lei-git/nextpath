@@ -2,8 +2,8 @@ const { request, uploadScoreImage } = require('../../utils/request')
 
 Page({
   data: {
-    form: { name: '', exam_date: '', total_score: '', total_full_mark: '', class_rank: '', grade_rank: '', grade_size: '', scores: {} },
-    subjects: [{ key: 'chinese', name: '语文' }, { key: 'math', name: '数学' }, { key: 'english', name: '英语' }, { key: 'physics', name: '物理' }, { key: 'history', name: '历史' }, { key: 'politics', name: '道法' }, { key: 'pe', name: '体育' }],
+    form: { name: '', exam_date: '', total_score: '', total_full_mark: '580', physical_estimate: '', physical_score: '', class_rank: '', grade_rank: '', grade_size: '', scores: {} },
+    subjects: [{ key: 'chinese', name: '语文' }, { key: 'math', name: '数学' }, { key: 'english', name: '英语' }, { key: 'physics', name: '物理' }, { key: 'history', name: '历史' }, { key: 'politics', name: '道法' }],
     uploading: false,
     saving: false,
     recording: false,
@@ -102,6 +102,8 @@ Page({
           ...form,
           total_score: Number(form.total_score),
           total_full_mark: form.total_full_mark ? Number(form.total_full_mark) : null,
+          physical_estimate: form.physical_estimate === '' ? null : Number(form.physical_estimate),
+          physical_score: form.physical_score === '' ? null : Number(form.physical_score),
           class_rank: form.class_rank ? Number(form.class_rank) : null,
           grade_rank: form.grade_rank ? Number(form.grade_rank) : null,
           grade_size: form.grade_size ? Number(form.grade_size) : null,
