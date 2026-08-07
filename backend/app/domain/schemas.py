@@ -13,6 +13,10 @@ class ExamCreate(BaseModel):
     class_rank: int | None = Field(default=None, ge=1)
     grade_rank: int | None = Field(default=None, ge=1)
     grade_size: int | None = Field(default=None, ge=1)
+    exam_scope: str | None = Field(default=None, max_length=120)
+    participant_scope: str | None = Field(default=None, max_length=32)
+    participant_count: int | None = Field(default=None, ge=1)
+    paper_version: str | None = Field(default=None, max_length=80)
     scores: dict[str, float] = Field(default_factory=dict)
 
     @model_validator(mode="after")
@@ -21,6 +25,8 @@ class ExamCreate(BaseModel):
             self.physical_score = 60
         if self.grade_rank and self.grade_size and self.grade_rank > self.grade_size:
             raise ValueError("年级排名不能大于年级人数")
+        if self.participant_count and self.grade_size and self.participant_scope == "年级" and self.participant_count != self.grade_size:
+            raise ValueError("参与范围为年级时，参考人数应与年级人数一致")
         return self
 
 
@@ -97,6 +103,8 @@ class StudentProfileUpdate(BaseModel):
     student_name: str = Field(min_length=1, max_length=64)
     junior_school: str = Field(min_length=1, max_length=128)
     grade: str = Field(default="初三", pattern="^(初一|初二|初三)$")
+    class_type_raw: str | None = Field(default=None, max_length=80)
+    class_type_standard: Literal["创新", "重点", "平行", "未知"] = "未知"
     target_school: str | None = Field(default=None, max_length=128)
 
 
@@ -105,6 +113,8 @@ class StudentProfileRead(BaseModel):
     student_name: str
     junior_school: str | None
     grade: str | None
+    class_type_raw: str | None
+    class_type_standard: str
     target_school: str | None
 
     model_config = {"from_attributes": True}
@@ -198,8 +208,18 @@ class CollectionJobCreate(BaseModel):
     source_id: str | None = None
     name: str = Field(min_length=1, max_length=160)
     target_url: str = Field(min_length=8, max_length=1024, pattern=r"^https?://")
+    collection_type: str = Field(default="web_page", max_length=32)
+    region: str | None = Field(default=None, max_length=80)
+    data_type: str | None = Field(default=None, max_length=32)
     extraction_hint: str | None = Field(default=None, max_length=1000)
     interval_minutes: int = Field(default=1440, ge=15, le=10080)
+    timeout_seconds: int = Field(default=30, ge=5, le=300)
+    max_retries: int = Field(default=3, ge=0, le=10)
+    rate_limit_per_minute: int = Field(default=10, ge=1, le=120)
+    parser_key: str = Field(default="default", max_length=80)
+    governance_rule_version: str | None = Field(default=None, max_length=48)
+    owner: str | None = Field(default=None, max_length=64)
+    priority: int = Field(default=50, ge=0, le=100)
     is_active: bool = True
 
 
@@ -211,6 +231,64 @@ class CollectionJobRead(CollectionJobCreate):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class SourceSnapshotRead(BaseModel):
+    id: str
+    run_id: str
+    evidence_id: str | None
+    source_url: str
+    final_url: str | None
+    response_status: int | None
+    content_hash: str | None
+    attachment_hash: str | None
+    structure_hash: str | None
+    storage_path: str | None
+    change_type: str
+    diff_summary: dict
+    captured_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ProcessingStepRead(BaseModel):
+    id: str
+    run_id: str
+    snapshot_id: str | None
+    step_name: str
+    status: str
+    processor_version: str | None
+    input_payload: dict
+    output_payload: dict
+    error_message: str | None
+    started_at: datetime | None
+    finished_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CollectionRunRead(BaseModel):
+    id: str
+    job_id: str
+    trigger_type: str
+    status: str
+    idempotency_key: str
+    attempt: int
+    item_count: int
+    changed_count: int
+    error_message: str | None
+    scheduled_at: datetime | None
+    started_at: datetime | None
+    finished_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CollectionRunDetail(CollectionRunRead):
+    snapshots: list[SourceSnapshotRead] = Field(default_factory=list)
+    steps: list[ProcessingStepRead] = Field(default_factory=list)
 
 
 class DataFactCreate(BaseModel):
@@ -245,7 +323,20 @@ class DataReleaseCreate(BaseModel):
     region: str = Field(min_length=1, max_length=80)
     reference_year: int = Field(ge=2020, le=2100)
     fact_ids: list[str] = Field(min_length=1)
+    environment: Literal["production", "test"] = "production"
+    data_purpose: Literal["forecast", "demo_or_backtest", "backtest_only"] = "forecast"
+    usable_for_prediction: bool = True
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
     notes: str | None = Field(default=None, max_length=2000)
+
+    @model_validator(mode="after")
+    def prediction_usage_matches_environment(self) -> "DataReleaseCreate":
+        if self.usable_for_prediction and (self.environment != "production" or self.data_purpose != "forecast"):
+            raise ValueError("只有 production/forecast 发布版本可以用于预测")
+        if self.valid_from and self.valid_until and self.valid_until <= self.valid_from:
+            raise ValueError("失效时间必须晚于生效时间")
+        return self
 
 
 class DataReleaseRead(BaseModel):
@@ -253,6 +344,11 @@ class DataReleaseRead(BaseModel):
     name: str
     region: str
     reference_year: int
+    environment: str
+    data_purpose: str
+    usable_for_prediction: bool
+    valid_from: datetime | None
+    valid_until: datetime | None
     notes: str | None
     published_at: datetime
     fact_count: int = 0
@@ -320,10 +416,16 @@ CalibrationStatus = Literal["pending_review", "approved", "rejected"]
 class PositionCalibrationSampleCreate(BaseModel):
     region: str = Field(default="西安", min_length=1, max_length=80)
     junior_school: str = Field(min_length=1, max_length=128)
+    class_type_raw: str | None = Field(default=None, max_length=80)
+    class_type_standard: Literal["创新", "重点", "平行", "未知"] = "未知"
     assessment_stage: str = Field(min_length=1, max_length=32)
+    assessment_date: date | None = None
     cohort_year: int = Field(ge=2020, le=2100)
+    mock_total_score: float | None = Field(default=None, ge=0, le=1000)
+    mock_full_mark: float | None = Field(default=None, gt=0, le=1000)
     grade_rank: int = Field(ge=1)
     grade_size: int = Field(ge=1)
+    final_total_score: float | None = Field(default=None, ge=0, le=1000)
     final_city_rank: int = Field(ge=1)
     final_candidate_count: int | None = Field(default=None, ge=1)
     evidence_ids: list[str] = Field(default_factory=list)

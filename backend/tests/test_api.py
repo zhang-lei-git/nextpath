@@ -17,7 +17,11 @@ def test_exam_creation_and_dashboard() -> None:
         profile = client.put(
             "/api/v1/profile",
             headers=headers,
-            json={"student_name": "小远", "junior_school": "示例初中", "grade": "初三", "target_school": "西安高新第一中学"},
+            json={
+                "student_name": "小远", "junior_school": "示例初中", "grade": "初三",
+                "class_type_raw": "创新班", "class_type_standard": "创新",
+                "target_school": "西安高新第一中学",
+            },
         )
         created = client.post(
             "/api/v1/exams",
@@ -29,17 +33,23 @@ def test_exam_creation_and_dashboard() -> None:
                 "class_rank": 28,
                 "grade_rank": 28,
                 "grade_size": 680,
+                "exam_scope": "九年级总复习范围",
+                "participant_scope": "年级",
+                "participant_count": 680,
+                "paper_version": "校内A卷",
                 "scores": {"math": 96},
             },
         )
     dashboard = client.get("/api/v1/dashboard", headers=headers)
     reports = client.get("/api/v1/reports", headers=headers)
     assert profile.status_code == 200
+    assert profile.json()["class_type_standard"] == "创新"
     assert created.status_code == 201
     assert dashboard.status_code == 200
     assert dashboard.json()["latest_exam"]["total_score"] == 615
     assert dashboard.json()["latest_exam"]["physical_score"] == 60
     assert dashboard.json()["latest_exam"]["grade_size"] == 680
+    assert dashboard.json()["latest_exam"]["participant_scope"] == "年级"
     assert dashboard.json()["forecast"]["target_gap"] is None
     assert dashboard.json()["forecast"]["current_snapshot"]["title"] == "当前现状"
     assert dashboard.json()["forecast"]["reasonable_projection"]["title"] == "合理预测"

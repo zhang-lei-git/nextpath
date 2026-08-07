@@ -1,4 +1,5 @@
 import ipaddress
+import hashlib
 import re
 import socket
 from datetime import datetime, timezone
@@ -11,7 +12,18 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.domain.models import CollectionJob, DataEvidence, DataFact, DataIngestion, DataRelease, DataSource
+from app.domain.models import (
+    CollectionJob,
+    CollectionRun,
+    DataEvidence,
+    DataFact,
+    DataIngestion,
+    DataRelease,
+    DataSource,
+    OperationAlert,
+    ProcessingStep,
+    SourceSnapshot,
+)
 from app.domain.schemas import (
     ConsumerDataResponse,
     ConsumerFact,
@@ -26,7 +38,11 @@ from app.domain.schemas import (
     EvidenceRead,
     CollectionJobCreate,
     CollectionJobRead,
+    CollectionRunDetail,
+    CollectionRunRead,
     DataIngestionRead,
+    ProcessingStepRead,
+    SourceSnapshotRead,
 )
 from app.repositories.data_repository import DataRepository
 
@@ -110,19 +126,87 @@ class DataService:
     async def list_collection_jobs(self) -> list[CollectionJobRead]:
         return [CollectionJobRead.model_validate(item) for item in await self.repository.list_collection_jobs()]
 
-    async def run_collection_job(self, job_id: str, actor: str) -> DataIngestionRead:
+    async def run_collection_job(
+        self, job_id: str, actor: str, *, trigger_type: str = "manual"
+    ) -> DataIngestionRead:
         job = await self.repository.get_collection_job(job_id)
         if not job:
             raise HTTPException(status_code=404, detail="未找到采集任务")
+        if not job.is_active and trigger_type == "scheduled":
+            raise HTTPException(status_code=409, detail="采集任务已停用")
+        now = datetime.now(timezone.utc)
+        run = await self.repository.add_collection_run(CollectionRun(
+            job_id=job.id,
+            trigger_type=trigger_type,
+            status="running",
+            idempotency_key=f"{job.id}:{uuid4()}",
+            started_at=now,
+            scheduled_at=now if trigger_type == "scheduled" else None,
+        ))
         try:
             self._validate_collect_url(job.target_url)
-            async with httpx.AsyncClient(timeout=20, follow_redirects=False) as client:
+            async with httpx.AsyncClient(timeout=job.timeout_seconds, follow_redirects=False) as client:
                 response = await client.get(job.target_url, headers={"User-Agent": "NextPath-DataCollector/0.1"})
             if response.status_code >= 400:
                 raise RuntimeError(f"访问返回 HTTP {response.status_code}")
+            if 300 <= response.status_code < 400:
+                raise RuntimeError("采集地址发生跳转，需要运营人员确认最终地址")
             content_type = response.headers.get("content-type", "")
             if "html" not in content_type and "text" not in content_type and "json" not in content_type:
                 raise RuntimeError("当前只采集网页、文本或 JSON 内容")
+            content = response.content
+            content_hash = hashlib.sha256(content).hexdigest()
+            structure = "|".join(re.findall(r"</?([a-zA-Z0-9]+)", response.text))
+            structure_hash = hashlib.sha256(structure.encode()).hexdigest() if structure else None
+            previous = await self.repository.latest_snapshot_for_job(job.id)
+            change_type = "unchanged" if previous and previous.content_hash == content_hash else "changed" if previous else "new"
+            suffix = ".json" if "json" in content_type else ".html" if "html" in content_type else ".txt"
+            stored_name = f"data-snapshots/{content_hash}{suffix}"
+            destination = settings.upload_dir / stored_name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            if not destination.exists():
+                destination.write_bytes(content)
+            snapshot = await self.repository.add_snapshot(SourceSnapshot(
+                run_id=run.id,
+                source_url=job.target_url,
+                final_url=str(response.url),
+                response_status=response.status_code,
+                content_hash=content_hash,
+                structure_hash=structure_hash,
+                storage_path=stored_name,
+                change_type=change_type,
+                diff_summary={
+                    "previous_hash": previous.content_hash if previous else None,
+                    "current_hash": content_hash,
+                    "structure_changed": bool(previous and previous.structure_hash != structure_hash),
+                },
+            ))
+            await self._record_step(
+                run.id, snapshot.id, "capture", "succeeded",
+                output_payload={"content_hash": content_hash, "change_type": change_type, "bytes": len(content)},
+            )
+
+            if change_type == "unchanged":
+                ingestion = await self.repository.add_ingestion(DataIngestion(
+                    source_id=job.source_id,
+                    ingestion_type="web",
+                    title=job.name,
+                    source_url=job.target_url,
+                    status="unchanged",
+                    extraction_text=None,
+                    suggested_facts=[],
+                    created_by=actor,
+                ))
+                run.status = "unchanged"
+                run.item_count = 1
+                run.changed_count = 0
+                run.finished_at = datetime.now(timezone.utc)
+                job.last_run_at = run.finished_at
+                job.last_status = "unchanged"
+                job.last_message = "来源内容无变化，未重复治理。"
+                await self.session.commit()
+                return self._ingestion_read(ingestion)
+
             extracted_text = self._html_to_text(response.text)
             evidence = await self.repository.add_evidence(DataEvidence(
                 source_id=job.source_id,
@@ -131,6 +215,8 @@ class DataService:
                 excerpt=self._excerpt(extracted_text),
                 created_by=actor,
             ))
+            snapshot.evidence_id = evidence.id
+            suggestions = self._suggest_facts(extracted_text, job.extraction_hint)
             ingestion = await self.repository.add_ingestion(DataIngestion(
                 source_id=job.source_id,
                 evidence_id=evidence.id,
@@ -138,24 +224,145 @@ class DataService:
                 title=job.name,
                 source_url=job.target_url,
                 extraction_text=extracted_text,
-                suggested_facts=self._suggest_facts(extracted_text, job.extraction_hint),
+                suggested_facts=suggestions,
                 status="extracted",
                 created_by=actor,
             ))
-            job.last_run_at = datetime.now(timezone.utc)
-            job.last_status = "succeeded"
-            job.last_message = f"已保存证据与待治理材料：{ingestion.id}"
+            await self._record_step(
+                run.id, snapshot.id, "extract", "succeeded",
+                processor_version=f"parser:{job.parser_key}",
+                output_payload={"characters": len(extracted_text), "suggestion_count": len(suggestions)},
+            )
+            candidates = await self._create_automatic_candidates(job, evidence, extracted_text, suggestions, actor)
+            await self._record_step(
+                run.id, snapshot.id, "normalize", "succeeded",
+                processor_version=job.governance_rule_version or "governance-baseline-v1",
+                output_payload={"candidate_fact_ids": [item.id for item in candidates]},
+            )
+            run.status = "pending_review" if candidates else "normalized"
+            run.item_count = 1
+            run.changed_count = 1
+            run.finished_at = datetime.now(timezone.utc)
+            job.last_run_at = run.finished_at
+            job.last_status = run.status
+            job.last_message = f"已保存证据、治理材料和 {len(candidates)} 条候选事实：{ingestion.id}"
             await self.session.commit()
             return self._ingestion_read(ingestion)
         except (httpx.HTTPError, RuntimeError, ValueError, socket.gaierror) as error:
-            job.last_run_at = datetime.now(timezone.utc)
+            finished_at = datetime.now(timezone.utc)
+            run.status = "failed"
+            run.error_message = str(error)
+            run.finished_at = finished_at
+            await self._record_step(run.id, None, "capture", "failed", error_message=str(error))
+            await self.repository.add_alert(OperationAlert(
+                alert_type="collection_failed",
+                severity="high",
+                source_id=job.source_id,
+                job_id=job.id,
+                run_id=run.id,
+                title=f"采集失败：{job.name}",
+                details={"error": str(error), "target_url": job.target_url},
+            ))
+            job.last_run_at = finished_at
             job.last_status = "failed"
             job.last_message = str(error)
             await self.session.commit()
             raise HTTPException(status_code=422, detail=f"采集失败：{error}") from error
 
+    async def list_collection_runs(
+        self, *, job_id: str | None = None, status: str | None = None
+    ) -> list[CollectionRunRead]:
+        return [
+            CollectionRunRead.model_validate(item)
+            for item in await self.repository.list_collection_runs(job_id=job_id, status=status)
+        ]
+
+    async def collection_run_detail(self, run_id: str) -> CollectionRunDetail:
+        run = await self.repository.get_collection_run(run_id)
+        if not run:
+            raise HTTPException(status_code=404, detail="未找到采集运行")
+        snapshots = await self.repository.snapshots_for_run(run_id)
+        steps = await self.repository.steps_for_run(run_id)
+        return CollectionRunDetail(
+            **CollectionRunRead.model_validate(run).model_dump(),
+            snapshots=[SourceSnapshotRead.model_validate(item) for item in snapshots],
+            steps=[ProcessingStepRead.model_validate(item) for item in steps],
+        )
+
     async def list_ingestions(self) -> list[DataIngestionRead]:
         return [self._ingestion_read(item) for item in await self.repository.list_ingestions()]
+
+    async def _record_step(
+        self,
+        run_id: str,
+        snapshot_id: str | None,
+        step_name: str,
+        status: str,
+        *,
+        processor_version: str | None = None,
+        output_payload: dict | None = None,
+        error_message: str | None = None,
+    ) -> ProcessingStep:
+        now = datetime.now(timezone.utc)
+        return await self.repository.add_processing_step(ProcessingStep(
+            run_id=run_id,
+            snapshot_id=snapshot_id,
+            step_name=step_name,
+            status=status,
+            processor_version=processor_version,
+            output_payload=output_payload or {},
+            error_message=error_message,
+            started_at=now,
+            finished_at=now,
+        ))
+
+    async def _create_automatic_candidates(
+        self,
+        job: CollectionJob,
+        evidence: DataEvidence,
+        extracted_text: str,
+        suggestions: list[dict],
+        actor: str,
+    ) -> list[DataFact]:
+        if not job.region:
+            return []
+        year_match = re.search(r"20\d{2}", extracted_text[:2000])
+        if not year_match:
+            return []
+        reference_year = int(year_match.group())
+        if not 2020 <= reference_year <= 2100:
+            return []
+        candidates = []
+        seen = set()
+        for suggestion in suggestions:
+            fact_type = suggestion.get("fact_type")
+            field = suggestion.get("field")
+            key = (fact_type, field)
+            if fact_type not in {"school", "admission", "policy"} or not field or key in seen:
+                continue
+            seen.add(key)
+            candidates.append(await self.repository.add_fact(DataFact(
+                fact_type=fact_type,
+                entity_name=job.name,
+                field=field,
+                region=job.region,
+                reference_year=reference_year,
+                scope={
+                    "auto_extracted": True,
+                    "needs_entity_review": True,
+                    "collection_job_id": job.id,
+                },
+                value={
+                    "summary": self._excerpt(extracted_text),
+                    "extraction_reason": suggestion.get("reason"),
+                },
+                evidence_ids=[evidence.id],
+                confidence="observation",
+                status="pending_review",
+                review_note="自动治理候选，发布前必须核对实体、字段和值。",
+                created_by=actor,
+            )))
+        return candidates
 
     async def create_fact(self, payload: DataFactCreate, actor: str) -> DataFactRead:
         evidence = await self.repository.get_evidence(payload.evidence_ids)
@@ -199,6 +406,11 @@ class DataService:
                 name=payload.name,
                 region=payload.region,
                 reference_year=payload.reference_year,
+                environment=payload.environment,
+                data_purpose=payload.data_purpose,
+                usable_for_prediction=payload.usable_for_prediction,
+                valid_from=payload.valid_from,
+                valid_until=payload.valid_until,
                 notes=payload.notes,
                 published_by=actor,
             ),
@@ -372,6 +584,11 @@ class DataService:
             name=release.name,
             region=release.region,
             reference_year=release.reference_year,
+            environment=release.environment,
+            data_purpose=release.data_purpose,
+            usable_for_prediction=release.usable_for_prediction,
+            valid_from=release.valid_from,
+            valid_until=release.valid_until,
             notes=release.notes,
             published_at=release.published_at,
             fact_count=fact_count,

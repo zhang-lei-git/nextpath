@@ -3,7 +3,19 @@ from datetime import datetime, timezone
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.models import CollectionJob, DataEvidence, DataFact, DataIngestion, DataRelease, DataReleaseItem, DataSource
+from app.domain.models import (
+    CollectionJob,
+    CollectionRun,
+    DataEvidence,
+    DataFact,
+    DataIngestion,
+    DataRelease,
+    DataReleaseItem,
+    DataSource,
+    OperationAlert,
+    ProcessingStep,
+    SourceSnapshot,
+)
 
 
 class DataRepository:
@@ -73,18 +85,42 @@ class DataRepository:
         await self.session.refresh(release)
         return release
 
-    async def latest_release(self, region: str, reference_year: int) -> DataRelease | None:
+    async def latest_release(
+        self, region: str, reference_year: int, *, as_of: datetime | None = None
+    ) -> DataRelease | None:
+        cutoff = as_of or datetime.now(timezone.utc)
         return await self.session.scalar(
             select(DataRelease)
-            .where(DataRelease.region == region, DataRelease.reference_year == reference_year)
+            .where(
+                DataRelease.region == region,
+                DataRelease.reference_year == reference_year,
+                DataRelease.environment == "production",
+                DataRelease.data_purpose == "forecast",
+                DataRelease.usable_for_prediction.is_(True),
+                DataRelease.published_at <= cutoff,
+                (DataRelease.valid_from.is_(None) | (DataRelease.valid_from <= cutoff)),
+                (DataRelease.valid_until.is_(None) | (DataRelease.valid_until > cutoff)),
+            )
             .order_by(desc(DataRelease.published_at))
             .limit(1)
         )
 
-    async def latest_release_before(self, region: str, before_year: int) -> DataRelease | None:
+    async def latest_release_before(
+        self, region: str, before_year: int, *, as_of: datetime | None = None
+    ) -> DataRelease | None:
+        cutoff = as_of or datetime.now(timezone.utc)
         return await self.session.scalar(
             select(DataRelease)
-            .where(DataRelease.region == region, DataRelease.reference_year < before_year)
+            .where(
+                DataRelease.region == region,
+                DataRelease.reference_year < before_year,
+                DataRelease.environment == "production",
+                DataRelease.data_purpose == "forecast",
+                DataRelease.usable_for_prediction.is_(True),
+                DataRelease.published_at <= cutoff,
+                (DataRelease.valid_from.is_(None) | (DataRelease.valid_from <= cutoff)),
+                (DataRelease.valid_until.is_(None) | (DataRelease.valid_until > cutoff)),
+            )
             .order_by(desc(DataRelease.reference_year), desc(DataRelease.published_at))
             .limit(1)
         )
@@ -140,3 +176,65 @@ class DataRepository:
 
     async def list_collection_jobs(self) -> list[CollectionJob]:
         return list(await self.session.scalars(select(CollectionJob).order_by(desc(CollectionJob.created_at))))
+
+    async def add_collection_run(self, run: CollectionRun) -> CollectionRun:
+        self.session.add(run)
+        await self.session.flush()
+        await self.session.refresh(run)
+        return run
+
+    async def get_collection_run(self, run_id: str) -> CollectionRun | None:
+        return await self.session.get(CollectionRun, run_id)
+
+    async def list_collection_runs(
+        self, *, job_id: str | None = None, status: str | None = None
+    ) -> list[CollectionRun]:
+        statement = select(CollectionRun).order_by(
+            desc(CollectionRun.started_at), desc(CollectionRun.created_at)
+        )
+        if job_id:
+            statement = statement.where(CollectionRun.job_id == job_id)
+        if status:
+            statement = statement.where(CollectionRun.status == status)
+        return list(await self.session.scalars(statement))
+
+    async def add_snapshot(self, snapshot: SourceSnapshot) -> SourceSnapshot:
+        self.session.add(snapshot)
+        await self.session.flush()
+        await self.session.refresh(snapshot)
+        return snapshot
+
+    async def latest_snapshot_for_job(self, job_id: str) -> SourceSnapshot | None:
+        return await self.session.scalar(
+            select(SourceSnapshot)
+            .join(CollectionRun, CollectionRun.id == SourceSnapshot.run_id)
+            .where(CollectionRun.job_id == job_id)
+            .order_by(desc(SourceSnapshot.captured_at))
+            .limit(1)
+        )
+
+    async def snapshots_for_run(self, run_id: str) -> list[SourceSnapshot]:
+        return list(await self.session.scalars(
+            select(SourceSnapshot)
+            .where(SourceSnapshot.run_id == run_id)
+            .order_by(SourceSnapshot.captured_at)
+        ))
+
+    async def add_processing_step(self, step: ProcessingStep) -> ProcessingStep:
+        self.session.add(step)
+        await self.session.flush()
+        await self.session.refresh(step)
+        return step
+
+    async def steps_for_run(self, run_id: str) -> list[ProcessingStep]:
+        return list(await self.session.scalars(
+            select(ProcessingStep)
+            .where(ProcessingStep.run_id == run_id)
+            .order_by(ProcessingStep.created_at)
+        ))
+
+    async def add_alert(self, alert: OperationAlert) -> OperationAlert:
+        self.session.add(alert)
+        await self.session.flush()
+        await self.session.refresh(alert)
+        return alert

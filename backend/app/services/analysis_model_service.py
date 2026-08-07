@@ -174,6 +174,11 @@ class AnalysisModelService:
         model_id: str,
         input_snapshot: dict,
         result: dict,
+        exam_at: datetime | None = None,
+        run_at: datetime | None = None,
+        data_cutoff_at: datetime | None = None,
+        status: str = "completed",
+        model_versions: dict | None = None,
     ) -> AnalysisRun:
         fingerprint_source = {"profile": profile_id, "exam": exam_id, "release": data_release_id, "model": model_id, "input": input_snapshot}
         fingerprint = hashlib.sha256(json.dumps(fingerprint_source, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
@@ -186,6 +191,11 @@ class AnalysisModelService:
             exam_id=exam_id,
             data_release_id=data_release_id,
             model_id=model_id,
+            exam_at=exam_at,
+            run_at=run_at or datetime.now(timezone.utc),
+            data_cutoff_at=data_cutoff_at,
+            status=status,
+            model_versions=model_versions or {},
             input_snapshot=input_snapshot,
             result=result,
         ))

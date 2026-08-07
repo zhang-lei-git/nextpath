@@ -16,6 +16,8 @@ from app.domain.schemas import (
     EvidenceRead,
     CollectionJobCreate,
     CollectionJobRead,
+    CollectionRunDetail,
+    CollectionRunRead,
     DataIngestionRead,
 )
 from app.services.data_service import DataService
@@ -101,6 +103,25 @@ async def run_collection_job(
     session: AsyncSession = Depends(get_session),
 ) -> DataIngestionRead:
     return await DataService(session).run_collection_job(job_id, actor)
+
+
+@router.get("/collection-runs", response_model=list[CollectionRunRead])
+async def list_collection_runs(
+    job_id: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> list[CollectionRunRead]:
+    return await DataService(session).list_collection_runs(job_id=job_id, status=status)
+
+
+@router.get("/collection-runs/{run_id}", response_model=CollectionRunDetail)
+async def collection_run_detail(
+    run_id: str,
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> CollectionRunDetail:
+    return await DataService(session).collection_run_detail(run_id)
 
 
 @router.post("/facts", response_model=DataFactRead, status_code=201)

@@ -306,6 +306,9 @@ async def import_data(legacy_data: dict) -> dict[str, int]:
             name=RELEASE_NAME,
             region=REGION,
             reference_year=YEAR,
+            environment="test",
+            data_purpose="demo_or_backtest",
+            usable_for_prediction=False,
             notes="从旧志愿预测系统导入的测试数据。来源与可信度已区分，非官方数据仅作参考。",
             published_by="legacy-import",
         )

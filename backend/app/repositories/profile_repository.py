@@ -30,6 +30,8 @@ class ProfileRepository:
         profile.student_name = payload.student_name
         profile.junior_school = payload.junior_school
         profile.grade = payload.grade
+        profile.class_type_raw = payload.class_type_raw
+        profile.class_type_standard = payload.class_type_standard
         profile.target_school = payload.target_school
         await self.session.flush()
         await self.session.refresh(profile)

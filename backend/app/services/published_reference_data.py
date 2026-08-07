@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,13 +35,17 @@ class PublishedReferenceDataService:
     def __init__(self, session: AsyncSession) -> None:
         self.repository = DataRepository(session)
 
-    async def load(self, region: str, reference_year: int) -> PublishedReferenceData | None:
-        release = await self.repository.latest_release(region, reference_year)
+    async def load(
+        self, region: str, reference_year: int, *, as_of: datetime | None = None
+    ) -> PublishedReferenceData | None:
+        release = await self.repository.latest_release(region, reference_year, as_of=as_of)
         return await self._from_release(release, reference_year) if release else None
 
-    async def load_latest_historical(self, region: str, before_year: int) -> PublishedReferenceData | None:
+    async def load_latest_historical(
+        self, region: str, before_year: int, *, as_of: datetime | None = None
+    ) -> PublishedReferenceData | None:
         """Only returns data that existed before the student's target examination year."""
-        release = await self.repository.latest_release_before(region, before_year)
+        release = await self.repository.latest_release_before(region, before_year, as_of=as_of)
         return await self._from_release(release, release.reference_year) if release else None
 
     async def _from_release(self, release, reference_year: int) -> PublishedReferenceData | None:

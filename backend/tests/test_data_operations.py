@@ -1,9 +1,11 @@
 from uuid import uuid4
 
+import httpx
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.main import app
+from app.services.data_service import DataService
 
 
 def test_only_reviewed_and_released_facts_are_consumable(monkeypatch) -> None:
@@ -136,3 +138,163 @@ def test_document_ingestion_creates_traceable_evidence(monkeypatch) -> None:
 
         evidence = client.get("/api/v1/data/evidence", headers=headers)
         assert any(item["id"] == ingestion["evidence_id"] for item in evidence.json())
+
+
+def test_non_production_and_future_releases_are_not_consumable(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "data_admin_key", "data-boundary-test-key")
+    headers = {"X-Data-Admin-Key": "data-boundary-test-key"}
+    region = f"数据边界测试区-{uuid4().hex}"
+    year = 2028
+
+    with TestClient(app) as client:
+        fact = client.post(
+            "/api/v1/data/facts",
+            headers=headers,
+            json={
+                "fact_type": "policy",
+                "entity_name": "测试政策",
+                "field": "中招政策摘要",
+                "region": region,
+                "reference_year": year,
+                "value": {"summary": "只用于边界测试"},
+                "confidence": "official",
+            },
+        )
+        assert fact.status_code == 201
+        fact_id = fact.json()["id"]
+        assert client.post(
+            f"/api/v1/data/facts/{fact_id}/review",
+            headers=headers,
+            json={"decision": "approved"},
+        ).status_code == 200
+
+        invalid = client.post(
+            "/api/v1/data/releases",
+            headers=headers,
+            json={
+                "name": "错误的测试预测版本",
+                "region": region,
+                "reference_year": year,
+                "fact_ids": [fact_id],
+                "environment": "test",
+                "data_purpose": "demo_or_backtest",
+                "usable_for_prediction": True,
+            },
+        )
+        assert invalid.status_code == 422
+
+        test_release = client.post(
+            "/api/v1/data/releases",
+            headers=headers,
+            json={
+                "name": "测试不可预测版本",
+                "region": region,
+                "reference_year": year,
+                "fact_ids": [fact_id],
+                "environment": "test",
+                "data_purpose": "demo_or_backtest",
+                "usable_for_prediction": False,
+            },
+        )
+        assert test_release.status_code == 201
+        assert test_release.json()["usable_for_prediction"] is False
+
+        unavailable = client.get(
+            "/api/v1/data/consumer/policies",
+            params={"region": region, "reference_year": year},
+        )
+        assert unavailable.status_code == 200
+        assert unavailable.json()["facts"] == []
+
+        future_release = client.post(
+            "/api/v1/data/releases",
+            headers=headers,
+            json={
+                "name": "尚未生效的生产版本",
+                "region": region,
+                "reference_year": year,
+                "fact_ids": [fact_id],
+                "environment": "production",
+                "data_purpose": "forecast",
+                "usable_for_prediction": True,
+                "valid_from": "2099-01-01T00:00:00Z",
+            },
+        )
+        assert future_release.status_code == 201
+
+        still_unavailable = client.get(
+            "/api/v1/data/consumer/policies",
+            params={"region": region, "reference_year": year},
+        )
+        assert still_unavailable.status_code == 200
+        assert still_unavailable.json()["facts"] == []
+
+
+def test_collection_run_detects_changes_and_exposes_step_logs(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "data_admin_key", "collection-run-test-key")
+    monkeypatch.setattr(DataService, "_validate_collect_url", staticmethod(lambda _: None))
+    original_client = httpx.AsyncClient
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/html; charset=utf-8"},
+            text="<html><body><h1>2028 年招生计划</h1><p>学校志愿规则已发布。</p></body></html>",
+        )
+
+    def mock_client(*_, **__) -> httpx.AsyncClient:
+        return original_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr("app.services.data_service.httpx.AsyncClient", mock_client)
+    headers = {"X-Data-Admin-Key": "collection-run-test-key"}
+    with TestClient(app) as client:
+        job = client.post(
+            "/api/v1/data/collection-jobs",
+            headers=headers,
+            json={
+                "name": "教育局招生计划",
+                "target_url": "https://example.com/admission",
+                "region": "西安",
+                "data_type": "admission",
+                "interval_minutes": 60,
+            },
+        )
+        assert job.status_code == 201, job.text
+
+        first = client.post(f"/api/v1/data/collection-jobs/{job.json()['id']}/run", headers=headers)
+        assert first.status_code == 200, first.text
+        assert first.json()["status"] == "extracted"
+
+        runs = client.get(
+            "/api/v1/data/collection-runs",
+            headers=headers,
+            params={"job_id": job.json()["id"]},
+        )
+        assert runs.status_code == 200
+        assert runs.json()[0]["status"] == "pending_review"
+        detail = client.get(f"/api/v1/data/collection-runs/{runs.json()[0]['id']}", headers=headers)
+        assert detail.status_code == 200
+        assert detail.json()["snapshots"][0]["change_type"] == "new"
+        assert [item["step_name"] for item in detail.json()["steps"]] == ["capture", "extract", "normalize"]
+
+        candidates = client.get(
+            "/api/v1/data/facts",
+            headers=headers,
+            params={"status": "pending_review"},
+        )
+        assert any(item["scope"].get("collection_job_id") == job.json()["id"] for item in candidates.json())
+
+        second = client.post(f"/api/v1/data/collection-jobs/{job.json()['id']}/run", headers=headers)
+        assert second.status_code == 200
+        assert second.json()["status"] == "unchanged"
+        latest_runs = client.get(
+            "/api/v1/data/collection-runs",
+            headers=headers,
+            params={"job_id": job.json()["id"]},
+        ).json()
+        assert latest_runs[0]["status"] == "unchanged"
+        unchanged_detail = client.get(
+            f"/api/v1/data/collection-runs/{latest_runs[0]['id']}", headers=headers
+        ).json()
+        assert unchanged_detail["snapshots"][0]["change_type"] == "unchanged"
+        assert [item["step_name"] for item in unchanged_detail["steps"]] == ["capture"]

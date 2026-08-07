@@ -1,3 +1,4 @@
+from datetime import datetime, time, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -78,9 +79,10 @@ class StudentService:
         *,
         publish_report: bool,
     ):
+            run_at = datetime.now(timezone.utc)
             trend_delta = self._trend_delta(exam, exams)
             reference_data = await PublishedReferenceDataService(self.session).load_latest_historical(
-                profile.city, exam.exam_date.year
+                profile.city, exam.exam_date.year, as_of=run_at
             )
             analysis_models = AnalysisModelService(self.session)
             position_model = await analysis_models.active_position_model(profile.city)
@@ -127,6 +129,11 @@ class StudentService:
                 exam_id=exam.id,
                 data_release_id=reference_data.release_id if reference_data else None,
                 model_id=position_model.id,
+                exam_at=datetime.combine(exam.exam_date, time.min, tzinfo=timezone.utc),
+                run_at=run_at,
+                data_cutoff_at=run_at,
+                status="completed",
+                model_versions={"student_forecast": position_model.version},
                 input_snapshot={
                     "total_score": exam.total_score,
                     "total_full_mark": exam.total_full_mark,
@@ -134,7 +141,13 @@ class StudentService:
                     "grade_rank": exam.grade_rank,
                     "grade_size": exam.grade_size,
                     "assessment_stage": assessment_stage,
+                    "exam_scope": exam.exam_scope,
+                    "participant_scope": exam.participant_scope,
+                    "participant_count": exam.participant_count,
+                    "paper_version": exam.paper_version,
                     "junior_school": profile.junior_school,
+                    "class_type_raw": profile.class_type_raw,
+                    "class_type_standard": profile.class_type_standard,
                     "target_school": profile.target_school,
                     "model_version": position_model.version,
                     "model_parameters": position_model.parameters,
