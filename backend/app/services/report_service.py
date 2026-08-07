@@ -300,7 +300,7 @@ class StudentReportService:
         if forecast.current_percentile is not None and forecast.estimated_percentile_range:
             lower, upper = forecast.estimated_percentile_range
             return f"当前预估处于全区前 {forecast.current_percentile:.1f}%，区间前 {lower:.1f}%–{upper:.1f}%。"
-        return "当前缺少年级位置或可用历史参考曲线，暂不直接换算区域位次。"
+        return "信息还不足以形成稳定的位置判断，下次补全年级排名和年级人数。"
 
     @staticmethod
     def _render_html(report_json: dict) -> str:

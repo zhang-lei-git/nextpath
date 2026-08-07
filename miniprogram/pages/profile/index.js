@@ -2,8 +2,9 @@ const { request } = require('../../utils/request')
 
 Page({
   data: {
-    form: { student_name: '', junior_school: '', grade: '初三', target_school: '' },
+    form: { student_name: '', junior_school: '', grade: '初三', class_type_raw: '', class_type_standard: '未知', target_school: '' },
     grades: ['初一', '初二', '初三'], gradeIndex: 2, saving: false,
+    classTypes: ['未知', '创新', '重点', '平行'], classTypeIndex: 0,
     juniorMatches: [], targetMatches: []
   },
   async onLoad() {
@@ -13,9 +14,15 @@ Page({
         student_name: profile.student_name || '',
         junior_school: profile.junior_school || '',
         grade: profile.grade || '初三',
+        class_type_raw: profile.class_type_raw || '',
+        class_type_standard: profile.class_type_standard || '未知',
         target_school: profile.target_school || ''
       }
-      this.setData({ form, gradeIndex: this.data.grades.indexOf(form.grade) })
+      this.setData({
+        form,
+        gradeIndex: this.data.grades.indexOf(form.grade),
+        classTypeIndex: Math.max(0, this.data.classTypes.indexOf(form.class_type_standard))
+      })
     } catch (_) { wx.showToast({ title: '暂时无法读取档案', icon: 'none' }) }
   },
   input(event) {
@@ -50,6 +57,10 @@ Page({
   gradeChange(event) {
     const gradeIndex = Number(event.detail.value)
     this.setData({ 'form.grade': this.data.grades[gradeIndex], gradeIndex })
+  },
+  classTypeChange(event) {
+    const classTypeIndex = Number(event.detail.value)
+    this.setData({ 'form.class_type_standard': this.data.classTypes[classTypeIndex], classTypeIndex })
   },
   async save() {
     const form = this.data.form
