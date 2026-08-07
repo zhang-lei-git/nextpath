@@ -48,6 +48,11 @@ def test_exam_creation_and_dashboard() -> None:
     html = client.get(f"/api/v1/reports/{reports.json()[0]['id']}/html", headers=headers)
     assert html.status_code == 200
     assert "升学分析报告" in html.text
+    assert "当前现状" in html.text
+    assert "合理预测" in html.text
+    assert "政策提示" not in html.text
+    assert "数据来源与可信度说明" not in html.text
+    assert "已使用" not in html.text
 
 
 def test_seven_mock_exams_generate_saved_reports_and_support_correction() -> None:

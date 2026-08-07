@@ -62,7 +62,7 @@ function renderNav() {
   const report = arguments[0] || {};
   const schoolLabel = report.school?.navLabel || '学校出口';
   const pathLabel = report.path?.navLabel || '目标路径';
-  return `<nav class="topnav" aria-label="报告章节导航"><a href="#glance">速览</a><a href="#conclusion">01 统一结论</a><a href="#data">02 成绩位次</a><a href="#subjects">03 学科结构</a><a href="#school">04 ${escapeHtml(schoolLabel)}</a><a href="#path">05 ${escapeHtml(pathLabel)}</a><a href="#action">06 阶段行动</a><a href="#decisions">07 家长决策</a><a href="#sources">08 数据来源</a></nav>`;
+  return `<nav class="topnav" aria-label="报告章节导航"><a href="#glance">速览</a><a href="#conclusion">01 当前判断</a><a href="#data">02 成绩变化</a><a href="#subjects">03 学科情况</a><a href="#school">04 ${escapeHtml(schoolLabel)}</a><a href="#path">05 ${escapeHtml(pathLabel)}</a><a href="#action">06 下一步</a><a href="#decisions">07 家长关注</a></nav>`;
 }
 
 function renderConclusion(report) {
@@ -87,11 +87,11 @@ function renderData(report) {
     return `<tr class="${exam.final ? 'highlight' : ''}"><td>${escapeHtml(exam.display)}</td>${cells}<td>${rank}</td></tr>`;
   }).join('');
   const sectionTitle=report.data.sectionTitle || '模考与中考成绩全景';
-  const sectionLead=report.data.sectionLead || '为消除不同科目满分差异，趋势图按已知满分折算为得分率；总分组成不一致的考试不做误导性横向比较。';
+  const sectionLead=report.data.sectionLead || '持续记录每次成绩和排名，观察变化。';
   return `<section id="data">${sectionHead('02','数据',sectionTitle,sectionLead)}
-    <div class="chart-wrap"><div class="chart-title"><strong>核心学科得分率趋势（%）</strong><span>按各科满分折算 · 最右侧为最终考试</span></div><div class="legend" id="scoreLegend"></div><svg id="scoreChart" viewBox="0 0 980 400" role="img" aria-label="历次考试得分率趋势"></svg></div>
+    <div class="chart-wrap"><div class="chart-title"><strong>核心学科成绩变化</strong><span>最右侧为最近一次考试</span></div><div class="legend" id="scoreLegend"></div><svg id="scoreChart" viewBox="0 0 980 400" role="img" aria-label="历次考试学科成绩变化"></svg></div>
     <div class="two-col" style="margin-top:22px"><div class="chart-wrap"><div class="chart-title"><strong>班级名次趋势</strong><span>${report.data.classSize} 人班 · 越靠上越好</span></div><svg id="rankChart" viewBox="0 0 560 380" role="img" aria-label="历次考试班级名次趋势"></svg></div>
-    <div class="panel"><h3>位次比原始总分更有解释力</h3><p>${rich(report.data.rankNarrativeHtml)}</p><div class="panel blue" style="margin-top:14px;padding:16px 18px"><strong>关键推断</strong><p style="margin:6px 0 0;font-size:14.5px">${rich(report.data.inferenceHtml)}</p></div></div></div>
+    <div class="panel"><h3>年级排名</h3><p>${rich(report.data.rankNarrativeHtml)}</p><div class="panel blue" style="margin-top:14px;padding:16px 18px"><strong>成绩记录</strong><p style="margin:6px 0 0;font-size:14.5px">${rich(report.data.inferenceHtml)}</p></div></div></div>
     <div class="table-scroll" style="margin-top:22px"><table><thead><tr><th>考试</th>${head}<th>名次</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${report.data.auxiliaryNote ? `<p class="small muted" style="margin-top:10px">${escapeHtml(report.data.auxiliaryNote)}</p>` : ''}
     <div class="takeaway"><span>${rich(report.data.takeawayHtml)}</span></div></section>`;
@@ -117,19 +117,7 @@ function renderEvidence(item) {
 }
 
 function renderPositionPanel(position) {
-  const renderSchools = item => {
-    if (!item.schools?.length) return '';
-    const schools=item.schools.map(school => {
-      const name=school.url?`<a href="${attr(school.url)}" target="_blank" rel="noreferrer"><strong>${escapeHtml(school.name)}</strong></a>`:`<strong>${escapeHtml(school.name)}</strong>`;
-      return `<div class="school-example">${name}${school.note?`<span>${escapeHtml(school.note)}</span>`:''}</div>`;
-    }).join('');
-    return `<details class="school-details"><summary>查看代表学校 <span>${item.schools.length}所</span></summary><div class="school-example-grid">${schools}</div>${item.schoolsNote?`<p>${escapeHtml(item.schoolsNote)}</p>`:''}</details>`;
-  };
-  const tierRows=(position.tiers || []).map(item => `<tr><td><strong>${escapeHtml(item.label)}</strong></td><td><span class="tag ${attr(item.tone || 'mid')}">${escapeHtml(item.judgement)}</span></td><td style="white-space:normal">${escapeHtml(item.detail)}${renderSchools(item)}</td></tr>`).join('');
-  const tierList=(position.tiers || []).map(item => `<div class="school-tier"><div class="school-tier-label"><strong>${escapeHtml(item.label)}</strong><span class="tag ${attr(item.tone || 'mid')}">${escapeHtml(item.judgement)}</span></div><div class="school-tier-detail">${escapeHtml(item.detail)}${renderSchools(item)}</div></div>`).join('');
-  const headers=position.headers || ['学校层次','当前判断','历史数据映射与使用边界'];
-  const tierContent=position.layout==='list'?`<div class="school-tier-list" style="margin-top:16px">${tierList}</div>`:`<div class="table-scroll" style="margin-top:16px"><table><thead><tr><th>${escapeHtml(headers[0] || '')}</th><th>${escapeHtml(headers[1] || '')}</th><th>${escapeHtml(headers[2] || '')}</th></tr></thead><tbody>${tierRows}</tbody></table></div>`;
-  return `<h3>${escapeHtml(position.title || '城六区位次预估')}</h3><div class="verdict" style="font-size:15px;padding:16px 18px;margin-top:12px">${rich(position.estimateHtml || '')}</div><p class="small muted" style="margin:14px 0 0">${rich(position.basisHtml || '')}</p>${tierContent}`;
+  return `<h3>${escapeHtml(position.title || '目标位置')}</h3><div class="verdict" style="font-size:15px;padding:16px 18px;margin-top:12px">${rich(position.estimateHtml || '')}</div>`;
 }
 
 function renderSchool(report) {
@@ -141,7 +129,7 @@ function renderSchool(report) {
   const positionPanel=report.school.position ? renderPositionPanel(report.school.position) : `<h3>${escapeHtml(report.school.entranceTitle || `${report.meta.year} 入口位置`)}</h3><div class="entrance-scale" aria-label="招生政策与当前位置参照"><div class="entrance-line"></div>${marker('city', entrance.cityLine, entrance.cityLabel)}${marker('school', entrance.schoolLine, entrance.schoolLabel, '约')}${marker('student', entrance.studentScore, entrance.studentLabel || '学生')}</div>${gapNotes}${scaleNote}`;
   return `<section id="school">${sectionHead('04','学校',report.school.title,report.school.lead)}<div class="two-col"><div class="panel">${positionPanel}</div>
     <div class="panel blue"><h3>${escapeHtml(report.school.environmentTitle || '学校培养环境')}</h3>${rich(report.school.environmentHtml)}</div></div>
-    <div class="evidence-list" style="margin-top:22px">${evidence}</div><div class="panel amber" style="margin-top:18px"><h3>${escapeHtml(report.school.interpretationTitle || '如何正确理解学校出口')}</h3><p style="margin-bottom:0">${rich(report.school.interpretationHtml)}</p></div><div class="takeaway"><span>${rich(report.school.takeawayHtml)}</span></div></section>`;
+    ${evidence ? `<div class="evidence-list" style="margin-top:22px">${evidence}</div>` : ''}<div class="panel amber" style="margin-top:18px"><h3>${escapeHtml(report.school.interpretationTitle || '当前关注')}</h3><p style="margin-bottom:0">${rich(report.school.interpretationHtml)}</p></div><div class="takeaway"><span>${rich(report.school.takeawayHtml)}</span></div></section>`;
 }
 
 function renderPath(report) {
@@ -165,12 +153,11 @@ function renderDecisions(report) {
 }
 
 function renderSources(report) {
-  const items=report.sources.map(item=>`<li>${item.url?`<a href="${attr(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(item.text)}</a>`:escapeHtml(item.text)}</li>`).join('');
-  return `<section id="sources">${sectionHead('08','来源','数据来源与可信度说明')}<ul class="source-list">${items}</ul></section>`;
+  return '';
 }
 
 function renderBody(report) {
-  return `<div class="report">${renderHero(report)}${renderGlance(report)}${renderNav(report)}<main>${renderConclusion(report)}${renderData(report)}${renderSubjects(report)}${renderSchool(report)}${renderPath(report)}${renderAction(report)}${renderDecisions(report)}${renderSources(report)}</main><footer class="footer">${escapeHtml(report.footer)}</footer></div>`;
+  return `<div class="report">${renderHero(report)}${renderGlance(report)}${renderNav(report)}<main>${renderConclusion(report)}${renderData(report)}${renderSubjects(report)}${renderSchool(report)}${renderPath(report)}${renderAction(report)}${renderDecisions(report)}</main><footer class="footer">${escapeHtml(report.footer)}</footer></div>`;
 }
 
 function buildReport(report) {

@@ -17,24 +17,23 @@
       <view class="target-label">目标</view>
       <view class="target-name" wx:if="{{dashboard.target_school}}">{{dashboard.target_school}}</view>
       <view class="target-name" wx:else>尚未设置目标高中</view>
-      <view class="target-meta" wx:if="{{dashboard.forecast.target_percentile !== null}}">历史入口位置：全区前 {{dashboard.forecast.target_percentile}}%</view>
+      <view class="target-meta" wx:if="{{dashboard.forecast.target_percentile !== null}}">目标位置：全区前 {{dashboard.forecast.target_percentile}}%</view>
     </view>
     <view class="judgement-block" wx:if="{{dashboard.forecast.current_snapshot}}">
       <view class="judgement-label">当前现状</view>
       <view class="judgement-score">{{dashboard.forecast.current_snapshot.total_range[0]}}<text>/ {{dashboard.forecast.current_snapshot.total_full_mark}} 分</text></view>
       <view class="judgement-meta" wx:if="{{dashboard.forecast.current_snapshot.current_percentile !== null}}">当前位置：全区前 {{dashboard.forecast.current_snapshot.estimated_percentile_range[0]}}%–{{dashboard.forecast.current_snapshot.estimated_percentile_range[1]}}%</view>
-      <view class="judgement-meta" wx:else>当前位置：等待可用历史参考数据</view>
+      <view class="judgement-meta" wx:else>当前位置：暂未形成判断</view>
       <view class="gap-copy" wx:if="{{dashboard.forecast.current_snapshot.target_percentile_gap !== null}}">距目标：还需前移 {{dashboard.forecast.current_snapshot.target_percentile_gap}} 个百分点</view>
     </view>
     <view class="judgement-block projection" wx:if="{{dashboard.forecast.reasonable_projection}}">
       <view class="judgement-label">合理预测</view>
       <view class="judgement-score">{{dashboard.forecast.reasonable_projection.total_range[0]}}–{{dashboard.forecast.reasonable_projection.total_range[1]}}<text>/ {{dashboard.forecast.reasonable_projection.total_full_mark}} 分</text></view>
       <view class="judgement-meta" wx:if="{{dashboard.forecast.reasonable_projection.current_percentile !== null}}">预测位置：全区前 {{dashboard.forecast.reasonable_projection.estimated_percentile_range[0]}}%–{{dashboard.forecast.reasonable_projection.estimated_percentile_range[1]}}%</view>
-      <view class="judgement-meta" wx:else>预测位置：等待可用历史参考数据</view>
+      <view class="judgement-meta" wx:else>预测位置：暂未形成判断</view>
       <view class="gap-copy" wx:if="{{dashboard.forecast.reasonable_projection.target_percentile_gap !== null}}">距目标：还需前移 {{dashboard.forecast.reasonable_projection.target_percentile_gap}} 个百分点</view>
-      <view class="projection-note">{{dashboard.forecast.reasonable_projection.summary}}</view>
     </view>
-    <button class="basis-link" bindtap="goToAnalysis">查看详细判断</button>
+    <button class="basis-link" bindtap="goToAnalysis">查看完整判断</button>
   </view>
   <view class="first-visit card" wx:else>
     <view class="first-title">{{dashboard.profile_complete ? '先建立第一份成绩判断' : '只需姓名、初中和年级'}}</view>
@@ -65,7 +64,6 @@
       <view class="muted">{{item.name}}</view><view class="trend-score">{{item.total_score}}</view>
     </view>
   </view>
-  <view class="source-note" wx:if="{{dashboard.forecast}}">本次判断参考 {{dashboard.forecast.reference_year}} 年公开数据，录取结果以当年官方发布为准。</view>
 </view>
 
 <view class="nav">
