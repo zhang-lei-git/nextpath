@@ -47,7 +47,7 @@ class BaselinePredictionEngine:
     admission percentiles.  It never reads a rank table from the analysis year.
     """
 
-    version = "historical-preexam-2026.4"
+    version = "historical-preexam-2026.5"
 
     def __init__(
         self,
@@ -83,6 +83,7 @@ class BaselinePredictionEngine:
             raw_score_percentile,
             junior_school=input_data.junior_school,
             assessment_stage=input_data.assessment_stage,
+            apply_difficulty=False,
         )
         historical_base = self.reference_data.candidate_count if self.reference_data else None
         rank_channel = self.position_fusion.rank_channel(
@@ -91,7 +92,10 @@ class BaselinePredictionEngine:
             candidate_count=historical_base,
             calibration_points=self.calibration_points,
         )
-        fused_position = self.position_fusion.fuse(score_channel, rank_channel)
+        # Parent-facing projected position must be a direct consequence of the
+        # projected score. Grade rank remains a separate internal validation
+        # signal and must not move a parent-visible position by itself.
+        fused_position = self.position_fusion.fuse(score_channel, None)
         percentile_range, method = fused_position.percentile_range, fused_position.method
         rank_range = self._project_rank_range(percentile_range, historical_base)
         current_rank = round(sum(rank_range) / 2) if rank_range != (0, 0) else None

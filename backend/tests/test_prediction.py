@@ -15,13 +15,22 @@ def test_baseline_prediction_is_explainable() -> None:
         school_references=(PublishedSchoolReference("测试高中", 780, "2025 年历史录取参考"),),
     )
     forecast = BaselinePredictionEngine(reference_data).predict(
-        PredictionInput(total_score=520, total_full_mark=580, class_rank=28, grade_rank=28, grade_size=680, target_school="测试高中")
+        PredictionInput(
+            total_score=520,
+            total_full_mark=580,
+            class_rank=28,
+            grade_rank=28,
+            grade_size=680,
+            target_school="测试高中",
+            analysis_year=2026,
+            analysis_date=date(2026, 3, 15),
+        )
     )
 
     assert forecast.current_percentile is not None
     assert forecast.target_percentile is not None
     assert forecast.target_gap is None
-    assert forecast.model_version == "historical-preexam-2026.4"
+    assert forecast.model_version == "historical-preexam-2026.5"
     assert "不使用本年度一分一段表" in forecast.basis[0]
 
 
@@ -66,7 +75,7 @@ def test_pre_exam_prediction_uses_historical_reference_data() -> None:
     assert "中考前只使用" in report.policy_summary
 
 
-def test_prediction_preserves_both_position_channels_for_auditing() -> None:
+def test_rank_validation_does_not_move_parent_projection_without_a_score_change() -> None:
     reference_data = PublishedReferenceData(
         reference_year=2025,
         rank_source="2025 年一分一段表",
@@ -97,10 +106,25 @@ def test_prediction_preserves_both_position_channels_for_auditing() -> None:
         analysis_date=date(2026, 3, 15),
     ))
 
-    assert forecast.position_method in {"dual_channel_fusion", "dual_channel_conflict_review"}
+    without_rank = engine.predict(PredictionInput(
+        total_score=520,
+        total_full_mark=580,
+        physical_score=54,
+        class_rank=None,
+        target_school=None,
+        junior_school="测试初中",
+        assessment_stage="一模",
+        analysis_year=2026,
+        analysis_date=date(2026, 3, 15),
+    ))
+
+    assert forecast.position_method == "score_only"
     assert set(forecast.position_channels) == {"score", "rank"}
     assert forecast.position_channels["rank"]["sample_count"] == 2
-    assert forecast.position_conflict_pp is not None
+    assert forecast.position_conflict_pp is None
+    assert forecast.reasonable_projection is not None
+    assert without_rank.reasonable_projection is not None
+    assert forecast.reasonable_projection.current_percentile == without_rank.reasonable_projection.current_percentile
 
 
 def test_missing_physical_score_defaults_to_full_mark_for_position_calculation() -> None:
