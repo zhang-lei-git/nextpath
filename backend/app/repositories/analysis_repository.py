@@ -9,10 +9,13 @@ class AnalysisRepository:
         self.session = session
 
     async def active_position_model(self, region: str) -> AnalysisModelVersion | None:
+        return await self.active_model(region, "position")
+
+    async def active_model(self, region: str, analysis_type: str) -> AnalysisModelVersion | None:
         return await self.session.scalar(
             select(AnalysisModelVersion)
             .where(
-                AnalysisModelVersion.analysis_type == "position",
+                AnalysisModelVersion.analysis_type == analysis_type,
                 AnalysisModelVersion.region == region,
                 AnalysisModelVersion.status == "active",
             )

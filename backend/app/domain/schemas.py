@@ -71,6 +71,10 @@ class Forecast(BaseModel):
     position_conflict_pp: float | None = None
     current_snapshot: "ForecastScenario | None" = None
     reasonable_projection: "ForecastScenario | None" = None
+    prediction_level: Literal["complete", "basic", "unavailable"] = "basic"
+    target_comparison: "TargetComparison | None" = None
+    school_tiers: dict[str, list[str]] = Field(default_factory=lambda: {"reach": [], "match": [], "safe": []})
+    missing_inputs: list[str] = Field(default_factory=list)
 
 
 class ForecastScenario(BaseModel):
@@ -84,6 +88,17 @@ class ForecastScenario(BaseModel):
     target_percentile_gap: float | None = None
     target_rank_gap: int | None = None
     summary: str
+    confidence: Literal["low", "medium", "high"] = "low"
+    range_usable: bool = False
+    parent_reasons: list[str] = Field(default_factory=list)
+
+
+class TargetComparison(BaseModel):
+    school: str
+    school_rank_range: tuple[int, int] | None = None
+    current_gap_rank_range: tuple[int, int] | None = None
+    projected_gap_rank_range: tuple[int, int] | None = None
+    risk: Literal["已进入", "稳妥", "匹配", "边界冲刺", "仍有差距", "数据不足"]
 
 
 class DashboardResponse(BaseModel):

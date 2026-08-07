@@ -67,6 +67,7 @@ def test_pre_exam_prediction_uses_historical_reference_data() -> None:
     assert forecast.projected_total_range == (574, 574)
     assert forecast.historical_equivalent_score_range is not None
     assert forecast.score_bridge_method == "subject_bridge_rate_projection"
+    assert forecast.prediction_level == "basic"
     assert forecast.current_percentile is not None
     assert forecast.position_method == "score_only"
     assert "score" in forecast.position_channels
@@ -75,7 +76,7 @@ def test_pre_exam_prediction_uses_historical_reference_data() -> None:
     assert "中考前只使用" in report.policy_summary
 
 
-def test_rank_validation_does_not_move_parent_projection_without_a_score_change() -> None:
+def test_rank_validation_moves_score_and_position_through_the_same_curve() -> None:
     reference_data = PublishedReferenceData(
         reference_year=2025,
         rank_source="2025 年一分一段表",
@@ -101,6 +102,7 @@ def test_rank_validation_does_not_move_parent_projection_without_a_score_change(
         grade_size=100,
         target_school=None,
         junior_school="测试初中",
+        class_type_standard="重点",
         assessment_stage="一模",
         analysis_year=2026,
         analysis_date=date(2026, 3, 15),
@@ -118,13 +120,37 @@ def test_rank_validation_does_not_move_parent_projection_without_a_score_change(
         analysis_date=date(2026, 3, 15),
     ))
 
-    assert forecast.position_method == "score_only"
+    assert forecast.position_method == "dual_channel_fusion"
     assert set(forecast.position_channels) == {"score", "rank"}
     assert forecast.position_channels["rank"]["sample_count"] == 2
-    assert forecast.position_conflict_pp is None
+    assert forecast.position_conflict_pp is not None
     assert forecast.reasonable_projection is not None
     assert without_rank.reasonable_projection is not None
-    assert forecast.reasonable_projection.current_percentile == without_rank.reasonable_projection.current_percentile
+    assert forecast.reasonable_projection.current_percentile != without_rank.reasonable_projection.current_percentile
+    assert forecast.reasonable_projection.total_range != without_rank.reasonable_projection.total_range
+
+
+def test_remaining_time_limits_projection_change() -> None:
+    engine = BaselinePredictionEngine()
+    common = dict(
+        total_score=500,
+        total_full_mark=580,
+        class_rank=None,
+        target_school=None,
+        analysis_year=2026,
+        score_history=((450, 580, 2026), (500, 580, 2026)),
+    )
+
+    early = engine.predict(PredictionInput(**common, analysis_date=date(2026, 3, 20)))
+    late = engine.predict(PredictionInput(**common, analysis_date=date(2026, 6, 18)))
+
+    assert early.reasonable_projection is not None
+    assert late.reasonable_projection is not None
+    early_range = early.reasonable_projection.total_range
+    late_range = late.reasonable_projection.total_range
+    assert early_range is not None and late_range is not None
+    assert late_range[1] - late_range[0] < early_range[1] - early_range[0]
+    assert late_range[1] < early_range[1]
 
 
 def test_missing_physical_score_defaults_to_full_mark_for_position_calculation() -> None:
@@ -153,5 +179,69 @@ def test_two_parent_facing_scenarios_keep_current_and_projected_results_separate
     assert forecast.reasonable_projection is not None
     assert forecast.current_snapshot.total_range == (580, 580)
     assert forecast.current_snapshot.total_full_mark == 640
-    assert forecast.reasonable_projection.total_range == (594, 614)
+    assert forecast.reasonable_projection.total_range == (584, 624)
     assert forecast.reasonable_projection.summary.startswith("已结合历次成绩变化")
+
+
+def test_target_comparison_keeps_rank_gap_as_a_range() -> None:
+    reference_data = PublishedReferenceData(
+        reference_year=2025,
+        rank_source="2025 年一分一段表",
+        rank_points=((820, 1), (780, 2000), (700, 15000), (610, 49900)),
+        rank_full_mark=820,
+        candidate_count=49900,
+        school_references=(PublishedSchoolReference("测试高中", 700, "历史录取参考"),),
+    )
+    forecast = BaselinePredictionEngine(reference_data).predict(PredictionInput(
+        total_score=520,
+        total_full_mark=580,
+        class_rank=None,
+        grade_rank=28,
+        grade_size=680,
+        junior_school="测试初中",
+        class_type_standard="重点",
+        target_school="测试高中",
+        analysis_year=2026,
+        analysis_date=date(2026, 3, 15),
+    ))
+
+    assert forecast.prediction_level == "complete"
+    assert forecast.target_comparison is not None
+    assert forecast.target_comparison.current_gap_rank_range is not None
+    assert forecast.target_comparison.projected_gap_rank_range is not None
+    assert forecast.current_snapshot is not None
+    assert forecast.current_snapshot.range_usable is True
+
+
+def test_rank_history_changes_the_joint_projection() -> None:
+    reference_data = PublishedReferenceData(
+        reference_year=2025,
+        rank_source="2025 年一分一段表",
+        rank_points=((820, 1), (780, 2000), (700, 15000), (610, 49900)),
+        rank_full_mark=820,
+        candidate_count=49900,
+    )
+    engine = BaselinePredictionEngine(reference_data)
+    common = dict(
+        total_score=500,
+        total_full_mark=580,
+        physical_score=60,
+        class_rank=None,
+        grade_rank=100,
+        grade_size=1000,
+        target_school=None,
+        junior_school="测试初中",
+        class_type_standard="平行",
+        assessment_stage="一模",
+        analysis_year=2026,
+        analysis_date=date(2026, 3, 20),
+        score_history=((480, 580, 2026), (500, 580, 2026)),
+    )
+
+    improving = engine.predict(PredictionInput(**common, rank_history=((180, 1000), (140, 1000), (100, 1000))))
+    flat = engine.predict(PredictionInput(**common, rank_history=((100, 1000), (100, 1000))))
+
+    assert improving.reasonable_projection is not None
+    assert flat.reasonable_projection is not None
+    assert improving.reasonable_projection.current_percentile < flat.reasonable_projection.current_percentile
+    assert improving.reasonable_projection.total_range[0] > flat.reasonable_projection.total_range[0]

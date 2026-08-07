@@ -88,17 +88,21 @@ class StudentService:
             )
             analysis_models = AnalysisModelService(self.session)
             position_model = await analysis_models.active_position_model(profile.city)
+            annual_distribution_model = await analysis_models.active_annual_distribution_model(profile.city)
             assessment_stage = analysis_models.assessment_stage(exam.name)
-            samples = await analysis_models.calibration_samples(
+            samples, calibration_level = await analysis_models.calibration_samples_for_prediction(
                 region=profile.city,
                 junior_school=profile.junior_school,
+                class_type_standard=profile.class_type_standard,
                 assessment_stage=assessment_stage,
-                approved_only=True,
-            ) if assessment_stage else []
+                minimum_samples=int(position_model.parameters.get("rank_channel_min_samples", 15)),
+            ) if assessment_stage else ([], "insufficient_prior")
             predictor = self.predictor or BaselinePredictionEngine(
                 reference_data,
                 position_parameters=position_model.parameters,
                 model_version=position_model.version,
+                annual_distribution_parameters=annual_distribution_model.parameters,
+                annual_distribution_version=annual_distribution_model.version,
                 calibration_points=tuple(
                     CalibrationPoint(item.grade_rank, item.grade_size, item.final_city_rank, item.final_candidate_count)
                     for item in samples
@@ -123,6 +127,13 @@ class StudentService:
                     for item in sorted(exams, key=lambda item: item.exam_date)
                     if item.exam_date <= exam.exam_date
                 ),
+                rank_history=tuple(
+                    (item.grade_rank, item.grade_size)
+                    for item in sorted(exams, key=lambda item: item.exam_date)
+                    if item.exam_date <= exam.exam_date and item.grade_rank and item.grade_size
+                ),
+                class_type_standard=profile.class_type_standard,
+                calibration_level=calibration_level,
             )
             forecast = predictor.predict(prediction_input)
             report = predictor.build_report(prediction_input)
@@ -142,7 +153,10 @@ class StudentService:
                 run_at=run_at,
                 data_cutoff_at=run_at,
                 status="completed",
-                model_versions={"student_forecast": position_model.version},
+                model_versions={
+                    "student_forecast": position_model.version,
+                    "annual_distribution": annual_distribution_model.version,
+                },
                 input_snapshot={
                     "total_score": exam.total_score,
                     "total_full_mark": exam.total_full_mark,
@@ -160,9 +174,25 @@ class StudentService:
                     "target_school": profile.target_school,
                     "model_version": position_model.version,
                     "model_parameters": position_model.parameters,
+                    "annual_distribution_version": annual_distribution_model.version,
+                    "annual_distribution_parameters": annual_distribution_model.parameters,
                     "calibration_sample_ids": [item.id for item in samples],
+                    "calibration_level": calibration_level,
                 },
-                result={"forecast": forecast.model_dump(), "report": report.model_dump()},
+                result={
+                    "forecast": forecast.model_dump(),
+                    "report": report.model_dump(),
+                    "internal_diagnostics": {
+                        "position_channels": forecast.position_channels,
+                        "position_conflict_pp": forecast.position_conflict_pp,
+                        "consistency_check": "passed" if all(
+                            scenario is None
+                            or scenario.estimated_rank_range == (0, 0)
+                            or scenario.total_range is not None
+                            for scenario in (forecast.current_snapshot, forecast.reasonable_projection)
+                        ) else "failed",
+                    },
+                },
             )
             if publish_report:
                 await StudentReportService(self.session).publish(ReportContext(

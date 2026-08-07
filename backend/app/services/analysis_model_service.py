@@ -34,6 +34,22 @@ DEFAULT_POSITION_PARAMETERS = {
     "score_projection_trend_weight": 0.6,
     "score_projection_max_trend_points": 24.0,
     "score_projection_range_points": 10.0,
+    "score_projection_volatility_weight": 0.5,
+    "score_projection_max_volatility_points": 12.0,
+    "rank_projection_trend_weight": 0.5,
+    "rank_projection_max_shift_pp": 5.0,
+    "score_projection_reference_days": 90,
+    "score_projection_min_time_factor": 0.15,
+    "target_exam_month": 6,
+    "target_exam_day": 21,
+}
+
+DEFAULT_ANNUAL_DISTRIBUTION_PARAMETERS = {
+    "engine_contract": "annual-distribution-target-curve-v1",
+    "candidate_count_multiplier": 1.0,
+    "target_score_shift": 0.0,
+    "rank_interval_ratio": 0.08,
+    "minimum_rank_interval": 600,
 }
 
 
@@ -73,8 +89,38 @@ class AnalysisModelService:
         await self.session.commit()
         return model
 
+    async def active_annual_distribution_model(self, region: str) -> AnalysisModelVersion:
+        model = await self.repository.active_model(region, "annual_distribution")
+        if model:
+            merged = {**DEFAULT_ANNUAL_DISTRIBUTION_PARAMETERS, **model.parameters}
+            if merged == model.parameters:
+                return model
+            model.status = "inactive"
+            successor = await self.repository.add_model(AnalysisModelVersion(
+                name=model.name,
+                version=await self._next_revision(model.version),
+                analysis_type="annual_distribution",
+                region=region,
+                status="active",
+                parameters=merged,
+                quality_metrics={**model.quality_metrics, "parent_version": model.version},
+            ))
+            await self.session.commit()
+            return successor
+        model = await self.repository.add_model(AnalysisModelVersion(
+            name="目标年度分数位次曲线",
+            version=f"annual-curve-v1-{region}",
+            analysis_type="annual_distribution",
+            region=region,
+            parameters=DEFAULT_ANNUAL_DISTRIBUTION_PARAMETERS,
+            quality_metrics={"method": "historical_percentile_scale", "validation_status": "awaiting_backtest"},
+        ))
+        await self.session.commit()
+        return model
+
     async def list_models(self) -> list[AnalysisModelRead]:
         await self.active_position_model("西安")
+        await self.active_annual_distribution_model("西安")
         return [AnalysisModelRead.model_validate(model) for model in await self.repository.list_models()]
 
     async def update_model(self, model_id: str, payload: AnalysisModelUpdate) -> AnalysisModelRead:
@@ -136,6 +182,28 @@ class AnalysisModelService:
             approved_only=approved_only,
         )
         return [PositionCalibrationSampleRead.model_validate(item) for item in items]
+
+    async def calibration_samples_for_prediction(
+        self,
+        *,
+        region: str,
+        junior_school: str | None,
+        class_type_standard: str | None,
+        assessment_stage: str | None,
+        minimum_samples: int,
+    ) -> tuple[list[PositionCalibrationSampleRead], str]:
+        items = await self.calibration_samples(
+            region=region, assessment_stage=assessment_stage, approved_only=True
+        )
+        levels = (
+            ("same_school_class_stage", [item for item in items if item.junior_school == junior_school and item.class_type_standard == class_type_standard]),
+            ("same_school_stage", [item for item in items if item.junior_school == junior_school]),
+            ("region_stage", items),
+        )
+        for level, matches in levels:
+            if len(matches) >= minimum_samples:
+                return matches, level
+        return (levels[0][1] or levels[1][1] or items), "insufficient_prior"
 
     async def add_calibration_sample(
         self, payload: PositionCalibrationSampleCreate
