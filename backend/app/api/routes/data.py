@@ -21,10 +21,51 @@ from app.domain.schemas import (
     CollectionRunDetail,
     CollectionRunRead,
     DataIngestionRead,
+    GovernanceRuleCreate,
+    GovernanceRuleRead,
+    OperationAlertRead,
+    OperationAlertUpdate,
 )
 from app.services.data_service import DataService
 
 router = APIRouter(prefix="/data", tags=["data operations"])
+
+
+@router.post("/governance-rules", response_model=GovernanceRuleRead, status_code=201)
+async def create_governance_rule(
+    payload: GovernanceRuleCreate,
+    actor: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> GovernanceRuleRead:
+    return await DataService(session).create_governance_rule(payload, actor)
+
+
+@router.get("/governance-rules", response_model=list[GovernanceRuleRead])
+async def list_governance_rules(
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> list[GovernanceRuleRead]:
+    return await DataService(session).list_governance_rules()
+
+
+@router.get("/alerts", response_model=list[OperationAlertRead])
+async def list_alerts(
+    status: str | None = Query(default=None, pattern="^(open|resolved)$"),
+    severity: str | None = Query(default=None, pattern="^(low|medium|high)$"),
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> list[OperationAlertRead]:
+    return await DataService(session).list_alerts(status=status, severity=severity)
+
+
+@router.patch("/alerts/{alert_id}", response_model=OperationAlertRead)
+async def update_alert(
+    alert_id: str,
+    payload: OperationAlertUpdate,
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> OperationAlertRead:
+    return await DataService(session).update_alert(alert_id, payload)
 
 
 @router.post("/sources", response_model=DataSourceRead, status_code=201)

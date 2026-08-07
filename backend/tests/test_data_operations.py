@@ -406,3 +406,151 @@ def test_failed_collection_run_can_retry_within_limit(monkeypatch) -> None:
         assert client.post(
             f"/api/v1/data/collection-runs/{latest['id']}/retry", headers=headers
         ).status_code == 409
+
+
+def test_governance_rules_detect_conflicts_and_expose_text_changes(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "data_admin_key", "governance-workbench-test-key")
+    monkeypatch.setattr(DataService, "_validate_collect_url", staticmethod(lambda _: None))
+    original_client = httpx.AsyncClient
+    page = {
+        "text": "<html><body><h1>2030 年招生计划</h1><p>计划招收 600 人。</p></body></html>"
+    }
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/html; charset=utf-8"},
+            text=page["text"],
+        )
+
+    def mock_client(*_, **__) -> httpx.AsyncClient:
+        return original_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr("app.services.data_service.httpx.AsyncClient", mock_client)
+    headers = {"X-Data-Admin-Key": "governance-workbench-test-key"}
+    suffix = uuid4().hex
+    version = f"admission-{suffix}"
+    job_name = f"招生采集-{suffix}"
+    canonical_name = f"标准学校-{suffix}"
+
+    with TestClient(app) as client:
+        rule = client.post(
+            "/api/v1/data/governance-rules",
+            headers=headers,
+            json={
+                "name": "招生数据标准化",
+                "version": version,
+                "rules": {
+                    "field_aliases": {"招生计划": "招生名额"},
+                    "entity_aliases": {job_name: canonical_name},
+                    "allowed_fact_types": ["admission"],
+                },
+            },
+        )
+        assert rule.status_code == 201, rule.text
+        assert client.post(
+            "/api/v1/data/governance-rules",
+            headers=headers,
+            json={"name": "重复版本", "version": version, "rules": {}},
+        ).status_code == 409
+        assert any(
+            item["version"] == version
+            for item in client.get("/api/v1/data/governance-rules", headers=headers).json()
+        )
+
+        existing = client.post(
+            "/api/v1/data/facts",
+            headers=headers,
+            json={
+                "fact_type": "admission",
+                "entity_name": canonical_name,
+                "field": "招生名额",
+                "region": "西安",
+                "reference_year": 2030,
+                "value": {"count": 580},
+                "confidence": "official",
+            },
+        )
+        assert existing.status_code == 201
+        assert client.post(
+            f"/api/v1/data/facts/{existing.json()['id']}/review",
+            headers=headers,
+            json={"decision": "approved"},
+        ).status_code == 200
+
+        invalid_job = client.post(
+            "/api/v1/data/collection-jobs",
+            headers=headers,
+            json={
+                "name": "无效规则任务",
+                "target_url": "https://example.com/invalid",
+                "governance_rule_version": f"missing-{suffix}",
+            },
+        )
+        assert invalid_job.status_code == 422
+
+        job = client.post(
+            "/api/v1/data/collection-jobs",
+            headers=headers,
+            json={
+                "name": job_name,
+                "target_url": "https://example.com/admission",
+                "region": "西安",
+                "data_type": "admission",
+                "governance_rule_version": version,
+            },
+        )
+        assert job.status_code == 201, job.text
+        first = client.post(
+            f"/api/v1/data/collection-jobs/{job.json()['id']}/run", headers=headers
+        )
+        assert first.status_code == 200, first.text
+
+        facts = client.get(
+            "/api/v1/data/facts", headers=headers, params={"status": "pending_review"}
+        ).json()
+        candidate = next(
+            item for item in facts
+            if item["scope"].get("collection_job_id") == job.json()["id"]
+            and item["field"] == "招生名额"
+        )
+        assert candidate["entity_name"] == canonical_name
+        assert candidate["scope"]["conflict_fact_ids"] == [existing.json()["id"]]
+
+        alerts = client.get(
+            "/api/v1/data/alerts", headers=headers, params={"status": "open"}
+        )
+        assert alerts.status_code == 200
+        alert = next(
+            item for item in alerts.json()
+            if item["details"].get("candidate_fact_id") == candidate["id"]
+        )
+        assert alert["severity"] == "high"
+        resolved = client.patch(
+            f"/api/v1/data/alerts/{alert['id']}",
+            headers=headers,
+            json={"status": "resolved"},
+        )
+        assert resolved.status_code == 200
+        assert resolved.json()["resolved_at"]
+
+        page["text"] = (
+            "<html><body><h1>2030 年招生计划</h1>"
+            "<p>计划调整为招收 620 人。</p><p>新增定向生说明。</p></body></html>"
+        )
+        second = client.post(
+            f"/api/v1/data/collection-jobs/{job.json()['id']}/run", headers=headers
+        )
+        assert second.status_code == 200, second.text
+        latest_run = client.get(
+            "/api/v1/data/collection-runs",
+            headers=headers,
+            params={"job_id": job.json()["id"]},
+        ).json()[0]
+        detail = client.get(
+            f"/api/v1/data/collection-runs/{latest_run['id']}", headers=headers
+        ).json()
+        text_diff = detail["snapshots"][0]["diff_summary"]["text_diff"]
+        assert text_diff["similarity"] < 1
+        assert text_diff["added_count"] > 0
+        assert text_diff["removed_count"] > 0

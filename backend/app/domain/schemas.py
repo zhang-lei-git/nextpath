@@ -315,6 +315,41 @@ class CollectionReprocessRequest(BaseModel):
     governance_rule_version: str | None = Field(default=None, max_length=48)
 
 
+class GovernanceRuleCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    version: str = Field(min_length=1, max_length=48, pattern=r"^[A-Za-z0-9._-]+$")
+    status: Literal["active", "inactive"] = "active"
+    rules: dict = Field(default_factory=dict)
+
+
+class GovernanceRuleRead(GovernanceRuleCreate):
+    id: str
+    created_by: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class OperationAlertRead(BaseModel):
+    id: str
+    alert_type: str
+    severity: str
+    source_id: str | None
+    job_id: str | None
+    run_id: str | None
+    status: str
+    title: str
+    details: dict
+    created_at: datetime
+    resolved_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class OperationAlertUpdate(BaseModel):
+    status: Literal["open", "resolved"]
+
+
 class DataFactCreate(BaseModel):
     fact_type: FactType
     entity_name: str = Field(min_length=1, max_length=160)

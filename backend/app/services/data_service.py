@@ -1,5 +1,6 @@
 import ipaddress
 import hashlib
+import difflib
 import re
 import socket
 from datetime import datetime, timezone
@@ -11,6 +12,7 @@ from zipfile import ZipFile
 import httpx
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from app.core.config import settings
 from app.domain.models import (
@@ -21,6 +23,7 @@ from app.domain.models import (
     DataIngestion,
     DataRelease,
     DataSource,
+    GovernanceRuleVersion,
     OperationAlert,
     ProcessingStep,
     SourceSnapshot,
@@ -37,6 +40,10 @@ from app.domain.schemas import (
     DataSourceRead,
     EvidenceCreate,
     EvidenceRead,
+    GovernanceRuleCreate,
+    GovernanceRuleRead,
+    OperationAlertRead,
+    OperationAlertUpdate,
     CollectionJobCreate,
     CollectionJobRead,
     CollectionJobUpdate,
@@ -62,6 +69,71 @@ class DataService:
 
     async def list_sources(self) -> list[DataSourceRead]:
         return [DataSourceRead.model_validate(source) for source in await self.repository.list_sources()]
+
+    async def create_governance_rule(
+        self, payload: GovernanceRuleCreate, actor: str
+    ) -> GovernanceRuleRead:
+        self._validate_governance_rules(payload.rules)
+        try:
+            rule = await self.repository.add_governance_rule(GovernanceRuleVersion(
+                **payload.model_dump(), created_by=actor
+            ))
+            await self.session.commit()
+        except IntegrityError as error:
+            await self.session.rollback()
+            raise HTTPException(status_code=409, detail="治理规则版本已存在") from error
+        return GovernanceRuleRead.model_validate(rule)
+
+    async def list_governance_rules(self) -> list[GovernanceRuleRead]:
+        return [
+            GovernanceRuleRead.model_validate(rule)
+            for rule in await self.repository.list_governance_rules()
+        ]
+
+    async def _require_governance_rule(
+        self, version: str
+    ) -> GovernanceRuleVersion:
+        rule = await self.repository.governance_rule_by_version(version)
+        if not rule:
+            raise HTTPException(status_code=422, detail="治理规则版本不存在")
+        if rule.status != "active":
+            raise HTTPException(status_code=422, detail="治理规则版本未启用")
+        return rule
+
+    @staticmethod
+    def _validate_governance_rules(rules: dict) -> None:
+        for key in ("field_aliases", "entity_aliases"):
+            aliases = rules.get(key, {})
+            if not isinstance(aliases, dict) or not all(
+                isinstance(source, str) and isinstance(target, str)
+                for source, target in aliases.items()
+            ):
+                raise HTTPException(status_code=422, detail=f"{key} 必须是字符串映射")
+        allowed = rules.get("allowed_fact_types", [])
+        if not isinstance(allowed, list) or any(
+            item not in {"school", "admission", "policy"} for item in allowed
+        ):
+            raise HTTPException(status_code=422, detail="allowed_fact_types 包含不支持的数据类别")
+
+    async def list_alerts(
+        self, *, status: str | None = None, severity: str | None = None
+    ) -> list[OperationAlertRead]:
+        return [
+            OperationAlertRead.model_validate(alert)
+            for alert in await self.repository.list_alerts(status=status, severity=severity)
+        ]
+
+    async def update_alert(
+        self, alert_id: str, payload: OperationAlertUpdate
+    ) -> OperationAlertRead:
+        alert = await self.repository.get_alert(alert_id)
+        if not alert:
+            raise HTTPException(status_code=404, detail="未找到运营告警")
+        alert.status = payload.status
+        alert.resolved_at = datetime.now(timezone.utc) if payload.status == "resolved" else None
+        await self.session.commit()
+        await self.session.refresh(alert)
+        return OperationAlertRead.model_validate(alert)
 
     async def create_evidence(self, payload: EvidenceCreate, actor: str) -> EvidenceRead:
         if payload.source_id and not await self.repository.get_source(payload.source_id):
@@ -121,6 +193,8 @@ class DataService:
     async def create_collection_job(self, payload: CollectionJobCreate) -> CollectionJobRead:
         if payload.source_id and not await self.repository.get_source(payload.source_id):
             raise HTTPException(status_code=404, detail="未找到数据来源")
+        if payload.governance_rule_version:
+            await self._require_governance_rule(payload.governance_rule_version)
         self._validate_collect_url(payload.target_url)
         job = await self.repository.add_collection_job(CollectionJob(**payload.model_dump()))
         await self.session.commit()
@@ -147,6 +221,8 @@ class DataService:
                 raise HTTPException(status_code=404, detail="未找到数据来源")
         if changes.get("target_url"):
             self._validate_collect_url(changes["target_url"])
+        if changes.get("governance_rule_version"):
+            await self._require_governance_rule(changes["governance_rule_version"])
         updated = await self.repository.update_collection_job(job, changes)
         await self.session.commit()
         return CollectionJobRead.model_validate(updated)
@@ -230,6 +306,7 @@ class DataService:
                     "previous_hash": previous.content_hash if previous else None,
                     "current_hash": content_hash,
                     "structure_changed": bool(previous and previous.structure_hash != structure_hash),
+                    "text_diff": self._build_text_diff(previous, response.text, content_type),
                     "attachments": attachments,
                     "attachments_added": self._attachment_hash_difference(attachments, previous, added=True),
                     "attachments_removed": self._attachment_hash_difference(attachments, previous, added=False),
@@ -307,6 +384,7 @@ class DataService:
                 suggestions,
                 actor,
                 governance_seed=f"{content_hash}:{attachment_hash or '-'}",
+                run_id=run.id,
             )
             await self._record_step(
                 run.id, snapshot.id, "normalize", "succeeded",
@@ -397,6 +475,8 @@ class DataService:
         job = await self.repository.get_collection_job(previous.job_id)
         if not job:
             raise HTTPException(status_code=404, detail="未找到采集任务")
+        if payload.governance_rule_version:
+            await self._require_governance_rule(payload.governance_rule_version)
         now = datetime.now(timezone.utc)
         run = await self.repository.add_collection_run(CollectionRun(
             job_id=job.id,
@@ -473,6 +553,7 @@ class DataService:
                 actor,
                 governance_seed=f"{original.content_hash}:{original.attachment_hash or '-'}",
                 governance_rule_version=rule_version,
+                run_id=run.id,
             )
             await self._record_step(
                 run.id,
@@ -538,6 +619,7 @@ class DataService:
         *,
         governance_seed: str,
         governance_rule_version: str | None = None,
+        run_id: str | None = None,
     ) -> list[DataFact]:
         if not job.region:
             return []
@@ -547,22 +629,32 @@ class DataService:
         reference_year = int(year_match.group())
         if not 2020 <= reference_year <= 2100:
             return []
+        rule_version = governance_rule_version or job.governance_rule_version or "governance-baseline-v1"
+        rule = None
+        if rule_version != "governance-baseline-v1":
+            rule = await self._require_governance_rule(rule_version)
+        rule_config = rule.rules if rule else {}
+        field_aliases = rule_config.get("field_aliases", {})
+        entity_aliases = rule_config.get("entity_aliases", {})
+        allowed_fact_types = set(rule_config.get("allowed_fact_types", []))
+        entity_name = entity_aliases.get(job.name, job.name)
         candidates = []
         seen = set()
         for suggestion in suggestions:
             fact_type = suggestion.get("fact_type")
-            field = suggestion.get("field")
+            field = field_aliases.get(suggestion.get("field"), suggestion.get("field"))
             key = (fact_type, field)
             if fact_type not in {"school", "admission", "policy"} or not field or key in seen:
                 continue
+            if allowed_fact_types and fact_type not in allowed_fact_types:
+                continue
             seen.add(key)
-            rule_version = governance_rule_version or job.governance_rule_version or "governance-baseline-v1"
             governance_key = hashlib.sha256(
                 f"{job.id}:{governance_seed}:{rule_version}:{fact_type}:{field}".encode()
             ).hexdigest()
             existing = await self.repository.find_automatic_fact(
                 fact_type=fact_type,
-                entity_name=job.name,
+                entity_name=entity_name,
                 field=field,
                 region=job.region,
                 reference_year=reference_year,
@@ -570,9 +662,24 @@ class DataService:
             )
             if existing:
                 continue
-            candidates.append(await self.repository.add_fact(DataFact(
+            candidate_value = {
+                "summary": self._excerpt(extracted_text),
+                "extraction_reason": suggestion.get("reason"),
+            }
+            matching = await self.repository.matching_facts(
                 fact_type=fact_type,
-                entity_name=job.name,
+                entity_name=entity_name,
+                field=field,
+                region=job.region,
+                reference_year=reference_year,
+            )
+            conflicts = [
+                item for item in matching
+                if item.scope.get("governance_key") != governance_key and item.value != candidate_value
+            ]
+            candidate = await self.repository.add_fact(DataFact(
+                fact_type=fact_type,
+                entity_name=entity_name,
                 field=field,
                 region=job.region,
                 reference_year=reference_year,
@@ -582,17 +689,31 @@ class DataService:
                     "collection_job_id": job.id,
                     "governance_key": governance_key,
                     "governance_rule_version": rule_version,
+                    "conflict_fact_ids": [item.id for item in conflicts],
                 },
-                value={
-                    "summary": self._excerpt(extracted_text),
-                    "extraction_reason": suggestion.get("reason"),
-                },
+                value=candidate_value,
                 evidence_ids=[evidence.id],
                 confidence="observation",
                 status="pending_review",
                 review_note="自动治理候选，发布前必须核对实体、字段和值。",
                 created_by=actor,
-            )))
+            ))
+            candidates.append(candidate)
+            if conflicts:
+                await self.repository.add_alert(OperationAlert(
+                    alert_type="data_conflict",
+                    severity="high" if any(item.status == "approved" for item in conflicts) else "medium",
+                    source_id=job.source_id,
+                    job_id=job.id,
+                    run_id=run_id,
+                    title=f"数据冲突：{entity_name} · {field}",
+                    details={
+                        "candidate_fact_id": candidate.id,
+                        "conflict_fact_ids": [item.id for item in conflicts],
+                        "reference_year": reference_year,
+                        "region": job.region,
+                    },
+                ))
         return candidates
 
     async def create_fact(self, payload: DataFactCreate, actor: str) -> DataFactRead:
@@ -814,6 +935,47 @@ class DataService:
         previous_items = (previous.diff_summary or {}).get("attachments", []) if previous else []
         old = {item["content_hash"] for item in previous_items if item.get("content_hash")}
         return sorted(current - old if added else old - current)
+
+    def _build_text_diff(
+        self,
+        previous: SourceSnapshot | None,
+        current_text: str,
+        content_type: str,
+    ) -> dict:
+        if not previous or not previous.storage_path:
+            return {"similarity": None, "added": [], "removed": []}
+        previous_path = settings.upload_dir / previous.storage_path
+        if not previous_path.exists():
+            return {"similarity": None, "added": [], "removed": []}
+        previous_raw = previous_path.read_text(encoding="utf-8", errors="replace")
+        if "html" in content_type:
+            previous_raw = self._html_to_text(previous_raw)
+            current_text = self._html_to_text(current_text)
+        previous_parts = self._diff_parts(previous_raw)
+        current_parts = self._diff_parts(current_text)
+        matcher = difflib.SequenceMatcher(a=previous_parts, b=current_parts, autojunk=False)
+        added = []
+        removed = []
+        for operation, left_start, left_end, right_start, right_end in matcher.get_opcodes():
+            if operation in {"insert", "replace"}:
+                added.extend(current_parts[right_start:right_end])
+            if operation in {"delete", "replace"}:
+                removed.extend(previous_parts[left_start:left_end])
+        return {
+            "similarity": round(matcher.ratio(), 4),
+            "added": added[:12],
+            "removed": removed[:12],
+            "added_count": len(added),
+            "removed_count": len(removed),
+        }
+
+    @staticmethod
+    def _diff_parts(value: str) -> list[str]:
+        return [
+            part.strip()
+            for part in re.split(r"(?<=[。！？；.!?;])|\n+", value)
+            if part.strip()
+        ][:2000]
 
     def _extract_attachment_text(self, attachments: list[dict]) -> str:
         extracted = []

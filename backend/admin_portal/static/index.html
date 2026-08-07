@@ -15,6 +15,7 @@
         <button class="nav-item" data-view="sources">数据来源</button>
         <button class="nav-item" data-view="capture">采集录入</button>
         <button class="nav-item" data-view="review">审核发布</button>
+        <button class="nav-item" data-view="quality">质量治理</button>
         <button class="nav-item" data-view="models">分析模型</button>
         <button class="nav-item" data-view="users">用户管理</button>
       </nav>
@@ -91,6 +92,7 @@
             <label>网页地址<input name="target_url" type="url" required placeholder="https://"></label>
             <div class="form-row"><label>地区<input name="region" value="西安" placeholder="例如：西安"></label><label>数据类别<select name="data_type"><option value="">待判断</option><option value="school">学校信息</option><option value="admission">招生录取</option><option value="policy">中招政策</option></select></label></div>
             <label>采集间隔（分钟）<input name="interval_minutes" type="number" min="15" value="1440" required></label>
+            <label>治理规则<select name="governance_rule_version" id="collectionRule"><option value="">基础规则</option></select></label>
             <label>治理提示<textarea name="extraction_hint" rows="3" placeholder="例如：重点核验招生计划和志愿规则"></textarea></label>
             <div class="actions"><button id="collectionSubmit" class="button secondary" type="submit">保存任务</button><button id="cancelCollectionEdit" class="button secondary hidden" type="button">取消编辑</button></div>
           </form></section>
@@ -112,6 +114,28 @@
             <button class="button" type="submit">发布到家长端</button>
           </form></section>
         </div>
+      </section>
+
+      <section id="quality" class="view">
+        <div class="grid-two wide-left">
+          <section class="panel">
+            <div class="panel-head"><div><h2>运营待办</h2><span>优先处理数据冲突</span></div><div class="segmented"><button data-alert-status="open" class="selected">待处理</button><button data-alert-status="resolved">已处理</button></div></div>
+            <div id="alertList" class="list"></div>
+          </section>
+          <section class="panel form-panel">
+            <h2>新增治理规则</h2>
+            <form id="governanceRuleForm" class="form-stack">
+              <label>规则名称<input name="name" required placeholder="例如：西安招生数据标准化"></label>
+              <label>版本号<input name="version" required pattern="[A-Za-z0-9._-]+" placeholder="例如：xian-admission-v1"></label>
+              <label>规则配置（JSON）<textarea name="rules" rows="10" required placeholder='{"field_aliases":{"招生人数":"招生计划"},"entity_aliases":{},"allowed_fact_types":["school","admission","policy"]}'></textarea></label>
+              <button class="button" type="submit">保存规则版本</button>
+            </form>
+          </section>
+        </div>
+        <section class="panel top-gap">
+          <div class="panel-head"><h2>规则版本</h2><span id="governanceRuleCount"></span></div>
+          <div id="governanceRuleList" class="rule-grid"></div>
+        </section>
       </section>
 
       <section id="users" class="view">

@@ -12,6 +12,7 @@ from app.domain.models import (
     DataRelease,
     DataReleaseItem,
     DataSource,
+    GovernanceRuleVersion,
     OperationAlert,
     ProcessingStep,
     SourceSnapshot,
@@ -84,6 +85,26 @@ class DataRepository:
             (record for record in records if record.scope.get("governance_key") == governance_key),
             None,
         )
+
+    async def matching_facts(
+        self,
+        *,
+        fact_type: str,
+        entity_name: str,
+        field: str,
+        region: str,
+        reference_year: int,
+    ) -> list[DataFact]:
+        return list(await self.session.scalars(
+            select(DataFact).where(
+                DataFact.fact_type == fact_type,
+                DataFact.entity_name == entity_name,
+                DataFact.field == field,
+                DataFact.region == region,
+                DataFact.reference_year == reference_year,
+                DataFact.status.in_(["pending_review", "approved"]),
+            )
+        ))
 
     async def review_fact(self, fact: DataFact, decision: str, note: str | None, reviewer: str) -> DataFact:
         fact.status = decision
@@ -269,3 +290,38 @@ class DataRepository:
         await self.session.flush()
         await self.session.refresh(alert)
         return alert
+
+    async def list_alerts(
+        self, *, status: str | None = None, severity: str | None = None
+    ) -> list[OperationAlert]:
+        statement = select(OperationAlert).order_by(desc(OperationAlert.created_at))
+        if status:
+            statement = statement.where(OperationAlert.status == status)
+        if severity:
+            statement = statement.where(OperationAlert.severity == severity)
+        return list(await self.session.scalars(statement))
+
+    async def get_alert(self, alert_id: str) -> OperationAlert | None:
+        return await self.session.get(OperationAlert, alert_id)
+
+    async def add_governance_rule(
+        self, rule: GovernanceRuleVersion
+    ) -> GovernanceRuleVersion:
+        self.session.add(rule)
+        await self.session.flush()
+        await self.session.refresh(rule)
+        return rule
+
+    async def list_governance_rules(self) -> list[GovernanceRuleVersion]:
+        return list(await self.session.scalars(
+            select(GovernanceRuleVersion).order_by(desc(GovernanceRuleVersion.created_at))
+        ))
+
+    async def governance_rule_by_version(
+        self, version: str
+    ) -> GovernanceRuleVersion | None:
+        return await self.session.scalar(
+            select(GovernanceRuleVersion)
+            .where(GovernanceRuleVersion.version == version)
+            .limit(1)
+        )
