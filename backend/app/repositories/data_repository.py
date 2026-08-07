@@ -61,6 +61,30 @@ class DataRepository:
             statement = statement.where(DataFact.status == status)
         return list(await self.session.scalars(statement))
 
+    async def find_automatic_fact(
+        self,
+        *,
+        fact_type: str,
+        entity_name: str,
+        field: str,
+        region: str,
+        reference_year: int,
+        governance_key: str,
+    ) -> DataFact | None:
+        records = list(await self.session.scalars(
+            select(DataFact).where(
+                DataFact.fact_type == fact_type,
+                DataFact.entity_name == entity_name,
+                DataFact.field == field,
+                DataFact.region == region,
+                DataFact.reference_year == reference_year,
+            )
+        ))
+        return next(
+            (record for record in records if record.scope.get("governance_key") == governance_key),
+            None,
+        )
+
     async def review_fact(self, fact: DataFact, decision: str, note: str | None, reviewer: str) -> DataFact:
         fact.status = decision
         fact.review_note = note
@@ -173,6 +197,13 @@ class DataRepository:
 
     async def get_collection_job(self, job_id: str) -> CollectionJob | None:
         return await self.session.get(CollectionJob, job_id)
+
+    async def update_collection_job(self, job: CollectionJob, changes: dict) -> CollectionJob:
+        for field, value in changes.items():
+            setattr(job, field, value)
+        await self.session.flush()
+        await self.session.refresh(job)
+        return job
 
     async def list_collection_jobs(self) -> list[CollectionJob]:
         return list(await self.session.scalars(select(CollectionJob).order_by(desc(CollectionJob.created_at))))

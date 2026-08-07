@@ -4,6 +4,7 @@ import re
 import socket
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urljoin, urlparse
 from uuid import uuid4
 from zipfile import ZipFile
 
@@ -38,6 +39,8 @@ from app.domain.schemas import (
     EvidenceRead,
     CollectionJobCreate,
     CollectionJobRead,
+    CollectionJobUpdate,
+    CollectionReprocessRequest,
     CollectionRunDetail,
     CollectionRunRead,
     DataIngestionRead,
@@ -126,8 +129,35 @@ class DataService:
     async def list_collection_jobs(self) -> list[CollectionJobRead]:
         return [CollectionJobRead.model_validate(item) for item in await self.repository.list_collection_jobs()]
 
+    async def update_collection_job(
+        self, job_id: str, payload: CollectionJobUpdate
+    ) -> CollectionJobRead:
+        job = await self.repository.get_collection_job(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="未找到采集任务")
+        changes = payload.model_dump(exclude_unset=True)
+        required_fields = {
+            "name", "target_url", "collection_type", "interval_minutes", "timeout_seconds",
+            "max_retries", "rate_limit_per_minute", "parser_key", "priority", "is_active",
+        }
+        if any(changes.get(field) is None for field in required_fields if field in changes):
+            raise HTTPException(status_code=422, detail="采集任务的必填配置不能设为空")
+        if "source_id" in changes and changes["source_id"]:
+            if not await self.repository.get_source(changes["source_id"]):
+                raise HTTPException(status_code=404, detail="未找到数据来源")
+        if changes.get("target_url"):
+            self._validate_collect_url(changes["target_url"])
+        updated = await self.repository.update_collection_job(job, changes)
+        await self.session.commit()
+        return CollectionJobRead.model_validate(updated)
+
     async def run_collection_job(
-        self, job_id: str, actor: str, *, trigger_type: str = "manual"
+        self,
+        job_id: str,
+        actor: str,
+        *,
+        trigger_type: str = "manual",
+        attempt: int = 1,
     ) -> DataIngestionRead:
         job = await self.repository.get_collection_job(job_id)
         if not job:
@@ -140,6 +170,7 @@ class DataService:
             trigger_type=trigger_type,
             status="running",
             idempotency_key=f"{job.id}:{uuid4()}",
+            attempt=attempt,
             started_at=now,
             scheduled_at=now if trigger_type == "scheduled" else None,
         ))
@@ -147,19 +178,38 @@ class DataService:
             self._validate_collect_url(job.target_url)
             async with httpx.AsyncClient(timeout=job.timeout_seconds, follow_redirects=False) as client:
                 response = await client.get(job.target_url, headers={"User-Agent": "NextPath-DataCollector/0.1"})
-            if response.status_code >= 400:
-                raise RuntimeError(f"访问返回 HTTP {response.status_code}")
-            if 300 <= response.status_code < 400:
-                raise RuntimeError("采集地址发生跳转，需要运营人员确认最终地址")
-            content_type = response.headers.get("content-type", "")
-            if "html" not in content_type and "text" not in content_type and "json" not in content_type:
-                raise RuntimeError("当前只采集网页、文本或 JSON 内容")
+                if response.status_code >= 400:
+                    raise RuntimeError(f"访问返回 HTTP {response.status_code}")
+                if 300 <= response.status_code < 400:
+                    raise RuntimeError("采集地址发生跳转，需要运营人员确认最终地址")
+                content_type = response.headers.get("content-type", "")
+                if "html" not in content_type and "text" not in content_type and "json" not in content_type:
+                    raise RuntimeError("当前只采集网页、文本或 JSON 内容")
+                attachments = await self._capture_attachments(
+                    client,
+                    base_url=str(response.url),
+                    html=response.text if "html" in content_type else "",
+                )
             content = response.content
+            if len(content) > settings.max_upload_size:
+                raise RuntimeError("采集页面超过 10MB")
             content_hash = hashlib.sha256(content).hexdigest()
+            attachment_hashes = sorted(
+                item["content_hash"] for item in attachments if item.get("content_hash")
+            )
+            attachment_hash = (
+                hashlib.sha256("|".join(attachment_hashes).encode()).hexdigest()
+                if attachment_hashes else None
+            )
             structure = "|".join(re.findall(r"</?([a-zA-Z0-9]+)", response.text))
             structure_hash = hashlib.sha256(structure.encode()).hexdigest() if structure else None
             previous = await self.repository.latest_snapshot_for_job(job.id)
-            change_type = "unchanged" if previous and previous.content_hash == content_hash else "changed" if previous else "new"
+            unchanged = bool(
+                previous
+                and previous.content_hash == content_hash
+                and previous.attachment_hash == attachment_hash
+            )
+            change_type = "unchanged" if unchanged else "changed" if previous else "new"
             suffix = ".json" if "json" in content_type else ".html" if "html" in content_type else ".txt"
             stored_name = f"data-snapshots/{content_hash}{suffix}"
             destination = settings.upload_dir / stored_name
@@ -172,6 +222,7 @@ class DataService:
                 final_url=str(response.url),
                 response_status=response.status_code,
                 content_hash=content_hash,
+                attachment_hash=attachment_hash,
                 structure_hash=structure_hash,
                 storage_path=stored_name,
                 change_type=change_type,
@@ -179,11 +230,20 @@ class DataService:
                     "previous_hash": previous.content_hash if previous else None,
                     "current_hash": content_hash,
                     "structure_changed": bool(previous and previous.structure_hash != structure_hash),
+                    "attachments": attachments,
+                    "attachments_added": self._attachment_hash_difference(attachments, previous, added=True),
+                    "attachments_removed": self._attachment_hash_difference(attachments, previous, added=False),
                 },
             ))
             await self._record_step(
                 run.id, snapshot.id, "capture", "succeeded",
-                output_payload={"content_hash": content_hash, "change_type": change_type, "bytes": len(content)},
+                output_payload={
+                    "content_hash": content_hash,
+                    "attachment_hash": attachment_hash,
+                    "attachment_count": len(attachments),
+                    "change_type": change_type,
+                    "bytes": len(content),
+                },
             )
 
             if change_type == "unchanged":
@@ -208,6 +268,9 @@ class DataService:
                 return self._ingestion_read(ingestion)
 
             extracted_text = self._html_to_text(response.text)
+            attachment_text = self._extract_attachment_text(attachments)
+            if attachment_text:
+                extracted_text = f"{extracted_text}\n{attachment_text}".strip()
             evidence = await self.repository.add_evidence(DataEvidence(
                 source_id=job.source_id,
                 title=f"{job.name} · {datetime.now().strftime('%Y-%m-%d %H:%M')}",
@@ -231,9 +294,20 @@ class DataService:
             await self._record_step(
                 run.id, snapshot.id, "extract", "succeeded",
                 processor_version=f"parser:{job.parser_key}",
-                output_payload={"characters": len(extracted_text), "suggestion_count": len(suggestions)},
+                output_payload={
+                    "characters": len(extracted_text),
+                    "attachment_count": len(attachments),
+                    "suggestion_count": len(suggestions),
+                },
             )
-            candidates = await self._create_automatic_candidates(job, evidence, extracted_text, suggestions, actor)
+            candidates = await self._create_automatic_candidates(
+                job,
+                evidence,
+                extracted_text,
+                suggestions,
+                actor,
+                governance_seed=f"{content_hash}:{attachment_hash or '-'}",
+            )
             await self._record_step(
                 run.id, snapshot.id, "normalize", "succeeded",
                 processor_version=job.governance_rule_version or "governance-baseline-v1",
@@ -248,7 +322,7 @@ class DataService:
             job.last_message = f"已保存证据、治理材料和 {len(candidates)} 条候选事实：{ingestion.id}"
             await self.session.commit()
             return self._ingestion_read(ingestion)
-        except (httpx.HTTPError, RuntimeError, ValueError, socket.gaierror) as error:
+        except (httpx.HTTPError, RuntimeError, ValueError, OSError, socket.gaierror) as error:
             finished_at = datetime.now(timezone.utc)
             run.status = "failed"
             run.error_message = str(error)
@@ -289,6 +363,142 @@ class DataService:
             steps=[ProcessingStepRead.model_validate(item) for item in steps],
         )
 
+    async def retry_collection_run(self, run_id: str, actor: str) -> DataIngestionRead:
+        previous = await self.repository.get_collection_run(run_id)
+        if not previous:
+            raise HTTPException(status_code=404, detail="未找到采集运行")
+        if previous.status != "failed":
+            raise HTTPException(status_code=409, detail="只有失败的采集运行可以重试")
+        job = await self.repository.get_collection_job(previous.job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="未找到采集任务")
+        if previous.attempt >= job.max_retries + 1:
+            raise HTTPException(status_code=409, detail="已达到该任务允许的最大重试次数")
+        return await self.run_collection_job(
+            job.id,
+            actor,
+            trigger_type="retry",
+            attempt=previous.attempt + 1,
+        )
+
+    async def reprocess_collection_run(
+        self,
+        run_id: str,
+        payload: CollectionReprocessRequest,
+        actor: str,
+    ) -> DataIngestionRead:
+        previous = await self.repository.get_collection_run(run_id)
+        if not previous:
+            raise HTTPException(status_code=404, detail="未找到采集运行")
+        snapshots = await self.repository.snapshots_for_run(run_id)
+        if not snapshots:
+            raise HTTPException(status_code=409, detail="该运行没有可重新治理的原始快照")
+        original = snapshots[-1]
+        job = await self.repository.get_collection_job(previous.job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="未找到采集任务")
+        now = datetime.now(timezone.utc)
+        run = await self.repository.add_collection_run(CollectionRun(
+            job_id=job.id,
+            trigger_type="reprocess",
+            status="running",
+            idempotency_key=f"{job.id}:reprocess:{uuid4()}",
+            started_at=now,
+        ))
+        snapshot = await self.repository.add_snapshot(SourceSnapshot(
+            run_id=run.id,
+            source_url=original.source_url,
+            final_url=original.final_url,
+            response_status=original.response_status,
+            content_hash=original.content_hash,
+            attachment_hash=original.attachment_hash,
+            structure_hash=original.structure_hash,
+            storage_path=original.storage_path,
+            change_type="reprocessed",
+            diff_summary={
+                **(original.diff_summary or {}),
+                "reprocessed_from_run_id": previous.id,
+                "reprocessed_from_snapshot_id": original.id,
+            },
+        ))
+        try:
+            await self._record_step(
+                run.id,
+                snapshot.id,
+                "capture",
+                "succeeded",
+                output_payload={"reused_snapshot_id": original.id},
+            )
+            extracted_text = self._extract_snapshot_text(snapshot)
+            if not extracted_text:
+                raise RuntimeError("原始快照没有可提取的文本")
+            evidence = await self.repository.add_evidence(DataEvidence(
+                source_id=job.source_id,
+                title=f"{job.name} · 重新治理 · {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                url=original.final_url or original.source_url,
+                file_path=original.storage_path,
+                excerpt=self._excerpt(extracted_text),
+                created_by=actor,
+            ))
+            snapshot.evidence_id = evidence.id
+            suggestions = self._suggest_facts(extracted_text, job.extraction_hint)
+            ingestion = await self.repository.add_ingestion(DataIngestion(
+                source_id=job.source_id,
+                evidence_id=evidence.id,
+                ingestion_type="reprocess",
+                title=job.name,
+                file_path=original.storage_path,
+                source_url=original.final_url or original.source_url,
+                extraction_text=extracted_text,
+                suggested_facts=suggestions,
+                status="extracted",
+                created_by=actor,
+            ))
+            parser_key = payload.parser_key or job.parser_key
+            rule_version = payload.governance_rule_version or job.governance_rule_version
+            await self._record_step(
+                run.id,
+                snapshot.id,
+                "extract",
+                "succeeded",
+                processor_version=f"parser:{parser_key}",
+                input_payload={"source_run_id": previous.id},
+                output_payload={"characters": len(extracted_text), "suggestion_count": len(suggestions)},
+            )
+            candidates = await self._create_automatic_candidates(
+                job,
+                evidence,
+                extracted_text,
+                suggestions,
+                actor,
+                governance_seed=f"{original.content_hash}:{original.attachment_hash or '-'}",
+                governance_rule_version=rule_version,
+            )
+            await self._record_step(
+                run.id,
+                snapshot.id,
+                "normalize",
+                "succeeded",
+                processor_version=rule_version or "governance-baseline-v1",
+                input_payload={"source_run_id": previous.id},
+                output_payload={"candidate_fact_ids": [item.id for item in candidates]},
+            )
+            run.status = "pending_review" if candidates else "normalized"
+            run.item_count = 1
+            run.changed_count = 0
+            run.finished_at = datetime.now(timezone.utc)
+            await self.session.commit()
+            return self._ingestion_read(ingestion)
+        except (RuntimeError, ValueError, OSError) as error:
+            run.status = "failed"
+            run.error_message = str(error)
+            run.finished_at = datetime.now(timezone.utc)
+            await self._record_step(
+                run.id, snapshot.id, "reprocess", "failed", error_message=str(error)
+            )
+            await self.session.commit()
+            raise HTTPException(status_code=422, detail=f"重新治理失败：{error}") from error
+
     async def list_ingestions(self) -> list[DataIngestionRead]:
         return [self._ingestion_read(item) for item in await self.repository.list_ingestions()]
 
@@ -300,6 +510,7 @@ class DataService:
         status: str,
         *,
         processor_version: str | None = None,
+        input_payload: dict | None = None,
         output_payload: dict | None = None,
         error_message: str | None = None,
     ) -> ProcessingStep:
@@ -310,6 +521,7 @@ class DataService:
             step_name=step_name,
             status=status,
             processor_version=processor_version,
+            input_payload=input_payload or {},
             output_payload=output_payload or {},
             error_message=error_message,
             started_at=now,
@@ -323,6 +535,9 @@ class DataService:
         extracted_text: str,
         suggestions: list[dict],
         actor: str,
+        *,
+        governance_seed: str,
+        governance_rule_version: str | None = None,
     ) -> list[DataFact]:
         if not job.region:
             return []
@@ -341,6 +556,20 @@ class DataService:
             if fact_type not in {"school", "admission", "policy"} or not field or key in seen:
                 continue
             seen.add(key)
+            rule_version = governance_rule_version or job.governance_rule_version or "governance-baseline-v1"
+            governance_key = hashlib.sha256(
+                f"{job.id}:{governance_seed}:{rule_version}:{fact_type}:{field}".encode()
+            ).hexdigest()
+            existing = await self.repository.find_automatic_fact(
+                fact_type=fact_type,
+                entity_name=job.name,
+                field=field,
+                region=job.region,
+                reference_year=reference_year,
+                governance_key=governance_key,
+            )
+            if existing:
+                continue
             candidates.append(await self.repository.add_fact(DataFact(
                 fact_type=fact_type,
                 entity_name=job.name,
@@ -351,6 +580,8 @@ class DataService:
                     "auto_extracted": True,
                     "needs_entity_review": True,
                     "collection_job_id": job.id,
+                    "governance_key": governance_key,
+                    "governance_rule_version": rule_version,
                 },
                 value={
                     "summary": self._excerpt(extracted_text),
@@ -510,6 +741,112 @@ class DataService:
     @staticmethod
     def _ingestion_read(ingestion: DataIngestion) -> DataIngestionRead:
         return DataIngestionRead.model_validate(ingestion)
+
+    async def _capture_attachments(
+        self,
+        client: httpx.AsyncClient,
+        *,
+        base_url: str,
+        html: str,
+    ) -> list[dict]:
+        if not html:
+            return []
+        supported = {".pdf", ".docx", ".xlsx", ".xls", ".csv", ".json", ".txt", ".md", ".png", ".jpg", ".jpeg"}
+        base_host = urlparse(base_url).hostname
+        candidates = []
+        for raw_url in re.findall(r"href\s*=\s*['\"]([^'\"]+)['\"]", html, flags=re.I):
+            absolute_url = urljoin(base_url, raw_url)
+            parsed = urlparse(absolute_url)
+            suffix = Path(parsed.path).suffix.lower()
+            if suffix not in supported or parsed.hostname != base_host or absolute_url in candidates:
+                continue
+            candidates.append(absolute_url)
+            if len(candidates) >= 10:
+                break
+
+        attachments = []
+        for attachment_url in candidates:
+            suffix = Path(urlparse(attachment_url).path).suffix.lower()
+            item = {"url": attachment_url, "suffix": suffix}
+            try:
+                self._validate_collect_url(attachment_url)
+                content_parts = []
+                content_size = 0
+                async with client.stream(
+                    "GET",
+                    attachment_url,
+                    headers={"User-Agent": "NextPath-DataCollector/0.1"},
+                ) as response:
+                    if response.status_code >= 400 or 300 <= response.status_code < 400:
+                        raise RuntimeError(f"附件访问返回 HTTP {response.status_code}")
+                    declared_size = int(response.headers.get("content-length", "0") or 0)
+                    if declared_size > settings.max_upload_size:
+                        raise RuntimeError("附件超过 10MB")
+                    async for chunk in response.aiter_bytes():
+                        content_size += len(chunk)
+                        if content_size > settings.max_upload_size:
+                            raise RuntimeError("附件超过 10MB")
+                        content_parts.append(chunk)
+                    content_type = response.headers.get("content-type")
+                content = b"".join(content_parts)
+                content_hash = hashlib.sha256(content).hexdigest()
+                stored_name = f"data-attachments/{content_hash}{suffix}"
+                destination = settings.upload_dir / stored_name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                if not destination.exists():
+                    destination.write_bytes(content)
+                item.update({
+                    "content_hash": content_hash,
+                    "storage_path": stored_name,
+                    "size": content_size,
+                    "content_type": content_type,
+                })
+            except (httpx.HTTPError, RuntimeError, ValueError, OSError, socket.gaierror) as error:
+                item["error"] = str(error)
+            attachments.append(item)
+        return attachments
+
+    @staticmethod
+    def _attachment_hash_difference(
+        attachments: list[dict], previous: SourceSnapshot | None, *, added: bool
+    ) -> list[str]:
+        current = {item["content_hash"] for item in attachments if item.get("content_hash")}
+        previous_items = (previous.diff_summary or {}).get("attachments", []) if previous else []
+        old = {item["content_hash"] for item in previous_items if item.get("content_hash")}
+        return sorted(current - old if added else old - current)
+
+    def _extract_attachment_text(self, attachments: list[dict]) -> str:
+        extracted = []
+        for item in attachments:
+            storage_path = item.get("storage_path")
+            if not storage_path:
+                continue
+            path = settings.upload_dir / storage_path
+            if not path.exists():
+                continue
+            text_value, _ = self._extract_document_text(path.read_bytes(), path.suffix.lower())
+            if text_value:
+                extracted.append(text_value)
+        return "\n".join(extracted)
+
+    def _extract_snapshot_text(self, snapshot: SourceSnapshot) -> str:
+        if not snapshot.storage_path:
+            return ""
+        path = settings.upload_dir / snapshot.storage_path
+        if not path.exists():
+            raise RuntimeError("原始快照文件不存在")
+        content = path.read_bytes()
+        if path.suffix.lower() == ".html":
+            extracted = self._html_to_text(content.decode("utf-8", errors="replace"))
+        else:
+            extracted, error = self._extract_document_text(content, path.suffix.lower())
+            if error and not extracted:
+                raise RuntimeError(error)
+            extracted = extracted or ""
+        attachment_text = self._extract_attachment_text(
+            (snapshot.diff_summary or {}).get("attachments", [])
+        )
+        return f"{extracted}\n{attachment_text}".strip()
 
     @staticmethod
     def _extract_document_text(content: bytes, suffix: str) -> tuple[str | None, str | None]:

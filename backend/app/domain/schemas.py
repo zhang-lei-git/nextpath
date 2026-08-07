@@ -223,6 +223,25 @@ class CollectionJobCreate(BaseModel):
     is_active: bool = True
 
 
+class CollectionJobUpdate(BaseModel):
+    source_id: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    target_url: str | None = Field(default=None, min_length=8, max_length=1024, pattern=r"^https?://")
+    collection_type: str | None = Field(default=None, max_length=32)
+    region: str | None = Field(default=None, max_length=80)
+    data_type: str | None = Field(default=None, max_length=32)
+    extraction_hint: str | None = Field(default=None, max_length=1000)
+    interval_minutes: int | None = Field(default=None, ge=15, le=10080)
+    timeout_seconds: int | None = Field(default=None, ge=5, le=300)
+    max_retries: int | None = Field(default=None, ge=0, le=10)
+    rate_limit_per_minute: int | None = Field(default=None, ge=1, le=120)
+    parser_key: str | None = Field(default=None, max_length=80)
+    governance_rule_version: str | None = Field(default=None, max_length=48)
+    owner: str | None = Field(default=None, max_length=64)
+    priority: int | None = Field(default=None, ge=0, le=100)
+    is_active: bool | None = None
+
+
 class CollectionJobRead(CollectionJobCreate):
     id: str
     last_run_at: datetime | None
@@ -289,6 +308,11 @@ class CollectionRunRead(BaseModel):
 class CollectionRunDetail(CollectionRunRead):
     snapshots: list[SourceSnapshotRead] = Field(default_factory=list)
     steps: list[ProcessingStepRead] = Field(default_factory=list)
+
+
+class CollectionReprocessRequest(BaseModel):
+    parser_key: str | None = Field(default=None, max_length=80)
+    governance_rule_version: str | None = Field(default=None, max_length=48)
 
 
 class DataFactCreate(BaseModel):

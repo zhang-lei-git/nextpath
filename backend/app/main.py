@@ -24,7 +24,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin for origin in settings.allowed_origins if origin],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT"],
+    allow_methods=["GET", "POST", "PUT", "PATCH"],
     allow_headers=["Content-Type", "X-Demo-User"],
 )
 app.include_router(health_router, prefix="/api")

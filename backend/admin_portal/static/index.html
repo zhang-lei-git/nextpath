@@ -85,12 +85,14 @@
         <div class="grid-two top-gap">
           <section class="panel"><div class="panel-head"><h2>采集任务</h2><span id="collectionCount"></span></div><div id="collectionList" class="list"></div></section>
           <section class="panel form-panel"><h2>新增网页采集</h2><form id="collectionForm" class="form-stack">
+            <input name="job_id" type="hidden">
             <label>数据来源<select name="source_id" id="collectionSource"></select></label>
             <label>任务名称<input name="name" required placeholder="例如：教育局中招通知"></label>
             <label>网页地址<input name="target_url" type="url" required placeholder="https://"></label>
+            <div class="form-row"><label>地区<input name="region" value="西安" placeholder="例如：西安"></label><label>数据类别<select name="data_type"><option value="">待判断</option><option value="school">学校信息</option><option value="admission">招生录取</option><option value="policy">中招政策</option></select></label></div>
             <label>采集间隔（分钟）<input name="interval_minutes" type="number" min="15" value="1440" required></label>
             <label>治理提示<textarea name="extraction_hint" rows="3" placeholder="例如：重点核验招生计划和志愿规则"></textarea></label>
-            <button class="button secondary" type="submit">保存任务</button>
+            <div class="actions"><button id="collectionSubmit" class="button secondary" type="submit">保存任务</button><button id="cancelCollectionEdit" class="button secondary hidden" type="button">取消编辑</button></div>
           </form></section>
         </div>
         <section class="panel top-gap">

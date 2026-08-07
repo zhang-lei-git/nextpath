@@ -208,7 +208,7 @@ async def reset_password(user_id: int, payload: PasswordReset, _: str = Depends(
     return {"ok": True}
 
 
-@app.api_route("/api/data/{path:path}", methods=["GET", "POST"])
+@app.api_route("/api/data/{path:path}", methods=["GET", "POST", "PATCH"])
 async def proxy_data(path: str, request: Request, _: str = Depends(current_user)) -> JSONResponse:
     return await proxy_to_nextpath(os.getenv("NEXT_PATH_API_BASE", "http://127.0.0.1:8000/api/v1/data"), path, request)
 

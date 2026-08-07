@@ -16,6 +16,8 @@ from app.domain.schemas import (
     EvidenceRead,
     CollectionJobCreate,
     CollectionJobRead,
+    CollectionJobUpdate,
+    CollectionReprocessRequest,
     CollectionRunDetail,
     CollectionRunRead,
     DataIngestionRead,
@@ -96,6 +98,16 @@ async def list_collection_jobs(
     return await DataService(session).list_collection_jobs()
 
 
+@router.patch("/collection-jobs/{job_id}", response_model=CollectionJobRead)
+async def update_collection_job(
+    job_id: str,
+    payload: CollectionJobUpdate,
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> CollectionJobRead:
+    return await DataService(session).update_collection_job(job_id, payload)
+
+
 @router.post("/collection-jobs/{job_id}/run", response_model=DataIngestionRead)
 async def run_collection_job(
     job_id: str,
@@ -122,6 +134,25 @@ async def collection_run_detail(
     session: AsyncSession = Depends(get_session),
 ) -> CollectionRunDetail:
     return await DataService(session).collection_run_detail(run_id)
+
+
+@router.post("/collection-runs/{run_id}/retry", response_model=DataIngestionRead)
+async def retry_collection_run(
+    run_id: str,
+    actor: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> DataIngestionRead:
+    return await DataService(session).retry_collection_run(run_id, actor)
+
+
+@router.post("/collection-runs/{run_id}/reprocess", response_model=DataIngestionRead)
+async def reprocess_collection_run(
+    run_id: str,
+    payload: CollectionReprocessRequest,
+    actor: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> DataIngestionRead:
+    return await DataService(session).reprocess_collection_run(run_id, payload, actor)
 
 
 @router.post("/facts", response_model=DataFactRead, status_code=201)
