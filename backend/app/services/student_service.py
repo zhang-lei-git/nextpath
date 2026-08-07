@@ -62,6 +62,7 @@ class StudentService:
             profile_complete=profile_complete,
             junior_school=profile.junior_school,
             grade=profile.grade,
+            target_school=profile.target_school,
             latest_exam=ExamRead.model_validate(latest) if latest else None,
             forecast=forecast,
             action_items=actions,
@@ -113,6 +114,11 @@ class StudentService:
                 analysis_year=exam.exam_date.year,
                 analysis_date=exam.exam_date,
                 subject_scores=exam.scores,
+                score_history=tuple(
+                    (item.total_score, item.total_full_mark, item.exam_date.year)
+                    for item in sorted(exams, key=lambda item: item.exam_date)
+                    if item.exam_date <= exam.exam_date
+                ),
             )
             forecast = predictor.predict(prediction_input)
             report = predictor.build_report(prediction_input)

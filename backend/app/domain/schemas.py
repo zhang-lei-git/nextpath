@@ -9,7 +9,7 @@ class ExamCreate(BaseModel):
     exam_date: date
     total_score: float = Field(ge=0, le=1000)
     total_full_mark: float | None = Field(default=None, gt=0, le=1000)
-    physical_score: float | None = Field(default=None, ge=0, le=60)
+    physical_score: float | None = Field(default=60, ge=0, le=60)
     class_rank: int | None = Field(default=None, ge=1)
     grade_rank: int | None = Field(default=None, ge=1)
     grade_size: int | None = Field(default=None, ge=1)
@@ -17,6 +17,8 @@ class ExamCreate(BaseModel):
 
     @model_validator(mode="after")
     def grade_rank_is_within_grade_size(self) -> "ExamCreate":
+        if self.physical_score is None:
+            self.physical_score = 60
         if self.grade_rank and self.grade_size and self.grade_rank > self.grade_size:
             raise ValueError("年级排名不能大于年级人数")
         return self
@@ -61,6 +63,21 @@ class Forecast(BaseModel):
     position_method: str | None = None
     position_channels: dict[str, dict] = Field(default_factory=dict)
     position_conflict_pp: float | None = None
+    current_snapshot: "ForecastScenario | None" = None
+    reasonable_projection: "ForecastScenario | None" = None
+
+
+class ForecastScenario(BaseModel):
+    title: str
+    total_range: tuple[float, float] | None = None
+    total_full_mark: float | None = None
+    tier: str
+    estimated_rank_range: tuple[int, int] = (0, 0)
+    estimated_percentile_range: tuple[float, float] | None = None
+    current_percentile: float | None = None
+    target_percentile_gap: float | None = None
+    target_rank_gap: int | None = None
+    summary: str
 
 
 class DashboardResponse(BaseModel):
@@ -68,6 +85,7 @@ class DashboardResponse(BaseModel):
     profile_complete: bool
     junior_school: str | None
     grade: str | None
+    target_school: str | None
     latest_exam: ExamRead | None
     forecast: Forecast | None
     action_items: list[ActionItem]

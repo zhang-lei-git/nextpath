@@ -14,7 +14,7 @@ from app.repositories.analysis_repository import AnalysisRepository
 
 
 DEFAULT_POSITION_PARAMETERS = {
-    "engine_contract": "position-fusion-pe-default-60-v1",
+    "engine_contract": "position-fusion-pe-default-60-two-scenarios-v1",
     "rank_interval_ratio": 0.06,
     "minimum_rank_interval": 400,
     "grade_rank_weight": 0,
@@ -31,6 +31,9 @@ DEFAULT_POSITION_PARAMETERS = {
     "difficulty_stage_uncertainty_pp": {"一模": 6.0, "二模": 5.0, "三模": 4.0, "月考": 8.0, "期中": 8.0, "期末": 7.0, "周测": 10.0},
     "school_difficulty_profiles": {},
     "difficulty_profile_min_samples": 20,
+    "score_projection_trend_weight": 0.6,
+    "score_projection_max_trend_points": 24.0,
+    "score_projection_range_points": 10.0,
 }
 
 

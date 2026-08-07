@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Protocol
 
-from app.domain.schemas import AdmissionReport, Forecast
+from app.domain.schemas import AdmissionReport, Forecast, ForecastScenario
 from app.services.published_reference_data import PublishedReferenceData
 from app.services.position_engine import CalibrationPoint, PositionEngine
 from app.services.position_fusion import PositionFusionEngine
@@ -30,6 +30,7 @@ class PredictionInput:
     analysis_year: int | None = None
     analysis_date: date | None = None
     subject_scores: dict[str, float] | None = None
+    score_history: tuple[tuple[float, float | None, int], ...] = ()
 
 
 class PredictionEngine(Protocol):
@@ -64,7 +65,18 @@ class BaselinePredictionEngine:
             self.version = model_version
 
     def predict(self, input_data: PredictionInput) -> Forecast:
-        projected_total = self._projected_total_range(input_data)
+        current_total = self._projected_total_range(input_data)
+        current_bridge = self._score_bridge(input_data, current_total)
+        current_score_percentile = self._score_percentile(current_bridge)
+        current_score_channel = self.position_fusion.score_channel(
+            current_score_percentile,
+            junior_school=None,
+            assessment_stage=None,
+            apply_difficulty=False,
+        )
+        current_position = self.position_fusion.fuse(current_score_channel, None)
+
+        projected_total = self._reasonable_total_range(input_data, current_total)
         bridge = self._score_bridge(input_data, projected_total)
         raw_score_percentile = self._score_percentile(bridge)
         score_channel = self.position_fusion.score_channel(
@@ -94,6 +106,26 @@ class BaselinePredictionEngine:
         target_rank_gap = (
             max(0, current_rank - target_rank)
             if current_rank is not None and target_rank is not None else None
+        )
+        current_snapshot = self._scenario(
+            title="当前现状",
+            total_range=current_total,
+            total_full_mark=self._total_full_mark(input_data),
+            position=current_position,
+            candidate_count=historical_base,
+            target_percentile=target_percentile,
+            target_rank=target_rank,
+            summary="仅按最近一次成绩换算，不使用历史走势或考试难度调整。",
+        )
+        reasonable_projection = self._scenario(
+            title="合理预测",
+            total_range=projected_total,
+            total_full_mark=self._total_full_mark(input_data),
+            position=fused_position,
+            candidate_count=historical_base,
+            target_percentile=target_percentile,
+            target_rank=target_rank,
+            summary=self._projection_summary(input_data),
         )
 
         if current_percentile is None:
@@ -134,6 +166,8 @@ class BaselinePredictionEngine:
                 **({"rank": rank_channel.as_dict()} if rank_channel else {}),
             },
             position_conflict_pp=fused_position.conflict_pp,
+            current_snapshot=current_snapshot,
+            reasonable_projection=reasonable_projection,
         )
 
     def build_report(self, input_data: PredictionInput) -> AdmissionReport:
@@ -175,13 +209,104 @@ class BaselinePredictionEngine:
         )
 
     def _projected_total_range(self, input_data: PredictionInput) -> tuple[float, float]:
-        scheme = scoring_scheme(input_data.analysis_year) if input_data.analysis_year else None
-        scheme_academic_full_mark = scheme.total_full_mark - scheme.counted_subjects.get("pe", 0) if scheme else None
-        academic_full_mark = input_data.total_full_mark or scheme_academic_full_mark or DEFAULT_ACADEMIC_FULL_MARK
+        academic_full_mark = self._academic_full_mark(input_data.total_full_mark, input_data.analysis_year)
         academic_score = min(input_data.total_score, academic_full_mark)
         physical_score = input_data.physical_score if input_data.physical_score is not None else PHYSICAL_EDUCATION_FULL_MARK
         total = round(academic_score + physical_score, 1)
         return (total, total)
+
+    def _reasonable_total_range(
+        self, input_data: PredictionInput, current_total: tuple[float, float]
+    ) -> tuple[float, float]:
+        academic_full_mark = self._academic_full_mark(input_data.total_full_mark, input_data.analysis_year)
+        physical_score = input_data.physical_score if input_data.physical_score is not None else PHYSICAL_EDUCATION_FULL_MARK
+        rates = [
+            min(1, max(0, score / self._academic_full_mark(full_mark, year)))
+            for score, full_mark, year in input_data.score_history
+            if self._academic_full_mark(full_mark, year) > 0
+        ]
+        current_rate = min(1, max(0, input_data.total_score / academic_full_mark))
+        if not rates or abs(rates[-1] - current_rate) > 0.0001:
+            rates.append(current_rate)
+        if len(rates) < 2:
+            return current_total
+
+        recent_rates = rates[-4:]
+        deltas = [right - left for left, right in zip(recent_rates, recent_rates[1:])]
+        average_delta = sum(deltas) / len(deltas)
+        trend_points = average_delta * academic_full_mark * float(
+            self.position_parameters.get("score_projection_trend_weight", 0.6)
+        )
+        max_adjustment = float(self.position_parameters.get("score_projection_max_trend_points", 24.0))
+        trend_points = max(-max_adjustment, min(max_adjustment, trend_points))
+        difficulty_points = self.position_fusion.score_projection_adjustment(
+            input_data.junior_school, input_data.assessment_stage
+        )
+        center = min(academic_full_mark, max(0, input_data.total_score + trend_points + difficulty_points)) + physical_score
+        half_width = float(self.position_parameters.get("score_projection_range_points", 10.0))
+        return (
+            round(max(physical_score, center - half_width), 1),
+            round(min(academic_full_mark + physical_score, center + half_width), 1),
+        )
+
+    @staticmethod
+    def _academic_full_mark(total_full_mark: float | None, analysis_year: int | None) -> float:
+        scheme = scoring_scheme(analysis_year) if analysis_year else None
+        scheme_academic = scheme.total_full_mark - scheme.counted_subjects.get("pe", 0) if scheme else DEFAULT_ACADEMIC_FULL_MARK
+        if total_full_mark is None:
+            return scheme_academic
+        # 580/760 are accepted for old records created before the form switched
+        # to the inclusive total-mark convention.
+        return total_full_mark if total_full_mark <= scheme_academic else total_full_mark - PHYSICAL_EDUCATION_FULL_MARK
+
+    @staticmethod
+    def _total_full_mark(input_data: PredictionInput) -> float:
+        scheme = scoring_scheme(input_data.analysis_year) if input_data.analysis_year else None
+        if scheme:
+            return scheme.total_full_mark
+        if input_data.total_full_mark:
+            return input_data.total_full_mark if input_data.total_full_mark > DEFAULT_ACADEMIC_FULL_MARK else input_data.total_full_mark + PHYSICAL_EDUCATION_FULL_MARK
+        return DEFAULT_ACADEMIC_FULL_MARK + PHYSICAL_EDUCATION_FULL_MARK
+
+    def _scenario(
+        self,
+        *,
+        title: str,
+        total_range: tuple[float, float],
+        total_full_mark: float,
+        position,
+        candidate_count: int | None,
+        target_percentile: float | None,
+        target_rank: int | None,
+        summary: str,
+    ) -> ForecastScenario:
+        percentile_range = position.percentile_range
+        rank_range = self._project_rank_range(percentile_range, candidate_count)
+        rank = round(sum(rank_range) / 2) if rank_range != (0, 0) else None
+        target_percentile_gap = (
+            round(max(0, position.center - target_percentile), 2)
+            if position.center is not None and target_percentile is not None else None
+        )
+        target_rank_gap = max(0, rank - target_rank) if rank is not None and target_rank is not None else None
+        return ForecastScenario(
+            title=title,
+            total_range=total_range,
+            total_full_mark=total_full_mark,
+            tier=self._tier(position.center) if position.center is not None else "暂缺位置参考",
+            estimated_rank_range=rank_range,
+            estimated_percentile_range=percentile_range,
+            current_percentile=position.center,
+            target_percentile_gap=target_percentile_gap,
+            target_rank_gap=target_rank_gap,
+            summary=summary,
+        )
+
+    def _projection_summary(self, input_data: PredictionInput) -> str:
+        if len(input_data.score_history) < 2:
+            return "成绩记录不足两次，暂以当前成绩作为合理预测。"
+        if self.position_fusion.score_projection_adjustment(input_data.junior_school, input_data.assessment_stage):
+            return "已结合历次成绩变化和已审核的同校考试难度档案。"
+        return "已结合历次成绩变化；学校考试难度档案会在审核样本充足后自动纳入。"
 
     def _score_percentile(self, bridge: ScoreBridgeResult | None) -> tuple[float, float] | None:
         if not self.reference_data or not self.reference_data.rank_points or not bridge:

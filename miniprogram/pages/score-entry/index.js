@@ -2,7 +2,7 @@ const { request, uploadScoreImage } = require('../../utils/request')
 
 Page({
   data: {
-    form: { name: '', exam_date: '', total_score: '', total_full_mark: '580', physical_score: '', class_rank: '', grade_rank: '', grade_size: '', scores: {} },
+    form: { name: '', exam_date: '', total_score: '', total_full_mark: '640', physical_score: '60', class_rank: '', grade_rank: '', grade_size: '', scores: {} },
     subjects: [{ key: 'chinese', name: '语文' }, { key: 'math', name: '数学' }, { key: 'english', name: '英语' }, { key: 'physics', name: '物理' }, { key: 'history', name: '历史' }, { key: 'politics', name: '道法' }],
     uploading: false,
     saving: false,
@@ -17,7 +17,7 @@ Page({
     if (options.id) {
       try {
         const exam = await request({ path: `/exams/${options.id}` })
-        this.setData({ examId: exam.id, form: { ...exam, scores: exam.scores || {}, class_rank: exam.class_rank || '', grade_rank: exam.grade_rank || '', grade_size: exam.grade_size || '' } })
+        this.setData({ examId: exam.id, form: { ...exam, total_full_mark: exam.total_full_mark || '640', physical_score: exam.physical_score === null || exam.physical_score === undefined ? '60' : exam.physical_score, scores: exam.scores || {}, class_rank: exam.class_rank || '', grade_rank: exam.grade_rank || '', grade_size: exam.grade_size || '' } })
         wx.setNavigationBarTitle({ title: '修改成绩' })
       } catch (error) { wx.showToast({ title: error.message, icon: 'none' }) }
     }
@@ -98,14 +98,14 @@ Page({
     }
     this.setData({ saving: true })
     try {
-      const { physical_estimate, ...payload } = form
+      const payload = { ...form }
       await request({
         path: this.data.examId ? `/exams/${this.data.examId}` : '/exams', method: this.data.examId ? 'PUT' : 'POST',
         data: {
           ...payload,
           total_score: Number(form.total_score),
           total_full_mark: form.total_full_mark ? Number(form.total_full_mark) : null,
-          physical_score: form.physical_score === '' ? null : Number(form.physical_score),
+          physical_score: form.physical_score === '' ? 60 : Number(form.physical_score),
           class_rank: form.class_rank ? Number(form.class_rank) : null,
           grade_rank: form.grade_rank ? Number(form.grade_rank) : null,
           grade_size: form.grade_size ? Number(form.grade_size) : null,

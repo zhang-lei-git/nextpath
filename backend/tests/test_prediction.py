@@ -113,3 +113,21 @@ def test_missing_physical_score_defaults_to_full_mark_for_position_calculation()
 
     assert forecast.projected_total_range == (580, 580)
     assert "满分 60 分" in forecast.basis[1]
+
+
+def test_two_parent_facing_scenarios_keep_current_and_projected_results_separate() -> None:
+    forecast = BaselinePredictionEngine().predict(PredictionInput(
+        total_score=520,
+        total_full_mark=640,
+        class_rank=None,
+        target_school=None,
+        analysis_year=2026,
+        score_history=((480, 640, 2026), (520, 640, 2026)),
+    ))
+
+    assert forecast.current_snapshot is not None
+    assert forecast.reasonable_projection is not None
+    assert forecast.current_snapshot.total_range == (580, 580)
+    assert forecast.current_snapshot.total_full_mark == 640
+    assert forecast.reasonable_projection.total_range == (594, 614)
+    assert forecast.reasonable_projection.summary.startswith("已结合历次成绩变化")

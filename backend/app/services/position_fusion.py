@@ -90,14 +90,15 @@ class PositionFusionEngine:
         *,
         junior_school: str | None,
         assessment_stage: str | None,
+        apply_difficulty: bool = True,
     ) -> PositionChannel | None:
         if not percentile_range:
             return None
         low, high = percentile_range
         center = (low + high) / 2
         uncertainty = float(self.parameters["score_channel_base_uncertainty_pp"])
-        uncertainty += self._stage_uncertainty(assessment_stage)
-        profile = self._difficulty_profile(junior_school, assessment_stage)
+        uncertainty += self._stage_uncertainty(assessment_stage) if apply_difficulty else 0
+        profile = self._difficulty_profile(junior_school, assessment_stage) if apply_difficulty else None
         applied = profile is not None
         if profile:
             center += float(profile.get("percentile_shift_pp", 0))
@@ -110,6 +111,11 @@ class PositionFusionEngine:
             method="score_bridge_with_verified_difficulty" if applied else "score_bridge",
             difficulty_applied=applied,
         )
+
+    def score_projection_adjustment(self, junior_school: str | None, assessment_stage: str | None) -> float:
+        """Returns a verified score-space correction, never a hard-coded school rule."""
+        profile = self._difficulty_profile(junior_school, assessment_stage)
+        return float(profile.get("academic_score_shift", 0)) if profile else 0.0
 
     def rank_channel(
         self,

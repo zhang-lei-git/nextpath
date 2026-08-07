@@ -38,8 +38,11 @@ def test_exam_creation_and_dashboard() -> None:
     assert created.status_code == 201
     assert dashboard.status_code == 200
     assert dashboard.json()["latest_exam"]["total_score"] == 615
+    assert dashboard.json()["latest_exam"]["physical_score"] == 60
     assert dashboard.json()["latest_exam"]["grade_size"] == 680
     assert dashboard.json()["forecast"]["target_gap"] is None
+    assert dashboard.json()["forecast"]["current_snapshot"]["title"] == "当前现状"
+    assert dashboard.json()["forecast"]["reasonable_projection"]["title"] == "合理预测"
     assert reports.status_code == 200
     assert reports.json()
     html = client.get(f"/api/v1/reports/{reports.json()[0]['id']}/html", headers=headers)
