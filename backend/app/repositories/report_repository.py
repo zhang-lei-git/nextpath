@@ -14,6 +14,15 @@ class ReportRepository:
         await self.session.refresh(report)
         return report
 
+    async def monthly_for_period(self, profile_id: str, period_key: str) -> StudentReport | None:
+        return await self.session.scalar(
+            select(StudentReport).where(
+                StudentReport.profile_id == profile_id,
+                StudentReport.report_type == "monthly",
+                StudentReport.period_key == period_key,
+            ).limit(1)
+        )
+
     async def list_for_profile(self, profile_id: str) -> list[StudentReport]:
         return list(await self.session.scalars(
             select(StudentReport)

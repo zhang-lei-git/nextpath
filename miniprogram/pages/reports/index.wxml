@@ -3,6 +3,6 @@
   <view class="page-title">每次判断都能回看</view>
   <view class="empty card" wx:if="{{!loading && !reports.length}}">保存一次成绩后，会在这里生成报告</view>
   <button class="report-card card" wx:for="{{reports}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
-    <view><view class="report-title">{{item.title}}</view><view class="muted">{{item.created_at}}</view></view><view class="arrow">查看</view>
+    <view><view class="report-kind">{{item.report_type === 'monthly' ? '月度报告' : '单次报告'}}</view><view class="report-title">{{item.title}}</view><view class="muted">{{item.display_date}}</view></view><view class="arrow">查看</view>
   </button>
 </view>

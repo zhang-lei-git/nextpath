@@ -153,6 +153,8 @@ class StudentReportRead(BaseModel):
     exam_id: str
     title: str
     status: str
+    report_type: Literal["exam", "monthly"] = "exam"
+    period_key: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

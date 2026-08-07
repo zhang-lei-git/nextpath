@@ -49,12 +49,44 @@ class StudentReportService:
             profile_id=context.profile.id,
             exam_id=context.exam.id,
             analysis_run_id=context.analysis_run_id,
+            report_type="exam",
             title=f"{context.exam.name}升学分析报告",
             report_json=report_json,
             html_content=html_content,
         ))
+        await self._publish_monthly(context)
         await self.session.commit()
         return StudentReportRead.model_validate(record)
+
+    async def _publish_monthly(self, context: ReportContext) -> None:
+        period_key = context.exam.exam_date.strftime("%Y-%m")
+        report_json = self._build_input(context)
+        title = f"{context.exam.exam_date.year}年{context.exam.exam_date.month}月升学月报"
+        monthly_count = sum(1 for item in context.exams if item.exam_date.strftime("%Y-%m") == period_key)
+        report_json["meta"]["title"] = title
+        report_json["meta"]["description"] = f"本月已记录 {monthly_count} 次成绩，关注位置和目标变化。"
+        report_json["meta"]["outputTitle"] = f"nextpath-monthly-{context.profile.id}-{period_key}"
+        html_content = self._render_html(report_json)
+        existing = await self.repository.monthly_for_period(context.profile.id, period_key)
+        if existing:
+            existing.exam_id = context.exam.id
+            existing.analysis_run_id = context.analysis_run_id
+            existing.title = title
+            existing.report_json = report_json
+            existing.html_content = html_content
+            existing.status = "published"
+            await self.session.flush()
+            return
+        await self.repository.add(StudentReport(
+            profile_id=context.profile.id,
+            exam_id=context.exam.id,
+            analysis_run_id=context.analysis_run_id,
+            report_type="monthly",
+            period_key=period_key,
+            title=title,
+            report_json=report_json,
+            html_content=html_content,
+        ))
 
     async def list_for_profile(self, profile_id: str) -> list[StudentReportRead]:
         return [StudentReportRead.model_validate(item) for item in await self.repository.list_for_profile(profile_id)]

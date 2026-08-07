@@ -5,7 +5,13 @@ Page({
   onShow() { this.load() },
   async load() {
     this.setData({ loading: true })
-    try { this.setData({ reports: await request({ path: '/reports' }) }) }
+    try {
+      const reports = await request({ path: '/reports' })
+      this.setData({ reports: reports.map((item) => ({
+        ...item,
+        display_date: item.period_key ? item.period_key.replace('-', '年') + '月' : item.created_at.slice(0, 10)
+      })) })
+    }
     catch (error) { wx.showToast({ title: error.message, icon: 'none' }) }
     finally { this.setData({ loading: false }) }
   },

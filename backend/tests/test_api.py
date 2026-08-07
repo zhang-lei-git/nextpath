@@ -90,7 +90,8 @@ def test_seven_mock_exams_generate_saved_reports_and_support_correction() -> Non
             exam_ids.append(response.json()["id"])
         reports = client.get("/api/v1/reports", headers=headers)
         assert reports.status_code == 200
-        assert len(reports.json()) == 7
+        assert len([item for item in reports.json() if item["report_type"] == "exam"]) == 7
+        assert len([item for item in reports.json() if item["report_type"] == "monthly"]) == 7
         corrected = client.put(
             f"/api/v1/exams/{exam_ids[0]}",
             headers=headers,
@@ -101,7 +102,10 @@ def test_seven_mock_exams_generate_saved_reports_and_support_correction() -> Non
         )
         assert corrected.status_code == 200
         updated_reports = client.get("/api/v1/reports", headers=headers)
-        assert len(updated_reports.json()) == 8
+        assert len([item for item in updated_reports.json() if item["report_type"] == "exam"]) == 8
+        monthly = [item for item in updated_reports.json() if item["report_type"] == "monthly"]
+        assert len(monthly) == 7
+        assert sum(item["period_key"] == "2025-09" for item in monthly) == 1
         published = client.get(f"/api/v1/reports/published/{updated_reports.json()[0]['id']}")
         assert published.status_code == 200
         assert "历次模考成绩与位置变化" in published.text

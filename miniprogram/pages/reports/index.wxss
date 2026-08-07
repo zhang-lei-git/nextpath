@@ -1,5 +1,6 @@
 .page-title { margin: 12rpx 0 30rpx; color: #143F43; font-size: 44rpx; font-weight: 700; }
 .report-card { display:flex; width:100%; align-items:center; justify-content:space-between; margin-bottom:16rpx; padding:27rpx; text-align:left; }
 .report-title { margin-bottom:8rpx; color:#143F43; font-size:30rpx; font-weight:650; }
+.report-kind { margin-bottom:6rpx; color:#16766D; font-size:22rpx; font-weight:650; }
 .arrow { color:#16766D; font-size:25rpx; }
 .empty { padding:34rpx 28rpx; color:#687574; font-size:27rpx; text-align:center; }

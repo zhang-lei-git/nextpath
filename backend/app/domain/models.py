@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, JSON, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -58,11 +58,14 @@ class ScoreImport(Base):
 
 class StudentReport(Base):
     __tablename__ = "student_reports"
+    __table_args__ = (UniqueConstraint("profile_id", "report_type", "period_key", name="uq_student_report_period"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     profile_id: Mapped[str] = mapped_column(ForeignKey("student_profiles.id"), index=True)
     exam_id: Mapped[str] = mapped_column(ForeignKey("exams.id"), index=True)
     analysis_run_id: Mapped[str | None] = mapped_column(ForeignKey("analysis_runs.id"), nullable=True, index=True)
+    report_type: Mapped[str] = mapped_column(String(24), default="exam", index=True)
+    period_key: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(160))
     status: Mapped[str] = mapped_column(String(24), default="published", index=True)
     report_json: Mapped[dict] = mapped_column(JSON, default=dict)
