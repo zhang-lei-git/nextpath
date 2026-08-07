@@ -27,7 +27,6 @@ class PredictionInput:
     assessment_stage: str | None = None
     total_full_mark: float | None = None
     physical_score: float | None = None
-    physical_estimate: float | None = None
     analysis_year: int | None = None
     analysis_date: date | None = None
     subject_scores: dict[str, float] | None = None
@@ -42,12 +41,12 @@ class BaselinePredictionEngine:
     """Pre-exam forecast built only from past, published reference data.
 
     A mock examination is not an admission result.  The engine therefore starts with
-    the student's local percentile when it is available, treats PE as an uncertain
-    60-point component before its result is known, and maps both sides to historical
+    the student's local percentile when it is available, includes PE as a 60-point
+    component unless the actual result has been entered, and maps both sides to historical
     admission percentiles.  It never reads a rank table from the analysis year.
     """
 
-    version = "historical-preexam-2026.3"
+    version = "historical-preexam-2026.4"
 
     def __init__(
         self,
@@ -99,7 +98,7 @@ class BaselinePredictionEngine:
 
         if current_percentile is None:
             tier = "先补全年级位置，再看升学范围"
-            position_note = "本次是未含体育的模考成绩，且缺少可换算的历史数据。补全年级排名和年级人数后，系统会先按校内位置估算。"
+            position_note = "本次模考学科成绩已按体育满分计入中考总分，但缺少可换算的历史数据。补全年级排名和年级人数后，系统会先按校内位置估算。"
         else:
             tier = self._tier(current_percentile)
             position_note = self._position_note(percentile_range, method, input_data)
@@ -180,13 +179,9 @@ class BaselinePredictionEngine:
         scheme_academic_full_mark = scheme.total_full_mark - scheme.counted_subjects.get("pe", 0) if scheme else None
         academic_full_mark = input_data.total_full_mark or scheme_academic_full_mark or DEFAULT_ACADEMIC_FULL_MARK
         academic_score = min(input_data.total_score, academic_full_mark)
-        if input_data.physical_score is not None:
-            low = high = input_data.physical_score
-        elif input_data.physical_estimate is not None:
-            low, high = max(0, input_data.physical_estimate - 3), min(60, input_data.physical_estimate + 3)
-        else:
-            low, high = 0, PHYSICAL_EDUCATION_FULL_MARK
-        return (round(academic_score + low, 1), round(academic_score + high, 1))
+        physical_score = input_data.physical_score if input_data.physical_score is not None else PHYSICAL_EDUCATION_FULL_MARK
+        total = round(academic_score + physical_score, 1)
+        return (total, total)
 
     def _score_percentile(self, bridge: ScoreBridgeResult | None) -> tuple[float, float] | None:
         if not self.reference_data or not self.reference_data.rank_points or not bridge:
@@ -251,10 +246,8 @@ class BaselinePredictionEngine:
     @staticmethod
     def _physical_basis(input_data: PredictionInput, projected_total: tuple[float, float]) -> str:
         if input_data.physical_score is not None:
-            return f"体育成绩已确认为 {input_data.physical_score:g}/60，合计预测口径为 {projected_total[0]:g} 分。"
-        if input_data.physical_estimate is not None:
-            return f"体育暂按 {input_data.physical_estimate:g}/60 的家长预估，并保留上下 3 分区间。"
-        return "体育尚未考试或未录入，预估位置保留体育 0–60 分的不确定性，不把模考学科分当作中考总分。"
+            return f"体育成绩已录入 {input_data.physical_score:g}/60，本次中考计分总分按 {projected_total[0]:g} 分计算。"
+        return f"体育成绩尚未录入，本次中考计分总分暂按体育满分 60 分，按 {projected_total[0]:g} 分计算。"
 
     @staticmethod
     def _position_basis(method: str) -> str:
@@ -292,4 +285,4 @@ class BaselinePredictionEngine:
 
 
 def basis_with_next_step(basis: list[str]) -> list[str]:
-    return basis + ["下次录入优先补全年级排名、年级人数和体育实际成绩；系统会保留本次判断，不会覆盖历史报告。"]
+    return basis + ["下次录入优先补全年级排名和年级人数；体育成绩公布后可直接补录，系统会保留本次判断，不会覆盖历史报告。"]

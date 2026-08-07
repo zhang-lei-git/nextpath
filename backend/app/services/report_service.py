@@ -80,6 +80,7 @@ class StudentReportService:
         source = context.reference_data.rank_source if context.reference_data and context.reference_data.rank_source else "尚未发布可用的历史升学参考数据"
         evidence_level = "third_party" if "待核验" in source or "网传" in source else "official"
         report = context.admission_report
+        projected_total = context.forecast.projected_total_range[0] if context.forecast.projected_total_range else None
         score_note = "" if sum(item["finalScore"] for item in subjects if item.get("table", True)) == context.exam.total_score else "科目分数未完整录入，总分以本次确认记录为准。"
         rank_note = (
             f"本次年级第 {context.exam.grade_rank}/{context.exam.grade_size} 名。"
@@ -103,7 +104,7 @@ class StudentReportService:
             "glance": {
                 "verdictHtml": f"<strong>{context.forecast.tier}</strong><br>{position}",
                 "kpis": [
-                    {"label": "学科总分", "value": f"{context.exam.total_score:g}", "note": "不含体育", "tone": "blue"},
+                    {"label": "中考计分总分", "value": f"{projected_total:g}" if projected_total is not None else "待计算", "note": "含体育", "tone": "blue"},
                     {"label": "参考位置", "value": self._rank_value(context.forecast), "note": "以区间呈现", "tone": "teal"},
                     {"label": "目标差距", "value": self._gap_value(context.forecast), "note": target, "tone": "green"},
                     {"label": "已记录考试", "value": str(len(exams)), "note": "持续更新", "tone": "blue"},

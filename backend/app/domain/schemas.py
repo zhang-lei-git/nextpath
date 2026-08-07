@@ -10,7 +10,6 @@ class ExamCreate(BaseModel):
     total_score: float = Field(ge=0, le=1000)
     total_full_mark: float | None = Field(default=None, gt=0, le=1000)
     physical_score: float | None = Field(default=None, ge=0, le=60)
-    physical_estimate: float | None = Field(default=None, ge=0, le=60)
     class_rank: int | None = Field(default=None, ge=1)
     grade_rank: int | None = Field(default=None, ge=1)
     grade_size: int | None = Field(default=None, ge=1)

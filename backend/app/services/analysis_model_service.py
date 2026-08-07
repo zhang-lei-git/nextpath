@@ -14,6 +14,7 @@ from app.repositories.analysis_repository import AnalysisRepository
 
 
 DEFAULT_POSITION_PARAMETERS = {
+    "engine_contract": "position-fusion-pe-default-60-v1",
     "rank_interval_ratio": 0.06,
     "minimum_rank_interval": 400,
     "grade_rank_weight": 0,

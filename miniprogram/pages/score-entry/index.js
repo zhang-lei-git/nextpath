@@ -2,7 +2,7 @@ const { request, uploadScoreImage } = require('../../utils/request')
 
 Page({
   data: {
-    form: { name: '', exam_date: '', total_score: '', total_full_mark: '580', physical_estimate: '', physical_score: '', class_rank: '', grade_rank: '', grade_size: '', scores: {} },
+    form: { name: '', exam_date: '', total_score: '', total_full_mark: '580', physical_score: '', class_rank: '', grade_rank: '', grade_size: '', scores: {} },
     subjects: [{ key: 'chinese', name: '语文' }, { key: 'math', name: '数学' }, { key: 'english', name: '英语' }, { key: 'physics', name: '物理' }, { key: 'history', name: '历史' }, { key: 'politics', name: '道法' }],
     uploading: false,
     saving: false,
@@ -29,7 +29,7 @@ Page({
   updateSubject(event) {
     const key = event.currentTarget.dataset.key
     const scores = { ...this.data.form.scores, [key]: event.detail.value }
-    const total = Object.values(scores).reduce((sum, value) => sum + (Number(value) || 0), 0)
+    const total = Object.entries(scores).filter(([subject]) => subject !== 'pe').reduce((sum, [, value]) => sum + (Number(value) || 0), 0)
     this.setData({ 'form.scores': scores, 'form.total_score': total || '' })
   },
   chooseImage() {
@@ -70,19 +70,21 @@ Page({
     this.setData({ recording: true })
   },
   applyVoiceText(text) {
-    const labels = { chinese: '语文', math: '数学', english: '英语', physics: '物理', history: '历史', politics: '(?:道法|政治)', pe: '体育' }
+    const labels = { chinese: '语文', math: '数学', english: '英语', physics: '物理', history: '历史', politics: '(?:道法|政治)' }
     const scores = { ...this.data.form.scores }
     Object.entries(labels).forEach(([key, label]) => {
       const matched = text.match(new RegExp(`${label}[为是：: ]*(\\d+(?:\\.\\d+)?)`))
       if (matched) scores[key] = matched[1]
     })
-    const total = Object.values(scores).reduce((sum, value) => sum + (Number(value) || 0), 0)
+    const physical = text.match(/体育[为是：: ]*(\d+(?:\.\d+)?)/)
+    const total = Object.entries(scores).filter(([subject]) => subject !== 'pe').reduce((sum, [, value]) => sum + (Number(value) || 0), 0)
     const classRank = text.match(/班(?:级)?(?:第)?(\\d+)名/)
     const gradeRank = text.match(/年级(?:第)?(\\d+)名/)
     this.setData({
       voiceText: text,
       'form.scores': scores,
       'form.total_score': total || this.data.form.total_score,
+      'form.physical_score': physical ? physical[1] : this.data.form.physical_score,
       'form.class_rank': classRank ? classRank[1] : this.data.form.class_rank,
       'form.grade_rank': gradeRank ? gradeRank[1] : this.data.form.grade_rank
     })
@@ -96,18 +98,18 @@ Page({
     }
     this.setData({ saving: true })
     try {
+      const { physical_estimate, ...payload } = form
       await request({
         path: this.data.examId ? `/exams/${this.data.examId}` : '/exams', method: this.data.examId ? 'PUT' : 'POST',
         data: {
-          ...form,
+          ...payload,
           total_score: Number(form.total_score),
           total_full_mark: form.total_full_mark ? Number(form.total_full_mark) : null,
-          physical_estimate: form.physical_estimate === '' ? null : Number(form.physical_estimate),
           physical_score: form.physical_score === '' ? null : Number(form.physical_score),
           class_rank: form.class_rank ? Number(form.class_rank) : null,
           grade_rank: form.grade_rank ? Number(form.grade_rank) : null,
           grade_size: form.grade_size ? Number(form.grade_size) : null,
-          scores: Object.fromEntries(Object.entries(form.scores).filter(([, value]) => value !== '').map(([key, value]) => [key, Number(value)]))
+          scores: Object.fromEntries(Object.entries(form.scores).filter(([key, value]) => key !== 'pe' && value !== '').map(([key, value]) => [key, Number(value)]))
         }
       })
       wx.showToast({ title: this.data.examId ? '成绩已更新' : '成绩已保存', icon: 'success' })

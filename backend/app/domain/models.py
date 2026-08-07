@@ -32,7 +32,6 @@ class Exam(Base):
     total_score: Mapped[float] = mapped_column(Float)
     total_full_mark: Mapped[float | None] = mapped_column(Float, nullable=True)
     physical_score: Mapped[float | None] = mapped_column(Float, nullable=True)
-    physical_estimate: Mapped[float | None] = mapped_column(Float, nullable=True)
     class_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
     grade_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
     grade_size: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -29,8 +29,6 @@ async def lifespan(_: FastAPI):
                 await connection.exec_driver_sql("ALTER TABLE exams ADD COLUMN total_full_mark FLOAT")
             if "physical_score" not in {column[1] for column in exam_columns}:
                 await connection.exec_driver_sql("ALTER TABLE exams ADD COLUMN physical_score FLOAT")
-            if "physical_estimate" not in {column[1] for column in exam_columns}:
-                await connection.exec_driver_sql("ALTER TABLE exams ADD COLUMN physical_estimate FLOAT")
             calibration_columns = (await connection.exec_driver_sql("PRAGMA table_info(position_calibration_samples)")).fetchall()
             if "final_candidate_count" not in {column[1] for column in calibration_columns}:
                 await connection.exec_driver_sql(

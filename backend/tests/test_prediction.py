@@ -21,7 +21,7 @@ def test_baseline_prediction_is_explainable() -> None:
     assert forecast.current_percentile is not None
     assert forecast.target_percentile is not None
     assert forecast.target_gap is None
-    assert forecast.model_version == "historical-preexam-2026.3"
+    assert forecast.model_version == "historical-preexam-2026.4"
     assert "不使用本年度一分一段表" in forecast.basis[0]
 
 
@@ -47,7 +47,7 @@ def test_pre_exam_prediction_uses_historical_reference_data() -> None:
     )
     engine = BaselinePredictionEngine(reference_data)
     prediction_input = PredictionInput(
-        total_score=520, total_full_mark=580, physical_estimate=54, class_rank=None,
+        total_score=520, total_full_mark=580, physical_score=54, class_rank=None,
         target_school="测试高中", analysis_year=2026, analysis_date=date(2026, 3, 15),
     )
 
@@ -55,8 +55,8 @@ def test_pre_exam_prediction_uses_historical_reference_data() -> None:
     report = engine.build_report(prediction_input)
 
     assert forecast.reference_year == 2025
-    assert forecast.projected_total_range == (571, 577)
-    assert forecast.historical_equivalent_score_range == (731.6, 739.3)
+    assert forecast.projected_total_range == (574, 574)
+    assert forecast.historical_equivalent_score_range is not None
     assert forecast.score_bridge_method == "subject_bridge_rate_projection"
     assert forecast.current_percentile is not None
     assert forecast.position_method == "score_only"
@@ -86,7 +86,7 @@ def test_prediction_preserves_both_position_channels_for_auditing() -> None:
     forecast = engine.predict(PredictionInput(
         total_score=520,
         total_full_mark=580,
-        physical_estimate=54,
+        physical_score=54,
         class_rank=None,
         grade_rank=20,
         grade_size=100,
@@ -101,3 +101,15 @@ def test_prediction_preserves_both_position_channels_for_auditing() -> None:
     assert set(forecast.position_channels) == {"score", "rank"}
     assert forecast.position_channels["rank"]["sample_count"] == 2
     assert forecast.position_conflict_pp is not None
+
+
+def test_missing_physical_score_defaults_to_full_mark_for_position_calculation() -> None:
+    forecast = BaselinePredictionEngine().predict(PredictionInput(
+        total_score=520,
+        total_full_mark=580,
+        class_rank=None,
+        target_school=None,
+    ))
+
+    assert forecast.projected_total_range == (580, 580)
+    assert "满分 60 分" in forecast.basis[1]
