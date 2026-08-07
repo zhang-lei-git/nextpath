@@ -1,0 +1,22 @@
+[Unit]
+Description=NextPath scheduled data collection service
+After=network-online.target nextpath-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/nextpath-api
+Environment=PYTHONUNBUFFERED=1
+Environment=DATABASE_URL=sqlite+aiosqlite:////var/lib/nextpath/nextpath.db
+Environment=UPLOAD_DIR=/var/lib/nextpath/uploads
+EnvironmentFile=-/etc/nextpath/nextpath-api.env
+ExecStart=/opt/nextpath-api/.venv/bin/python -m app.workers.scheduler --poll-seconds 60
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

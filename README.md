@@ -40,4 +40,6 @@ cd backend
 .venv/bin/python -m app.workers.scheduler --poll-seconds 60
 ```
 
+生产环境的 systemd 配置位于 `deploy/nextpath-data-scheduler.service`。
+
 数据库结构由 Alembic 管理。部署前执行 `alembic upgrade head`；需要回退本次结构时，应先停止 API 和 worker，再执行 `alembic downgrade -1`。
