@@ -80,7 +80,8 @@ class StudentReportService:
         source = context.reference_data.rank_source if context.reference_data and context.reference_data.rank_source else "尚未发布可用的历史升学参考数据"
         evidence_level = "third_party" if "待核验" in source or "网传" in source else "official"
         report = context.admission_report
-        projected_total = context.forecast.projected_total_range[0] if context.forecast.projected_total_range else None
+        current_scenario = context.forecast.current_snapshot
+        reasonable_scenario = context.forecast.reasonable_projection
         score_note = "" if sum(item["finalScore"] for item in subjects if item.get("table", True)) == context.exam.total_score else "科目分数未完整录入，总分以本次确认记录为准。"
         rank_note = (
             f"本次年级第 {context.exam.grade_rank}/{context.exam.grade_size} 名。"
@@ -104,7 +105,8 @@ class StudentReportService:
             "glance": {
                 "verdictHtml": f"<strong>{context.forecast.tier}</strong><br>{position}",
                 "kpis": [
-                    {"label": "中考计分总分", "value": f"{projected_total:g}" if projected_total is not None else "待计算", "note": "含体育", "tone": "blue"},
+                    {"label": "当前现状", "value": self._scenario_total(current_scenario), "note": "仅最近一次成绩", "tone": "blue"},
+                    {"label": "合理预测", "value": self._scenario_total(reasonable_scenario), "note": "结合历史变化", "tone": "teal"},
                     {"label": "参考位置", "value": self._rank_value(context.forecast), "note": "以区间呈现", "tone": "teal"},
                     {"label": "目标差距", "value": self._gap_value(context.forecast), "note": target, "tone": "green"},
                     {"label": "已记录考试", "value": str(len(exams)), "note": "持续更新", "tone": "blue"},
@@ -238,6 +240,14 @@ class StudentReportService:
         if forecast.current_percentile is not None:
             return f"前 {forecast.current_percentile:.1f}%"
         return "待补数据"
+
+    @staticmethod
+    def _scenario_total(scenario) -> str:
+        if not scenario or not scenario.total_range or scenario.total_full_mark is None:
+            return "待计算"
+        low, high = scenario.total_range
+        value = f"{low:g}" if low == high else f"{low:g}–{high:g}"
+        return f"{value}/{scenario.total_full_mark:g}"
 
     @staticmethod
     def _gap_value(forecast: Forecast) -> str:
