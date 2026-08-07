@@ -11,6 +11,13 @@ class PublishedSchoolReference:
     name: str
     score: float
     source: str
+    reference_year: int = 0
+    rank: int | None = None
+    candidate_count: int | None = None
+    plan: int | None = None
+    previous_year_plan: int | None = None
+    batch: str | None = None
+    anomaly: bool = False
 
 
 @dataclass(frozen=True)
@@ -48,6 +55,26 @@ class PublishedReferenceDataService:
         release = await self.repository.latest_release_before(region, before_year, as_of=as_of)
         return await self._from_release(release, release.reference_year) if release else None
 
+    async def load_historical_bundle(
+        self, region: str, before_year: int, *, as_of: datetime | None = None, limit: int = 5
+    ) -> PublishedReferenceData | None:
+        releases = await self.repository.latest_releases_before(region, before_year, as_of=as_of, limit=limit)
+        datasets = [await self._from_release(release, release.reference_year) for release in releases]
+        datasets = [item for item in datasets if item]
+        if not datasets:
+            return None
+        latest = datasets[0]
+        return PublishedReferenceData(
+            reference_year=latest.reference_year,
+            release_id=latest.release_id,
+            rank_source=latest.rank_source,
+            rank_points=latest.rank_points,
+            school_references=tuple(reference for item in datasets for reference in item.school_references),
+            policy_summary=latest.policy_summary,
+            rank_full_mark=latest.rank_full_mark,
+            candidate_count=latest.candidate_count,
+        )
+
     async def _from_release(self, release, reference_year: int) -> PublishedReferenceData | None:
         admissions = await self.repository.facts_in_release(release.id, "admission")
         policies = await self.repository.facts_in_release(release.id, "policy")
@@ -56,6 +83,7 @@ class PublishedReferenceDataService:
         rank_full_mark: float | None = None
         candidate_count: int | None = None
         school_references: list[PublishedSchoolReference] = []
+        plan_by_school: dict[str, tuple[int | None, int | None]] = {}
 
         for fact in admissions:
             if fact.field == "一分一段参考点":
@@ -70,12 +98,32 @@ class PublishedReferenceDataService:
                 rank_full_mark = float(max_score) if isinstance(max_score, (float, int)) else None
                 base = fact.value.get("candidate_count")
                 candidate_count = int(base) if isinstance(base, (float, int)) else None
-            elif fact.field == "录取参考线" and "score" in fact.value:
+            elif fact.field == "招生计划":
+                plan_by_school[fact.entity_name] = (
+                    int(fact.value["plan"]) if isinstance(fact.value.get("plan"), (float, int)) else None,
+                    int(fact.value["previous_year_plan"]) if isinstance(fact.value.get("previous_year_plan"), (float, int)) else None,
+                )
+
+        for fact in admissions:
+            if fact.field == "录取参考线" and "score" in fact.value:
+                score = float(fact.value["score"])
+                rank = None
+                if len(rank_points) >= 2:
+                    from app.services.position_engine import PositionEngine
+                    rank = PositionEngine(rank_points).estimate(score).rank
+                plan, previous_plan = plan_by_school.get(fact.entity_name, (None, None))
                 school_references.append(
                     PublishedSchoolReference(
                         name=fact.entity_name,
-                        score=float(fact.value["score"]),
+                        score=score,
                         source=fact.value.get("source") or "已发布学校招录参考数据",
+                        reference_year=reference_year,
+                        rank=rank,
+                        candidate_count=candidate_count,
+                        plan=plan,
+                        previous_year_plan=previous_plan,
+                        batch=fact.scope.get("batch"),
+                        anomaly=bool(fact.scope.get("anomaly")),
                     )
                 )
 

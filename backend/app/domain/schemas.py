@@ -99,6 +99,8 @@ class TargetComparison(BaseModel):
     current_gap_rank_range: tuple[int, int] | None = None
     projected_gap_rank_range: tuple[int, int] | None = None
     risk: Literal["已进入", "稳妥", "匹配", "边界冲刺", "仍有差距", "数据不足"]
+    current_relation: str | None = None
+    projected_relation: str | None = None
 
 
 class DashboardResponse(BaseModel):

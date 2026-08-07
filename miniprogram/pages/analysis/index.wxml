@@ -5,21 +5,28 @@
     <view class="summary-label">目标</view>
     <view class="tier" wx:if="{{targetSchool}}">{{targetSchool}}</view>
     <view class="tier" wx:else>尚未设置目标高中</view>
-    <view class="summary-line" wx:if="{{forecast.target_percentile !== null}}">目标位置：全区前 {{forecast.target_percentile}}%</view>
+    <view class="summary-line" wx:if="{{forecast.target_comparison && forecast.target_comparison.school_rank_range}}">近年参考边界：全区第 {{forecast.target_comparison.school_rank_range[0]}}–{{forecast.target_comparison.school_rank_range[1]}} 名</view>
+    <view class="summary-line" wx:if="{{forecast.target_comparison}}">当前判断：{{forecast.target_comparison.risk}}</view>
   </view>
   <view class="section-title">当前现状</view>
   <view class="scenario card" wx:if="{{forecast.current_snapshot}}">
     <view class="scenario-score">{{forecast.current_snapshot.total_range[0]}} / {{forecast.current_snapshot.total_full_mark}} 分</view>
     <view class="scenario-meta" wx:if="{{forecast.current_snapshot.current_percentile !== null}}">全区前 {{forecast.current_snapshot.estimated_percentile_range[0]}}%–{{forecast.current_snapshot.estimated_percentile_range[1]}}%</view>
     <view class="scenario-meta" wx:else>暂未形成位置判断</view>
-    <view class="scenario-gap" wx:if="{{forecast.current_snapshot.target_percentile_gap !== null}}">距目标：还需前移 {{forecast.current_snapshot.target_percentile_gap}} 个百分点</view>
+    <view class="scenario-gap" wx:if="{{forecast.target_comparison && forecast.target_comparison.current_relation}}">与目标相比：{{forecast.target_comparison.current_relation}}</view>
   </view>
   <view class="section-title">合理预测</view>
   <view class="scenario card projection" wx:if="{{forecast.reasonable_projection}}">
     <view class="scenario-score">{{forecast.reasonable_projection.total_range[0]}}–{{forecast.reasonable_projection.total_range[1]}} / {{forecast.reasonable_projection.total_full_mark}} 分</view>
     <view class="scenario-meta" wx:if="{{forecast.reasonable_projection.current_percentile !== null}}">全区前 {{forecast.reasonable_projection.estimated_percentile_range[0]}}%–{{forecast.reasonable_projection.estimated_percentile_range[1]}}%</view>
     <view class="scenario-meta" wx:else>暂未形成位置判断</view>
-    <view class="scenario-gap" wx:if="{{forecast.reasonable_projection.target_percentile_gap !== null}}">距目标：还需前移 {{forecast.reasonable_projection.target_percentile_gap}} 个百分点</view>
+    <view class="scenario-gap" wx:if="{{forecast.target_comparison && forecast.target_comparison.projected_relation}}">与目标相比：{{forecast.target_comparison.projected_relation}}</view>
+  </view>
+  <view class="section-title" wx:if="{{forecast.school_tiers.match.length || forecast.school_tiers.reach.length || forecast.school_tiers.safe.length}}">可关注的学校</view>
+  <view class="summary card" wx:if="{{forecast.school_tiers.match.length || forecast.school_tiers.reach.length || forecast.school_tiers.safe.length}}">
+    <view wx:if="{{forecast.school_tiers.reach.length}}"><view class="summary-label">冲刺</view><view class="summary-line" wx:for="{{forecast.school_tiers.reach}}" wx:key="*this">{{item}}</view></view>
+    <view wx:if="{{forecast.school_tiers.match.length}}"><view class="summary-label">匹配</view><view class="summary-line" wx:for="{{forecast.school_tiers.match}}" wx:key="*this">{{item}}</view></view>
+    <view wx:if="{{forecast.school_tiers.safe.length}}"><view class="summary-label">稳妥</view><view class="summary-line" wx:for="{{forecast.school_tiers.safe}}" wx:key="*this">{{item}}</view></view>
   </view>
   <button class="primary-button" bindtap="goToEntry">更新成绩后重新判断</button>
   <button class="secondary-button report-history" bindtap="goToReports">查看历次报告</button>

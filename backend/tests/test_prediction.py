@@ -72,7 +72,8 @@ def test_pre_exam_prediction_uses_historical_reference_data() -> None:
     assert forecast.position_method == "score_only"
     assert "score" in forecast.position_channels
     assert "2025 年已发布一分一段表" in forecast.basis[0]
-    assert "2025 年已发布招生参考" in report.target_summary
+    assert "历史录取位置" in report.target_summary
+    assert "2025 年已发布招生参考" in report.data_sources
     assert "中考前只使用" in report.policy_summary
 
 
@@ -211,6 +212,48 @@ def test_target_comparison_keeps_rank_gap_as_a_range() -> None:
     assert forecast.target_comparison.projected_gap_rank_range is not None
     assert forecast.current_snapshot is not None
     assert forecast.current_snapshot.range_usable is True
+
+
+def test_multiple_school_observations_create_boundary_and_tiers() -> None:
+    references = tuple(
+        PublishedSchoolReference(
+            "测试高中",
+            score,
+            f"{year} 年录取参考",
+            reference_year=year,
+            rank=rank,
+            candidate_count=50000,
+            plan=520 if year == 2025 else None,
+            previous_year_plan=500 if year == 2025 else None,
+        )
+        for year, score, rank in ((2025, 700, 10000), (2024, 695, 10500), (2023, 705, 9600))
+    ) + (
+        PublishedSchoolReference("保底高中", 650, "2025 年录取参考", reference_year=2025, rank=22000, candidate_count=50000),
+    )
+    reference_data = PublishedReferenceData(
+        reference_year=2025,
+        rank_source="2025 年一分一段表",
+        rank_points=((820, 1), (780, 2000), (700, 10000), (650, 22000), (610, 49900)),
+        rank_full_mark=820,
+        candidate_count=50000,
+        school_references=references,
+    )
+    forecast = BaselinePredictionEngine(reference_data).predict(PredictionInput(
+        total_score=510,
+        total_full_mark=580,
+        class_rank=None,
+        grade_rank=150,
+        grade_size=1000,
+        junior_school="测试初中",
+        class_type_standard="重点",
+        target_school="测试高中",
+        analysis_year=2026,
+        analysis_date=date(2026, 3, 20),
+    ))
+
+    assert forecast.target_comparison is not None
+    assert forecast.target_comparison.school_rank_range[0] < forecast.target_comparison.school_rank_range[1]
+    assert "保底高中" in forecast.school_tiers["safe"] or "保底高中" in forecast.school_tiers["match"]
 
 
 def test_rank_history_changes_the_joint_projection() -> None:

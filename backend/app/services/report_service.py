@@ -230,8 +230,9 @@ class StudentReportService:
 
     @staticmethod
     def _rank_value(forecast: Forecast) -> str:
-        if forecast.current_percentile is not None:
-            return f"前 {forecast.current_percentile:.1f}%"
+        scenario = forecast.reasonable_projection
+        if scenario and scenario.estimated_rank_range != (0, 0):
+            return f"第 {scenario.estimated_rank_range[0]:,}–{scenario.estimated_rank_range[1]:,} 名"
         return "待补数据"
 
     @staticmethod
@@ -244,6 +245,16 @@ class StudentReportService:
 
     @staticmethod
     def _gap_value(forecast: Forecast) -> str:
+        comparison = forecast.target_comparison
+        if comparison:
+            gap = comparison.projected_gap_rank_range
+            if not gap:
+                return comparison.risk
+            if gap[1] <= 0:
+                return "已进入目标边界"
+            if gap[0] <= 0:
+                return "处于目标边界"
+            return f"还需前移 {gap[0]:,}–{gap[1]:,} 名"
         if forecast.target_percentile_gap is not None:
             return f"{forecast.target_percentile_gap:.1f} 个百分点"
         if forecast.target_rank_gap is not None:

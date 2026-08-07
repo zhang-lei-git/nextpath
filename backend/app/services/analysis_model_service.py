@@ -52,6 +52,17 @@ DEFAULT_ANNUAL_DISTRIBUTION_PARAMETERS = {
     "minimum_rank_interval": 600,
 }
 
+DEFAULT_SCHOOL_BOUNDARY_PARAMETERS = {
+    "engine_contract": "school-boundary-position-range-v1",
+    "year_decay": 0.75,
+    "plan_elasticity": 0.7,
+    "minimum_boundary_width_pp": 0.8,
+    "preferred_observation_count": 3,
+    "sparse_data_extra_width_pp": 1.5,
+    "anomaly_weight": 0.35,
+    "anomaly_extra_width_pp": 0.8,
+}
+
 
 class AnalysisModelService:
     def __init__(self, session: AsyncSession) -> None:
@@ -118,9 +129,39 @@ class AnalysisModelService:
         await self.session.commit()
         return model
 
+    async def active_school_boundary_model(self, region: str) -> AnalysisModelVersion:
+        model = await self.repository.active_model(region, "school_boundary")
+        if model:
+            merged = {**DEFAULT_SCHOOL_BOUNDARY_PARAMETERS, **model.parameters}
+            if merged == model.parameters:
+                return model
+            model.status = "inactive"
+            successor = await self.repository.add_model(AnalysisModelVersion(
+                name=model.name,
+                version=await self._next_revision(model.version),
+                analysis_type="school_boundary",
+                region=region,
+                status="active",
+                parameters=merged,
+                quality_metrics={**model.quality_metrics, "parent_version": model.version},
+            ))
+            await self.session.commit()
+            return successor
+        model = await self.repository.add_model(AnalysisModelVersion(
+            name="高中录取边界模型",
+            version=f"school-boundary-v1-{region}",
+            analysis_type="school_boundary",
+            region=region,
+            parameters=DEFAULT_SCHOOL_BOUNDARY_PARAMETERS,
+            quality_metrics={"method": "weighted_historical_position", "validation_status": "awaiting_backtest"},
+        ))
+        await self.session.commit()
+        return model
+
     async def list_models(self) -> list[AnalysisModelRead]:
         await self.active_position_model("西安")
         await self.active_annual_distribution_model("西安")
+        await self.active_school_boundary_model("西安")
         return [AnalysisModelRead.model_validate(model) for model in await self.repository.list_models()]
 
     async def update_model(self, model_id: str, payload: AnalysisModelUpdate) -> AnalysisModelRead:

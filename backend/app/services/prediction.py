@@ -9,6 +9,7 @@ from app.services.published_reference_data import PublishedReferenceData
 from app.services.position_engine import CalibrationPoint, PositionEngine
 from app.services.position_fusion import PositionFusionEngine
 from app.services.scoring_scheme import ScoreBridgeModel, ScoreBridgeResult, scoring_scheme
+from app.services.school_boundary import SchoolAdmissionObservation, SchoolBoundary, SchoolBoundaryModel
 
 
 PHYSICAL_EDUCATION_FULL_MARK = 60
@@ -61,6 +62,8 @@ class BaselinePredictionEngine:
         model_version: str | None = None,
         annual_distribution_parameters: dict | None = None,
         annual_distribution_version: str | None = None,
+        school_boundary_parameters: dict | None = None,
+        school_boundary_version: str | None = None,
         calibration_points: tuple[CalibrationPoint, ...] = (),
     ) -> None:
         self.reference_data = reference_data
@@ -71,6 +74,8 @@ class BaselinePredictionEngine:
         self.annual_distribution = AnnualDistributionModel(
             annual_distribution_parameters, annual_distribution_version
         )
+        self.school_boundary = SchoolBoundaryModel(school_boundary_parameters)
+        self.school_boundary_version = school_boundary_version or self.school_boundary.version
         if model_version:
             self.version = model_version
 
@@ -120,9 +125,18 @@ class BaselinePredictionEngine:
         current_rank = round(sum(rank_range) / 2) if rank_range != (0, 0) else None
         current_percentile = fused_position.center
         target = self._find_school_reference(input_data.target_school)
+        target_boundary = self._school_boundary(input_data.target_school, target_base)
         historical_target_rank = self._rank_for_score(target[1]) if target else None
-        target_percentile = self._rank_percentile(historical_target_rank) if historical_target_rank else None
-        target_rank = round(target_percentile / 100 * target_base) if target_percentile is not None and target_base else None
+        target_percentile = (
+            round(sum(target_boundary.percentile_range) / 2, 2)
+            if target_boundary
+            else self._rank_percentile(historical_target_rank) if historical_target_rank else None
+        )
+        target_rank = (
+            round(sum(target_boundary.rank_range) / 2)
+            if target_boundary
+            else round(target_percentile / 100 * target_base) if target_percentile is not None and target_base else None
+        )
         target_percentile_gap = (
             round(max(0, current_percentile - target_percentile), 2)
             if current_percentile is not None and target_percentile is not None else None
@@ -168,7 +182,7 @@ class BaselinePredictionEngine:
         prediction_level = self._prediction_level(input_data, annual_curve)
         target_comparison = self._target_comparison(
             target[0] if target else None,
-            target_rank,
+            target_boundary.rank_range if target_boundary else (target_rank, target_rank) if target_rank else None,
             current_snapshot.estimated_rank_range,
             reasonable_projection.estimated_rank_range,
         )
@@ -202,6 +216,7 @@ class BaselinePredictionEngine:
             reasonable_projection=reasonable_projection,
             prediction_level=prediction_level,
             target_comparison=target_comparison,
+            school_tiers=self._school_tiers(reasonable_projection.estimated_rank_range, target_base),
             missing_inputs=missing_inputs,
         )
 
@@ -211,7 +226,13 @@ class BaselinePredictionEngine:
             f"最近两次学科总分变化 {input_data.trend_delta:+.1f} 分；不同试卷先看年级位置，再看分数变化。"
         )
         target = self._find_school_reference(input_data.target_school)
-        if target and forecast.current_percentile is not None and forecast.target_percentile is not None:
+        if forecast.target_comparison and forecast.target_comparison.school_rank_range:
+            boundary = forecast.target_comparison.school_rank_range
+            target_summary = (
+                f"目标 {forecast.target_comparison.school} 的历史录取位置折算到本届约为第 {boundary[0]}–{boundary[1]} 名；"
+                f"孩子的合理预测与目标关系为“{forecast.target_comparison.risk}”。"
+            )
+        elif target and forecast.current_percentile is not None and forecast.target_percentile is not None:
             gap = forecast.target_percentile_gap or 0
             target_summary = (
                 f"目标 {target[0]} 在 {self._reference_year()} 年的历史录取位置约为前 {forecast.target_percentile:.1f}%；"
@@ -462,22 +483,22 @@ class BaselinePredictionEngine:
     @staticmethod
     def _target_comparison(
         school: str | None,
-        target_rank: int | None,
+        school_rank_range: tuple[int, int] | None,
         current_range: tuple[int, int],
         projected_range: tuple[int, int],
     ) -> TargetComparison | None:
         if not school:
             return None
-        if not target_rank or current_range == (0, 0) or projected_range == (0, 0):
+        if not school_rank_range or current_range == (0, 0) or projected_range == (0, 0):
             return TargetComparison(school=school, risk="数据不足")
-        school_range = (target_rank, target_rank)
-        current_gap = (current_range[0] - target_rank, current_range[1] - target_rank)
-        projected_gap = (projected_range[0] - target_rank, projected_range[1] - target_rank)
+        school_range = school_rank_range
+        current_gap = (current_range[0] - school_range[1], current_range[1] - school_range[0])
+        projected_gap = (projected_range[0] - school_range[1], projected_range[1] - school_range[0])
         if projected_gap[1] <= 0:
             risk = "已进入"
         elif projected_gap[0] <= 0:
             risk = "边界冲刺"
-        elif projected_gap[0] <= max(500, round(target_rank * 0.08)):
+        elif projected_gap[0] <= max(500, round(sum(school_range) / 2 * 0.08)):
             risk = "匹配"
         else:
             risk = "仍有差距"
@@ -487,7 +508,17 @@ class BaselinePredictionEngine:
             current_gap_rank_range=current_gap,
             projected_gap_rank_range=projected_gap,
             risk=risk,
+            current_relation=BaselinePredictionEngine._gap_relation(current_gap),
+            projected_relation=BaselinePredictionEngine._gap_relation(projected_gap),
         )
+
+    @staticmethod
+    def _gap_relation(gap: tuple[int, int]) -> str:
+        if gap[1] <= 0:
+            return "已进入目标边界"
+        if gap[0] <= 0:
+            return "与目标边界有交集"
+        return f"还需前移约 {gap[0]:,}–{gap[1]:,} 名"
 
     def _score_bridge(
         self, input_data: PredictionInput, projected_total: tuple[float, float]
@@ -533,6 +564,51 @@ class BaselinePredictionEngine:
         normalized = name.replace(" ", "")
         match = next((item for item in self.reference_data.school_references if item.name.replace(" ", "") in normalized or normalized in item.name), None)
         return (match.name, match.score, match.source) if match else None
+
+    def _school_boundary(self, name: str | None, target_candidate_count: int | None) -> SchoolBoundary | None:
+        if not self.reference_data or not name or not target_candidate_count:
+            return None
+        normalized = name.replace(" ", "")
+        matches = [
+            item for item in self.reference_data.school_references
+            if item.name.replace(" ", "") in normalized or normalized in item.name.replace(" ", "")
+        ]
+        observations = tuple(
+            SchoolAdmissionObservation(
+                school=item.name,
+                reference_year=item.reference_year,
+                rank=item.rank,
+                candidate_count=item.candidate_count,
+                plan=item.plan,
+                previous_year_plan=item.previous_year_plan,
+                batch=item.batch,
+                anomaly=item.anomaly,
+            )
+            for item in matches
+            if item.rank and item.candidate_count
+        )
+        return self.school_boundary.estimate(
+            matches[0].name if matches else name, observations, target_candidate_count
+        )
+
+    def _school_tiers(
+        self, student_rank_range: tuple[int, int], target_candidate_count: int | None
+    ) -> dict[str, list[str]]:
+        tiers = {"reach": [], "match": [], "safe": []}
+        if not self.reference_data or not target_candidate_count or student_rank_range == (0, 0):
+            return tiers
+        for name in sorted({item.name for item in self.reference_data.school_references}):
+            boundary = self._school_boundary(name, target_candidate_count)
+            if not boundary:
+                continue
+            if student_rank_range[0] > boundary.rank_range[1]:
+                bucket = "reach"
+            elif student_rank_range[1] < boundary.rank_range[0]:
+                bucket = "safe"
+            else:
+                bucket = "match"
+            tiers[bucket].append(name)
+        return tiers
 
     def _historical_basis(self) -> str:
         return f"只使用 {self._reference_year()} 年及更早的已发布参考数据（{self._rank_reference_source()}），不使用本年度一分一段表或录取结果。"

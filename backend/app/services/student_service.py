@@ -83,12 +83,13 @@ class StudentService:
     ):
             run_at = datetime.now(timezone.utc)
             trend_delta = self._trend_delta(exam, exams)
-            reference_data = await PublishedReferenceDataService(self.session).load_latest_historical(
+            reference_data = await PublishedReferenceDataService(self.session).load_historical_bundle(
                 profile.city, exam.exam_date.year, as_of=run_at
             )
             analysis_models = AnalysisModelService(self.session)
             position_model = await analysis_models.active_position_model(profile.city)
             annual_distribution_model = await analysis_models.active_annual_distribution_model(profile.city)
+            school_boundary_model = await analysis_models.active_school_boundary_model(profile.city)
             assessment_stage = analysis_models.assessment_stage(exam.name)
             samples, calibration_level = await analysis_models.calibration_samples_for_prediction(
                 region=profile.city,
@@ -103,6 +104,8 @@ class StudentService:
                 model_version=position_model.version,
                 annual_distribution_parameters=annual_distribution_model.parameters,
                 annual_distribution_version=annual_distribution_model.version,
+                school_boundary_parameters=school_boundary_model.parameters,
+                school_boundary_version=school_boundary_model.version,
                 calibration_points=tuple(
                     CalibrationPoint(item.grade_rank, item.grade_size, item.final_city_rank, item.final_candidate_count)
                     for item in samples
@@ -156,6 +159,7 @@ class StudentService:
                 model_versions={
                     "student_forecast": position_model.version,
                     "annual_distribution": annual_distribution_model.version,
+                    "school_boundary": school_boundary_model.version,
                 },
                 input_snapshot={
                     "total_score": exam.total_score,
@@ -176,6 +180,8 @@ class StudentService:
                     "model_parameters": position_model.parameters,
                     "annual_distribution_version": annual_distribution_model.version,
                     "annual_distribution_parameters": annual_distribution_model.parameters,
+                    "school_boundary_version": school_boundary_model.version,
+                    "school_boundary_parameters": school_boundary_model.parameters,
                     "calibration_sample_ids": [item.id for item in samples],
                     "calibration_level": calibration_level,
                 },

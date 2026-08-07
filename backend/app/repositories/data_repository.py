@@ -171,6 +171,29 @@ class DataRepository:
             .limit(1)
         )
 
+    async def latest_releases_before(
+        self, region: str, before_year: int, *, as_of: datetime | None = None, limit: int = 5
+    ) -> list[DataRelease]:
+        cutoff = as_of or datetime.now(timezone.utc)
+        releases = list(await self.session.scalars(
+            select(DataRelease)
+            .where(
+                DataRelease.region == region,
+                DataRelease.reference_year < before_year,
+                DataRelease.environment == "production",
+                DataRelease.data_purpose == "forecast",
+                DataRelease.usable_for_prediction.is_(True),
+                DataRelease.published_at <= cutoff,
+                (DataRelease.valid_from.is_(None) | (DataRelease.valid_from <= cutoff)),
+                (DataRelease.valid_until.is_(None) | (DataRelease.valid_until > cutoff)),
+            )
+            .order_by(desc(DataRelease.reference_year), desc(DataRelease.published_at))
+        ))
+        latest_by_year: dict[int, DataRelease] = {}
+        for release in releases:
+            latest_by_year.setdefault(release.reference_year, release)
+        return list(latest_by_year.values())[:limit]
+
     async def list_releases(self) -> list[DataRelease]:
         return list(await self.session.scalars(select(DataRelease).order_by(desc(DataRelease.published_at))))
 
