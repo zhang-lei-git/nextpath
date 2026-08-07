@@ -21,6 +21,7 @@ function triggerType(value) { return ({scheduled:"定时",manual:"手动",retry:
 function changeType(value) { return ({new:"首次采集",changed:"内容有变化",unchanged:"内容无变化"})[value] || value; }
 function stepName(value) { return ({capture:"采集快照",extract:"提取内容",normalize:"治理标准化"})[value] || value; }
 function gapType(value) { return ({annual_distribution:"年度分数位次曲线",scoring_scheme:"年度计分方案",policy:"中招政策",school_boundary:"高中录取边界",junior_school_mapping:"初中排名映射",class_type_mapping:"班型映射",assessment_calibration:"模考校准样本"})[value] || value; }
+function modelType(value) { return ({position:"学生位置",annual_distribution:"年度分布",school_boundary:"学校边界"})[value] || value; }
 
 async function load() {
   const [sources, evidence, facts, releases, me, users, models, calibrationSamples, ingestions, collectionJobs, collectionRuns, alerts, governanceRules, gaps] = await Promise.all([dataApi("sources"), dataApi("evidence"), dataApi("facts"), dataApi("releases"), api("auth/me"), api("users"), analysisApi("models"), analysisApi("calibration-samples"), dataApi("ingestions"), dataApi("collection-jobs"), dataApi("collection-runs"), dataApi("alerts"), dataApi("governance-rules"), dataApi("gaps")]);
@@ -118,7 +119,7 @@ function renderGaps() {
 function renderUsers() { $("#userList").innerHTML = state.users.map((user) => `<div class="list-item"><strong>${text(user.username)}</strong><p>创建于 ${formatDate(user.created_at)} · 最近修改 ${formatDate(user.updated_at)}</p><div class="actions"><button class="button small secondary" data-reset-user="${user.id}" data-name="${text(user.username)}">重置密码</button></div></div>`).join("") || '<div class="empty">还没有运营用户</div>'; $$("[data-reset-user]").forEach((button) => button.addEventListener("click", () => resetPassword(button.dataset.resetUser, button.dataset.name))); }
 function renderModels() {
   const model = state.models.find((item) => item.id === state.selectedModelId);
-  $("#modelList").innerHTML = state.models.map((item) => `<div class="list-item"><strong>${text(item.name)}</strong><p>${item.analysis_type === "annual_distribution" ? "年度分布" : "学生位置"} · ${text(item.version)} · ${text(item.region)} · ${item.status === "active" ? "生效中" : "已停用"}</p><div class="actions"><button class="button small secondary" data-model-id="${item.id}">查看</button></div></div>`).join("") || '<div class="empty">尚未建立模型</div>';
+  $("#modelList").innerHTML = state.models.map((item) => `<div class="list-item"><strong>${text(item.name)}</strong><p>${text(modelType(item.analysis_type))} · ${text(item.version)} · ${text(item.region)} · ${item.status === "active" ? "生效中" : "已停用"}</p><div class="actions"><button class="button small secondary" data-model-id="${item.id}">查看</button></div></div>`).join("") || '<div class="empty">尚未建立模型</div>';
   $$("[data-model-id]").forEach((button) => button.addEventListener("click", async () => { state.selectedModelId = button.dataset.modelId; await loadValidations(); renderModels(); }));
   if (!model) return;
   $("#modelId").value = model.id;
