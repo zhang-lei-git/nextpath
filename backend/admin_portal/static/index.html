@@ -16,6 +16,7 @@
         <button class="nav-item" data-view="capture">采集录入</button>
         <button class="nav-item" data-view="review">审核发布</button>
         <button class="nav-item" data-view="quality">质量治理</button>
+        <button class="nav-item" data-view="gaps">数据缺口</button>
         <button class="nav-item" data-view="models">分析模型</button>
         <button class="nav-item" data-view="users">用户管理</button>
       </nav>
@@ -138,6 +139,27 @@
         </section>
       </section>
 
+      <section id="gaps" class="view">
+        <div class="grid-two wide-left">
+          <section class="panel">
+            <div class="panel-head"><div><h2>补数任务</h2><span>优先补齐影响判断的数据</span></div><div class="segmented"><button data-gap-status="open" class="selected">待处理</button><button data-gap-status="resolved">已完成</button></div></div>
+            <div id="gapList" class="list"></div>
+          </section>
+          <section class="panel form-panel">
+            <h2>登记数据缺口</h2>
+            <form id="gapForm" class="form-stack">
+              <label>地区<input name="region" value="西安" required></label>
+              <label>缺口类别<select name="gap_type"><option value="annual_distribution">年度分数位次曲线</option><option value="scoring_scheme">年度计分方案</option><option value="policy">中招政策</option><option value="school_boundary">高中录取边界</option><option value="junior_school_mapping">初中排名映射</option><option value="class_type_mapping">班型映射</option><option value="assessment_calibration">模考校准样本</option></select></label>
+              <label>初中学校<input name="junior_school" placeholder="没有明确初中时可留空"></label>
+              <div class="form-row"><label>班型<select name="class_type_standard"><option value="">未指定</option><option>创新</option><option>重点</option><option>平行</option><option>未知</option></select></label><label>考试阶段<select name="assessment_stage"><option value="">未指定</option><option>一模</option><option>二模</option><option>三模</option><option>月考</option><option>期中</option><option>期末</option><option>周测</option></select></label></div>
+              <label>影响用户数<input name="affected_users" type="number" min="1" value="1" required></label>
+              <label>补数说明<textarea name="reason" rows="4" placeholder="需要补充什么，以及影响哪类判断"></textarea></label>
+              <button class="button" type="submit">加入补数任务</button>
+            </form>
+          </section>
+        </div>
+      </section>
+
       <section id="users" class="view">
         <div class="grid-two wide-left">
           <section class="panel"><div class="panel-head"><h2>运营用户</h2><span>可登录数据运营台</span></div><div id="userList" class="list"></div></section>
@@ -153,6 +175,10 @@
         <div class="grid-two wide-left top-gap"><section class="panel"><div class="panel-head"><h2>初中位置校准样本</h2><span id="calibrationSummary"></span></div><div id="calibrationList" class="list"></div></section><section class="panel form-panel"><h2>新增匿名样本</h2><form id="calibrationForm" class="form-stack"><label>地区<input name="region" value="西安" required></label><label>初中学校<input name="junior_school" required></label><label>考试阶段<select name="assessment_stage"><option>一模</option><option>二模</option><option>三模</option><option>期中</option><option>期末</option><option>月考</option><option>周测</option></select></label><label>中考年度<input name="cohort_year" type="number" value="2026" required></label><label>当时年级排名<input name="grade_rank" type="number" min="1" required></label><label>当时年级人数<input name="grade_size" type="number" min="1" required></label><label>最终中考区域排名<input name="final_city_rank" type="number" min="1" required></label><label>该届区域考生人数（建议填写）<input name="final_candidate_count" type="number" min="1"></label><label>来源备注<textarea name="source_note" rows="3"></textarea></label><button class="button secondary" type="submit">提交审核</button></form></section></div>
       </section>
     </main>
+    <dialog id="lineageDialog" class="lineage-dialog">
+      <div class="dialog-head"><div><p class="eyebrow">DATA LINEAGE</p><h2 id="lineageTitle">数据追溯</h2></div><button id="closeLineage" class="icon-button" aria-label="关闭追溯" title="关闭追溯">×</button></div>
+      <div id="lineageContent"></div>
+    </dialog>
     <script src="/assets/app.js"></script>
   </body>
 </html>

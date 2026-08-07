@@ -8,6 +8,7 @@ from app.domain.models import (
     CollectionRun,
     DataEvidence,
     DataFact,
+    DataGap,
     DataIngestion,
     DataRelease,
     DataReleaseItem,
@@ -198,6 +199,14 @@ class DataRepository:
         )
         return list(await self.session.scalars(statement))
 
+    async def releases_for_fact(self, fact_id: str) -> list[DataRelease]:
+        return list(await self.session.scalars(
+            select(DataRelease)
+            .join(DataReleaseItem, DataReleaseItem.release_id == DataRelease.id)
+            .where(DataReleaseItem.fact_id == fact_id)
+            .order_by(desc(DataRelease.published_at))
+        ))
+
     async def source_for_evidence(self, evidence: DataEvidence) -> DataSource | None:
         return await self.session.get(DataSource, evidence.source_id) if evidence.source_id else None
 
@@ -272,6 +281,15 @@ class DataRepository:
             .order_by(SourceSnapshot.captured_at)
         ))
 
+    async def snapshots_for_evidence(self, evidence_ids: list[str]) -> list[SourceSnapshot]:
+        if not evidence_ids:
+            return []
+        return list(await self.session.scalars(
+            select(SourceSnapshot)
+            .where(SourceSnapshot.evidence_id.in_(evidence_ids))
+            .order_by(SourceSnapshot.captured_at)
+        ))
+
     async def add_processing_step(self, step: ProcessingStep) -> ProcessingStep:
         self.session.add(step)
         await self.session.flush()
@@ -283,6 +301,23 @@ class DataRepository:
             select(ProcessingStep)
             .where(ProcessingStep.run_id == run_id)
             .order_by(ProcessingStep.created_at)
+        ))
+
+    async def steps_for_runs(self, run_ids: list[str]) -> list[ProcessingStep]:
+        if not run_ids:
+            return []
+        return list(await self.session.scalars(
+            select(ProcessingStep)
+            .where(ProcessingStep.run_id.in_(run_ids))
+            .order_by(ProcessingStep.created_at)
+        ))
+
+    async def recent_runs_for_job(self, job_id: str, limit: int = 10) -> list[CollectionRun]:
+        return list(await self.session.scalars(
+            select(CollectionRun)
+            .where(CollectionRun.job_id == job_id)
+            .order_by(desc(CollectionRun.started_at), desc(CollectionRun.created_at))
+            .limit(limit)
         ))
 
     async def add_alert(self, alert: OperationAlert) -> OperationAlert:
@@ -303,6 +338,17 @@ class DataRepository:
 
     async def get_alert(self, alert_id: str) -> OperationAlert | None:
         return await self.session.get(OperationAlert, alert_id)
+
+    async def open_alerts_for_job(
+        self, job_id: str, alert_type: str
+    ) -> list[OperationAlert]:
+        return list(await self.session.scalars(
+            select(OperationAlert).where(
+                OperationAlert.job_id == job_id,
+                OperationAlert.alert_type == alert_type,
+                OperationAlert.status == "open",
+            )
+        ))
 
     async def add_governance_rule(
         self, rule: GovernanceRuleVersion
@@ -325,3 +371,42 @@ class DataRepository:
             .where(GovernanceRuleVersion.version == version)
             .limit(1)
         )
+
+    async def add_gap(self, gap: DataGap) -> DataGap:
+        self.session.add(gap)
+        await self.session.flush()
+        await self.session.refresh(gap)
+        return gap
+
+    async def get_gap(self, gap_id: str) -> DataGap | None:
+        return await self.session.get(DataGap, gap_id)
+
+    async def list_gaps(self, status: str | None = None) -> list[DataGap]:
+        statement = select(DataGap).order_by(
+            desc(DataGap.priority_score), desc(DataGap.affected_users), desc(DataGap.created_at)
+        )
+        if status:
+            statement = statement.where(DataGap.status == status)
+        return list(await self.session.scalars(statement))
+
+    async def matching_open_gaps(
+        self,
+        *,
+        region: str,
+        junior_school: str | None,
+        class_type_standard: str | None,
+        assessment_stage: str | None,
+        gap_type: str,
+    ) -> list[DataGap]:
+        statement = select(DataGap).where(
+            DataGap.region == region,
+            DataGap.gap_type == gap_type,
+            DataGap.status == "open",
+        )
+        for column, value in (
+            (DataGap.junior_school, junior_school),
+            (DataGap.class_type_standard, class_type_standard),
+            (DataGap.assessment_stage, assessment_stage),
+        ):
+            statement = statement.where(column == value) if value is not None else statement.where(column.is_(None))
+        return list(await self.session.scalars(statement.order_by(desc(DataGap.created_at))))

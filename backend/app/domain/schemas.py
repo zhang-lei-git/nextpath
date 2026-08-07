@@ -350,6 +350,30 @@ class OperationAlertUpdate(BaseModel):
     status: Literal["open", "resolved"]
 
 
+class DataGapCreate(BaseModel):
+    region: str = Field(min_length=1, max_length=80)
+    junior_school: str | None = Field(default=None, max_length=128)
+    class_type_standard: str | None = Field(default=None, max_length=24)
+    assessment_stage: str | None = Field(default=None, max_length=32)
+    gap_type: str = Field(min_length=1, max_length=48)
+    affected_users: int = Field(default=1, ge=1, le=1_000_000)
+    details: dict = Field(default_factory=dict)
+
+
+class DataGapRead(DataGapCreate):
+    id: str
+    priority_score: float
+    status: Literal["open", "resolved"]
+    created_at: datetime
+    resolved_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class DataGapUpdate(BaseModel):
+    status: Literal["open", "resolved"]
+
+
 class DataFactCreate(BaseModel):
     fact_type: FactType
     entity_name: str = Field(min_length=1, max_length=160)
@@ -413,6 +437,14 @@ class DataReleaseRead(BaseModel):
     fact_count: int = 0
 
     model_config = {"from_attributes": True}
+
+
+class FactLineageRead(BaseModel):
+    fact: DataFactRead
+    evidence: list[EvidenceRead]
+    snapshots: list[SourceSnapshotRead]
+    steps: list[ProcessingStepRead]
+    releases: list[DataReleaseRead]
 
 
 class ConsumerFact(BaseModel):

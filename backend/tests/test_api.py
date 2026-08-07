@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from uuid import uuid4
 
+from app.core.config import settings
 from app.main import app
 
 
@@ -104,3 +105,46 @@ def test_seven_mock_exams_generate_saved_reports_and_support_correction() -> Non
         published = client.get(f"/api/v1/reports/published/{updated_reports.json()[0]['id']}")
         assert published.status_code == 200
         assert "历次模考成绩与位置变化" in published.text
+
+
+def test_analysis_records_missing_data_as_idempotent_gap(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "data_admin_key", "analysis-gap-test-key")
+    owner = f"gap-family-{uuid4().hex}"
+    target = f"待补边界高中-{uuid4().hex}"
+    family_headers = {"X-Demo-User": owner}
+    admin_headers = {"X-Data-Admin-Key": "analysis-gap-test-key"}
+    with TestClient(app) as client:
+        assert client.put(
+            "/api/v1/profile",
+            headers=family_headers,
+            json={
+                "student_name": "小策",
+                "junior_school": "待补映射初中",
+                "grade": "初三",
+                "class_type_standard": "未知",
+                "target_school": target,
+            },
+        ).status_code == 200
+        assert client.post(
+            "/api/v1/exams",
+            headers=family_headers,
+            json={
+                "name": "一模",
+                "exam_date": "2026-03-20",
+                "total_score": 520,
+                "grade_rank": 180,
+                "grade_size": 900,
+            },
+        ).status_code == 201
+        assert client.get("/api/v1/dashboard", headers=family_headers).status_code == 200
+        assert client.get("/api/v1/dashboard", headers=family_headers).status_code == 200
+        gaps = client.get(
+            "/api/v1/data/gaps", headers=admin_headers, params={"status": "open"}
+        )
+        assert gaps.status_code == 200
+        target_gap = next(
+            item for item in gaps.json()
+            if item["gap_type"] == "school_boundary"
+            and item["details"].get("target_school") == target
+        )
+        assert target_gap["affected_users"] == 1

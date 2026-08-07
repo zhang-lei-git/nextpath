@@ -114,6 +114,13 @@ def test_only_reviewed_and_released_facts_are_consumable(monkeypatch) -> None:
             "/api/v1/data/consumer/admissions",
             params={"region": region, "reference_year": year},
         )
+        lineage = client.get(
+            f"/api/v1/data/facts/{fact_id}/lineage", headers=headers
+        )
+        assert lineage.status_code == 200
+        assert lineage.json()["evidence"][0]["source_name"] == "测试教育主管部门"
+        assert lineage.json()["releases"][0]["id"] == release.json()["id"]
+        assert lineage.json()["snapshots"] == []
     assert consumed.status_code == 200
     assert consumed.json()["facts"][0]["value"]["count"] == 800
     assert consumed.json()["facts"][0]["evidence"][0]["source_type"] == "official"
@@ -516,6 +523,14 @@ def test_governance_rules_detect_conflicts_and_expose_text_changes(monkeypatch) 
         )
         assert candidate["entity_name"] == canonical_name
         assert candidate["scope"]["conflict_fact_ids"] == [existing.json()["id"]]
+        lineage = client.get(
+            f"/api/v1/data/facts/{candidate['id']}/lineage", headers=headers
+        )
+        assert lineage.status_code == 200
+        assert lineage.json()["snapshots"]
+        assert {item["step_name"] for item in lineage.json()["steps"]} >= {
+            "capture", "extract", "normalize"
+        }
 
         alerts = client.get(
             "/api/v1/data/alerts", headers=headers, params={"status": "open"}
@@ -554,3 +569,114 @@ def test_governance_rules_detect_conflicts_and_expose_text_changes(monkeypatch) 
         assert text_diff["similarity"] < 1
         assert text_diff["added_count"] > 0
         assert text_diff["removed_count"] > 0
+        structure_alerts = client.get(
+            "/api/v1/data/alerts", headers=headers, params={"status": "open"}
+        ).json()
+        assert any(
+            item["alert_type"] == "source_structure_changed"
+            and item["run_id"] == latest_run["id"]
+            for item in structure_alerts
+        )
+
+
+def test_data_gaps_aggregate_unique_users_and_can_be_resolved(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "data_admin_key", "data-gap-test-key")
+    headers = {"X-Data-Admin-Key": "data-gap-test-key"}
+    school = f"缺口测试初中-{uuid4().hex}"
+    payload = {
+        "region": "西安",
+        "junior_school": school,
+        "class_type_standard": "重点",
+        "assessment_stage": "一模",
+        "gap_type": "junior_school_mapping",
+        "affected_users": 1,
+        "details": {"reason": "缺少纵向样本", "occurrence_key": "user-a"},
+    }
+    with TestClient(app) as client:
+        first = client.post("/api/v1/data/gaps", headers=headers, json=payload)
+        assert first.status_code == 201, first.text
+        duplicate = client.post("/api/v1/data/gaps", headers=headers, json=payload)
+        assert duplicate.status_code == 201
+        assert duplicate.json()["affected_users"] == 1
+
+        second_user = client.post(
+            "/api/v1/data/gaps",
+            headers=headers,
+            json={**payload, "details": {**payload["details"], "occurrence_key": "user-b"}},
+        )
+        assert second_user.status_code == 201
+        assert second_user.json()["id"] == first.json()["id"]
+        assert second_user.json()["affected_users"] == 2
+        assert second_user.json()["priority_score"] > first.json()["priority_score"]
+
+        gaps = client.get(
+            "/api/v1/data/gaps", headers=headers, params={"status": "open"}
+        )
+        assert gaps.status_code == 200
+        assert any(item["id"] == first.json()["id"] for item in gaps.json())
+
+        resolved = client.patch(
+            f"/api/v1/data/gaps/{first.json()['id']}",
+            headers=headers,
+            json={"status": "resolved"},
+        )
+        assert resolved.status_code == 200
+        assert resolved.json()["resolved_at"]
+
+
+def test_consecutive_collection_failures_create_and_auto_resolve_alert(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "data_admin_key", "failure-alert-test-key")
+    monkeypatch.setattr(DataService, "_validate_collect_url", staticmethod(lambda _: None))
+    original_client = httpx.AsyncClient
+    should_fail = {"value": True}
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        if should_fail["value"]:
+            return httpx.Response(503, text="temporarily unavailable")
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/html; charset=utf-8"},
+            text="<html><body><h1>2031 年中招政策</h1><p>志愿规则。</p></body></html>",
+        )
+
+    def mock_client(*_, **__) -> httpx.AsyncClient:
+        return original_client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr("app.services.data_service.httpx.AsyncClient", mock_client)
+    headers = {"X-Data-Admin-Key": "failure-alert-test-key"}
+    with TestClient(app) as client:
+        job = client.post(
+            "/api/v1/data/collection-jobs",
+            headers=headers,
+            json={
+                "name": f"连续失败-{uuid4().hex}",
+                "target_url": "https://example.com/policy",
+                "region": "西安",
+                "data_type": "policy",
+            },
+        )
+        assert job.status_code == 201
+        for _ in range(2):
+            assert client.post(
+                f"/api/v1/data/collection-jobs/{job.json()['id']}/run", headers=headers
+            ).status_code == 422
+
+        alerts = client.get(
+            "/api/v1/data/alerts", headers=headers, params={"status": "open"}
+        ).json()
+        alert = next(
+            item for item in alerts
+            if item["job_id"] == job.json()["id"]
+            and item["alert_type"] == "collection_failed"
+        )
+        assert alert["details"]["consecutive_failures"] == 2
+
+        should_fail["value"] = False
+        succeeded = client.post(
+            f"/api/v1/data/collection-jobs/{job.json()['id']}/run", headers=headers
+        )
+        assert succeeded.status_code == 200, succeeded.text
+        resolved = client.get(
+            "/api/v1/data/alerts", headers=headers, params={"status": "resolved"}
+        ).json()
+        assert any(item["id"] == alert["id"] for item in resolved)

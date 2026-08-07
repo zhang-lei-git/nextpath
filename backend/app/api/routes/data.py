@@ -8,12 +8,16 @@ from app.domain.schemas import (
     DataFactCreate,
     DataFactRead,
     DataFactReview,
+    DataGapCreate,
+    DataGapRead,
+    DataGapUpdate,
     DataReleaseCreate,
     DataReleaseRead,
     DataSourceCreate,
     DataSourceRead,
     EvidenceCreate,
     EvidenceRead,
+    FactLineageRead,
     CollectionJobCreate,
     CollectionJobRead,
     CollectionJobUpdate,
@@ -66,6 +70,34 @@ async def update_alert(
     session: AsyncSession = Depends(get_session),
 ) -> OperationAlertRead:
     return await DataService(session).update_alert(alert_id, payload)
+
+
+@router.post("/gaps", response_model=DataGapRead, status_code=201)
+async def create_or_increment_gap(
+    payload: DataGapCreate,
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> DataGapRead:
+    return await DataService(session).create_or_increment_gap(payload)
+
+
+@router.get("/gaps", response_model=list[DataGapRead])
+async def list_gaps(
+    status: str | None = Query(default=None, pattern="^(open|resolved)$"),
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> list[DataGapRead]:
+    return await DataService(session).list_gaps(status)
+
+
+@router.patch("/gaps/{gap_id}", response_model=DataGapRead)
+async def update_gap(
+    gap_id: str,
+    payload: DataGapUpdate,
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> DataGapRead:
+    return await DataService(session).update_gap(gap_id, payload)
 
 
 @router.post("/sources", response_model=DataSourceRead, status_code=201)
@@ -212,6 +244,15 @@ async def list_facts(
     session: AsyncSession = Depends(get_session),
 ) -> list[DataFactRead]:
     return await DataService(session).list_facts(status)
+
+
+@router.get("/facts/{fact_id}/lineage", response_model=FactLineageRead)
+async def fact_lineage(
+    fact_id: str,
+    _: str = Depends(current_data_admin),
+    session: AsyncSession = Depends(get_session),
+) -> FactLineageRead:
+    return await DataService(session).fact_lineage(fact_id)
 
 
 @router.post("/facts/{fact_id}/review", response_model=DataFactRead)

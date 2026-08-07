@@ -20,6 +20,7 @@ from app.domain.models import (
     CollectionRun,
     DataEvidence,
     DataFact,
+    DataGap,
     DataIngestion,
     DataRelease,
     DataSource,
@@ -34,12 +35,16 @@ from app.domain.schemas import (
     DataFactCreate,
     DataFactRead,
     DataFactReview,
+    DataGapCreate,
+    DataGapRead,
+    DataGapUpdate,
     DataReleaseCreate,
     DataReleaseRead,
     DataSourceCreate,
     DataSourceRead,
     EvidenceCreate,
     EvidenceRead,
+    FactLineageRead,
     GovernanceRuleCreate,
     GovernanceRuleRead,
     OperationAlertRead,
@@ -134,6 +139,89 @@ class DataService:
         await self.session.commit()
         await self.session.refresh(alert)
         return OperationAlertRead.model_validate(alert)
+
+    async def create_or_increment_gap(
+        self, payload: DataGapCreate, *, commit: bool = True
+    ) -> DataGapRead:
+        matches = await self.repository.matching_open_gaps(
+            region=payload.region,
+            junior_school=payload.junior_school,
+            class_type_standard=payload.class_type_standard,
+            assessment_stage=payload.assessment_stage,
+            gap_type=payload.gap_type,
+        )
+        target_school = payload.details.get("target_school")
+        occurrence_key = payload.details.get("occurrence_key")
+        gap = next(
+            (
+                item for item in matches
+                if (item.details or {}).get("target_school") == target_school
+            ),
+            None,
+        )
+        if gap:
+            current_details = gap.details or {}
+            occurrence_keys = list(current_details.get("occurrence_keys", []))
+            is_new_occurrence = not occurrence_key or occurrence_key not in occurrence_keys
+            if occurrence_key and is_new_occurrence:
+                occurrence_keys.append(occurrence_key)
+            if is_new_occurrence:
+                gap.affected_users += payload.affected_users
+            gap.details = {
+                **current_details,
+                **payload.details,
+                "occurrence_keys": occurrence_keys[-500:],
+            }
+            gap.priority_score = self._gap_priority(
+                gap.gap_type, gap.affected_users, gap.details
+            )
+            await self.session.flush()
+            await self.session.refresh(gap)
+        else:
+            details = dict(payload.details)
+            if occurrence_key:
+                details["occurrence_keys"] = [occurrence_key]
+            gap = await self.repository.add_gap(DataGap(
+                **payload.model_dump(exclude={"details"}),
+                details=details,
+                priority_score=self._gap_priority(
+                    payload.gap_type, payload.affected_users, details
+                ),
+            ))
+        if commit:
+            await self.session.commit()
+        return DataGapRead.model_validate(gap)
+
+    async def list_gaps(self, status: str | None = None) -> list[DataGapRead]:
+        return [
+            DataGapRead.model_validate(item)
+            for item in await self.repository.list_gaps(status)
+        ]
+
+    async def update_gap(self, gap_id: str, payload: DataGapUpdate) -> DataGapRead:
+        gap = await self.repository.get_gap(gap_id)
+        if not gap:
+            raise HTTPException(status_code=404, detail="未找到数据缺口")
+        gap.status = payload.status
+        gap.resolved_at = datetime.now(timezone.utc) if payload.status == "resolved" else None
+        await self.session.commit()
+        await self.session.refresh(gap)
+        return DataGapRead.model_validate(gap)
+
+    @staticmethod
+    def _gap_priority(gap_type: str, affected_users: int, details: dict) -> float:
+        base = {
+            "annual_distribution": 90,
+            "scoring_scheme": 88,
+            "policy": 85,
+            "school_boundary": 82,
+            "junior_school_mapping": 76,
+            "class_type_mapping": 68,
+            "assessment_calibration": 64,
+        }.get(gap_type, 50)
+        impact = min(30, affected_users * 2)
+        uncertainty = min(15, float(details.get("uncertainty_pp", 0) or 0))
+        return round(base + impact + uncertainty, 2)
 
     async def create_evidence(self, payload: EvidenceCreate, actor: str) -> EvidenceRead:
         if payload.source_id and not await self.repository.get_source(payload.source_id):
@@ -292,6 +380,8 @@ class DataService:
             destination.parent.mkdir(parents=True, exist_ok=True)
             if not destination.exists():
                 destination.write_bytes(content)
+            text_diff = self._build_text_diff(previous, response.text, content_type)
+            structure_changed = bool(previous and previous.structure_hash != structure_hash)
             snapshot = await self.repository.add_snapshot(SourceSnapshot(
                 run_id=run.id,
                 source_url=job.target_url,
@@ -305,8 +395,8 @@ class DataService:
                 diff_summary={
                     "previous_hash": previous.content_hash if previous else None,
                     "current_hash": content_hash,
-                    "structure_changed": bool(previous and previous.structure_hash != structure_hash),
-                    "text_diff": self._build_text_diff(previous, response.text, content_type),
+                    "structure_changed": structure_changed,
+                    "text_diff": text_diff,
                     "attachments": attachments,
                     "attachments_added": self._attachment_hash_difference(attachments, previous, added=True),
                     "attachments_removed": self._attachment_hash_difference(attachments, previous, added=False),
@@ -322,6 +412,23 @@ class DataService:
                     "bytes": len(content),
                 },
             )
+            if structure_changed and (
+                text_diff.get("similarity") is None or text_diff["similarity"] < 0.75
+            ):
+                await self.repository.add_alert(OperationAlert(
+                    alert_type="source_structure_changed",
+                    severity="medium",
+                    source_id=job.source_id,
+                    job_id=job.id,
+                    run_id=run.id,
+                    title=f"来源结构显著变化：{job.name}",
+                    details={
+                        "target_url": job.target_url,
+                        "similarity": text_diff.get("similarity"),
+                        "added_count": text_diff.get("added_count", 0),
+                        "removed_count": text_diff.get("removed_count", 0),
+                    },
+                ))
 
             if change_type == "unchanged":
                 ingestion = await self.repository.add_ingestion(DataIngestion(
@@ -341,6 +448,7 @@ class DataService:
                 job.last_run_at = run.finished_at
                 job.last_status = "unchanged"
                 job.last_message = "来源内容无变化，未重复治理。"
+                await self._resolve_collection_failure_alerts(job.id)
                 await self.session.commit()
                 return self._ingestion_read(ingestion)
 
@@ -398,6 +506,7 @@ class DataService:
             job.last_run_at = run.finished_at
             job.last_status = run.status
             job.last_message = f"已保存证据、治理材料和 {len(candidates)} 条候选事实：{ingestion.id}"
+            await self._resolve_collection_failure_alerts(job.id)
             await self.session.commit()
             return self._ingestion_read(ingestion)
         except (httpx.HTTPError, RuntimeError, ValueError, OSError, socket.gaierror) as error:
@@ -406,15 +515,26 @@ class DataService:
             run.error_message = str(error)
             run.finished_at = finished_at
             await self._record_step(run.id, None, "capture", "failed", error_message=str(error))
-            await self.repository.add_alert(OperationAlert(
-                alert_type="collection_failed",
-                severity="high",
-                source_id=job.source_id,
-                job_id=job.id,
-                run_id=run.id,
-                title=f"采集失败：{job.name}",
-                details={"error": str(error), "target_url": job.target_url},
-            ))
+            recent_runs = await self.repository.recent_runs_for_job(job.id)
+            consecutive_failures = 0
+            for recent in recent_runs:
+                if recent.status != "failed":
+                    break
+                consecutive_failures += 1
+            if consecutive_failures >= 2:
+                await self.repository.add_alert(OperationAlert(
+                    alert_type="collection_failed",
+                    severity="high" if consecutive_failures >= 3 else "medium",
+                    source_id=job.source_id,
+                    job_id=job.id,
+                    run_id=run.id,
+                    title=f"连续 {consecutive_failures} 次采集失败：{job.name}",
+                    details={
+                        "error": str(error),
+                        "target_url": job.target_url,
+                        "consecutive_failures": consecutive_failures,
+                    },
+                ))
             job.last_run_at = finished_at
             job.last_status = "failed"
             job.last_message = str(error)
@@ -609,6 +729,12 @@ class DataService:
             finished_at=now,
         ))
 
+    async def _resolve_collection_failure_alerts(self, job_id: str) -> None:
+        now = datetime.now(timezone.utc)
+        for alert in await self.repository.open_alerts_for_job(job_id, "collection_failed"):
+            alert.status = "resolved"
+            alert.resolved_at = now
+
     async def _create_automatic_candidates(
         self,
         job: CollectionJob,
@@ -780,6 +906,27 @@ class DataService:
         if not release:
             raise HTTPException(status_code=404, detail="未找到发布版本")
         return [DataFactRead.model_validate(fact) for fact in await self.repository.all_facts_in_release(release_id)]
+
+    async def fact_lineage(self, fact_id: str) -> FactLineageRead:
+        fact = await self.repository.get_fact(fact_id)
+        if not fact:
+            raise HTTPException(status_code=404, detail="未找到数据事实")
+        evidence_records = await self.repository.get_evidence(fact.evidence_ids)
+        snapshots = await self.repository.snapshots_for_evidence(fact.evidence_ids)
+        steps = await self.repository.steps_for_runs(list(dict.fromkeys(
+            snapshot.run_id for snapshot in snapshots
+        )))
+        releases = await self.repository.releases_for_fact(fact.id)
+        return FactLineageRead(
+            fact=DataFactRead.model_validate(fact),
+            evidence=[await self._evidence_read(item) for item in evidence_records],
+            snapshots=[SourceSnapshotRead.model_validate(item) for item in snapshots],
+            steps=[ProcessingStepRead.model_validate(item) for item in steps],
+            releases=[
+                self._release_read(item, await self.repository.release_fact_count(item.id))
+                for item in releases
+            ],
+        )
 
     async def consume(
         self,

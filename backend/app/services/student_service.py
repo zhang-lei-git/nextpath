@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime, time, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -8,13 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.domain.models import Exam, ScoreImport
 from app.domain.schemas import (
-    ActionItem, DashboardResponse, ExamCreate, ExamRead, ImportResponse, StudentProfileRead, StudentProfileUpdate,
+    ActionItem, DashboardResponse, DataGapCreate, ExamCreate, ExamRead, ImportResponse, StudentProfileRead, StudentProfileUpdate,
 )
 from app.repositories.exam_repository import ExamRepository
 from app.repositories.profile_repository import ProfileRepository
 from app.services.prediction import BaselinePredictionEngine, PredictionEngine, PredictionInput
 from app.services.published_reference_data import PublishedReferenceDataService
 from app.services.analysis_model_service import AnalysisModelService
+from app.services.data_service import DataService
 from app.services.position_engine import CalibrationPoint
 from app.services.report_service import ReportContext, StudentReportService
 
@@ -124,6 +126,13 @@ class StudentService:
             )
             forecast = predictor.predict(prediction_input)
             report = predictor.build_report(prediction_input)
+            await self._record_analysis_gaps(
+                profile=profile,
+                exam=exam,
+                assessment_stage=assessment_stage,
+                reference_data=reference_data,
+                forecast=forecast,
+            )
             analysis_run = await analysis_models.record_run(
                 profile_id=profile.id,
                 exam_id=exam.id,
@@ -166,6 +175,56 @@ class StudentService:
                     analysis_run_id=analysis_run.id,
                 ))
             return forecast, report
+
+    async def _record_analysis_gaps(
+        self,
+        *,
+        profile,
+        exam: Exam,
+        assessment_stage: str | None,
+        reference_data,
+        forecast,
+    ) -> None:
+        occurrence_key = hashlib.sha256(profile.id.encode()).hexdigest()[:16]
+        common = {
+            "region": profile.city,
+            "junior_school": profile.junior_school,
+            "class_type_standard": profile.class_type_standard,
+            "assessment_stage": assessment_stage,
+            "affected_users": 1,
+        }
+        gaps: list[tuple[str, dict]] = []
+        if not reference_data or not reference_data.rank_points:
+            gaps.append(("annual_distribution", {
+                "reference_year": exam.exam_date.year,
+                "reason": "缺少截止本次分析时可用的历史分数位次曲线",
+            }))
+        if exam.grade_rank and exam.grade_size and "rank" not in forecast.position_channels:
+            gaps.append(("junior_school_mapping", {
+                "reference_year": exam.exam_date.year,
+                "reason": "已有年级排名，但缺少同校同阶段纵向映射样本",
+                "uncertainty_pp": 8,
+            }))
+        if profile.class_type_standard == "未知":
+            gaps.append(("class_type_mapping", {
+                "reference_year": exam.exam_date.year,
+                "reason": "学生班型尚未标准化",
+            }))
+        if profile.target_school and forecast.target_percentile is None:
+            gaps.append(("school_boundary", {
+                "reference_year": exam.exam_date.year,
+                "target_school": profile.target_school,
+                "reason": "缺少目标高中可用的录取位置边界",
+            }))
+        service = DataService(self.session)
+        for gap_type, details in gaps:
+            await service.create_or_increment_gap(DataGapCreate(
+                **common,
+                gap_type=gap_type,
+                details={**details, "occurrence_key": occurrence_key},
+            ), commit=False)
+        if gaps:
+            await self.session.commit()
 
     @staticmethod
     def _trend_delta(exam: Exam, exams: list[Exam]) -> float | None:
