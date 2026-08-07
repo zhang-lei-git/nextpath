@@ -109,7 +109,7 @@ class StudentService:
                 grade_size=exam.grade_size,
                 assessment_stage=assessment_stage,
                 total_full_mark=exam.total_full_mark,
-                physical_score=exam.physical_score or exam.scores.get("pe"),
+                physical_score=exam.physical_score if exam.physical_score is not None else exam.scores.get("pe"),
                 analysis_year=exam.exam_date.year,
                 analysis_date=exam.exam_date,
                 subject_scores=exam.scores,
