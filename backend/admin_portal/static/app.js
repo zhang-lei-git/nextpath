@@ -1,4 +1,4 @@
-const state = { sources: [], evidence: [], facts: [], releases: [], publishedFacts: [], users: [], models: [], validations: [], calibrationSamples: [], ingestions: [], collectionJobs: [], activeStatus: "pending_review", selectedReleaseId: "", selectedModelId: "" };
+const state = { sources: [], evidence: [], facts: [], releases: [], publishedFacts: [], users: [], models: [], validations: [], calibrationSamples: [], ingestions: [], collectionJobs: [], collectionRuns: [], selectedCollectionRun: null, activeStatus: "pending_review", selectedReleaseId: "", selectedModelId: "" };
 const titles = { overview: "数据总览", data: "基础数据", sources: "数据来源", capture: "采集录入", review: "审核发布", models: "分析模型", users: "用户管理" };
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -15,11 +15,15 @@ async function analysisApi(path, options = {}) { return api(`analysis/${path}`, 
 function notice(message, error = false) { const node = $("#notice"); node.textContent = message; node.className = `notice${error ? " error" : ""}`; setTimeout(() => node.classList.add("hidden"), 4200); }
 function text(value) { return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[char])); }
 function formatDate(value) { return value ? new Date(typeof value === "number" ? value * 1000 : value).toLocaleString("zh-CN", { hour12:false }) : "-"; }
-function badge(status) { return `<span class="badge ${status}">${({pending_review:"待审核",approved:"已通过",rejected:"已拒绝"})[status] || status}</span>`; }
+function badge(status) { return `<span class="badge ${status}">${({pending_review:"待审核",approved:"已通过",rejected:"已拒绝",running:"运行中",normalized:"已治理",unchanged:"无变化",failed:"失败"})[status] || status}</span>`; }
+function collectionStatus(status) { return ({running:"运行中",pending_review:"待审核",normalized:"已治理",unchanged:"无变化",failed:"失败"})[status] || status; }
+function triggerType(value) { return ({scheduled:"定时",manual:"手动",retry:"重试"})[value] || value; }
+function changeType(value) { return ({new:"首次采集",changed:"内容有变化",unchanged:"内容无变化"})[value] || value; }
+function stepName(value) { return ({capture:"采集快照",extract:"提取内容",normalize:"治理标准化"})[value] || value; }
 
 async function load() {
-  const [sources, evidence, facts, releases, me, users, models, calibrationSamples, ingestions, collectionJobs] = await Promise.all([dataApi("sources"), dataApi("evidence"), dataApi("facts"), dataApi("releases"), api("auth/me"), api("users"), analysisApi("models"), analysisApi("calibration-samples"), dataApi("ingestions"), dataApi("collection-jobs")]);
-  Object.assign(state, { sources, evidence, facts, releases, users, models, calibrationSamples, ingestions, collectionJobs, selectedReleaseId: state.selectedReleaseId || releases[0]?.id || "", selectedModelId: state.selectedModelId || models[0]?.id || "" });
+  const [sources, evidence, facts, releases, me, users, models, calibrationSamples, ingestions, collectionJobs, collectionRuns] = await Promise.all([dataApi("sources"), dataApi("evidence"), dataApi("facts"), dataApi("releases"), api("auth/me"), api("users"), analysisApi("models"), analysisApi("calibration-samples"), dataApi("ingestions"), dataApi("collection-jobs"), dataApi("collection-runs")]);
+  Object.assign(state, { sources, evidence, facts, releases, users, models, calibrationSamples, ingestions, collectionJobs, collectionRuns, selectedReleaseId: state.selectedReleaseId || releases[0]?.id || "", selectedModelId: state.selectedModelId || models[0]?.id || "" });
   $("#currentUser").textContent = me.username;
   await loadPublishedFacts();
   await loadValidations();
@@ -27,7 +31,7 @@ async function load() {
 }
 async function loadPublishedFacts() { state.publishedFacts = state.selectedReleaseId ? await dataApi(`releases/${state.selectedReleaseId}/facts`) : []; }
 async function loadValidations() { state.validations = state.selectedModelId ? await analysisApi(`models/${state.selectedModelId}/validations`) : []; }
-function render() { renderOverview(); renderSources(); renderSelectors(); renderFacts(); renderPublishedFacts(); renderIngestions(); renderCollectionJobs(); renderModels(); renderUsers(); }
+function render() { renderOverview(); renderSources(); renderSelectors(); renderFacts(); renderPublishedFacts(); renderIngestions(); renderCollectionJobs(); renderCollectionRuns(); renderModels(); renderUsers(); }
 function renderOverview() {
   const pending = state.facts.filter((fact) => fact.status === "pending_review").length;
   $("#metrics").innerHTML = [["数据来源",state.sources.length,"已登记"],["证据材料",state.evidence.length,"可追溯"],["待审核",pending,"暂未进入家长端"],["已发布版本",state.releases.length,"家长端可读取"]].map(([label,value,note]) => `<div class="metric"><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join("");
@@ -50,8 +54,24 @@ function renderIngestions() {
 }
 function renderCollectionJobs() {
   $("#collectionCount").textContent = `${state.collectionJobs.length} 个`;
-  $("#collectionList").innerHTML = state.collectionJobs.length ? state.collectionJobs.map((job) => `<div class="list-item"><strong>${text(job.name)}</strong><p>${text(job.target_url)} · 每 ${job.interval_minutes} 分钟</p><p>${job.last_status ? `最近：${text(job.last_status)}` : "尚未运行"}${job.last_message ? ` · ${text(job.last_message)}` : ""}</p><div class="actions"><button class="button small secondary" data-run-collection="${job.id}">立即采集</button></div></div>`).join("") : '<div class="empty">还没有采集任务</div>';
+  $("#collectionList").innerHTML = state.collectionJobs.length ? state.collectionJobs.map((job) => `<div class="list-item"><strong>${text(job.name)}</strong><p>${text(job.target_url)} · 每 ${job.interval_minutes} 分钟</p><p>${job.last_status ? `最近：${text(collectionStatus(job.last_status))}` : "尚未运行"}${job.last_message ? ` · ${text(job.last_message)}` : ""}</p><div class="actions"><button class="button small secondary" data-run-collection="${job.id}">立即采集</button></div></div>`).join("") : '<div class="empty">还没有采集任务</div>';
   $$("[data-run-collection]").forEach((button) => button.addEventListener("click", () => runCollection(button.dataset.runCollection)));
+}
+function renderCollectionRuns() {
+  const jobNames = Object.fromEntries(state.collectionJobs.map((job) => [job.id, job.name]));
+  $("#collectionRunCount").textContent = `${state.collectionRuns.length} 次`;
+  $("#collectionRunList").innerHTML = state.collectionRuns.length ? state.collectionRuns.slice(0,20).map((run) => `<div class="run-row"><div><strong>${text(jobNames[run.job_id] || "采集任务")}</strong><p>${triggerType(run.trigger_type)} · ${formatDate(run.started_at || run.created_at)} · ${run.changed_count ? "发现变化" : "未发现变化"}</p></div><div class="run-status">${badge(run.status)}<button class="button small secondary" data-run-detail="${run.id}">查看日志</button></div></div>`).join("") : '<div class="empty">采集任务运行后，这里会显示完整记录</div>';
+  $$("[data-run-detail]").forEach((button) => button.addEventListener("click", () => showCollectionRun(button.dataset.runDetail)));
+  renderCollectionRunDetail();
+}
+function renderCollectionRunDetail() {
+  const detail = state.selectedCollectionRun;
+  const node = $("#collectionRunDetail");
+  if (!detail) { node.innerHTML = '<div class="empty compact">选择一条运行记录查看采集和治理步骤</div>'; return; }
+  const snapshots = detail.snapshots.map((snapshot) => `<div class="detail-block"><strong>原始快照 · ${text(changeType(snapshot.change_type))}</strong><p>${text(snapshot.final_url || snapshot.source_url)}</p><dl><div><dt>响应状态</dt><dd>${snapshot.response_status ?? "-"}</dd></div><div><dt>内容哈希</dt><dd class="mono">${text(snapshot.content_hash || "-")}</dd></div><div><dt>结构变化</dt><dd>${snapshot.diff_summary?.structure_changed ? "有" : "无"}</dd></div></dl></div>`).join("");
+  const steps = detail.steps.map((step) => `<div class="step-row"><span class="step-dot ${step.status}"></span><div><strong>${text(stepName(step.step_name))}</strong><p>${formatDate(step.started_at)} · ${step.status === "succeeded" ? "完成" : "失败"}${step.processor_version ? ` · ${text(step.processor_version)}` : ""}</p>${step.error_message ? `<p class="error-text">${text(step.error_message)}</p>` : ""}</div></div>`).join("");
+  node.innerHTML = `<div class="detail-head"><div><strong>${collectionStatus(detail.status)}</strong><p>${triggerType(detail.trigger_type)}触发 · ${formatDate(detail.started_at)} 至 ${formatDate(detail.finished_at)}</p></div><button class="icon-button" id="closeRunDetail" aria-label="关闭详情" title="关闭详情">×</button></div>${detail.error_message ? `<p class="error-text">${text(detail.error_message)}</p>` : ""}${snapshots}<div class="step-list">${steps || '<div class="empty compact">暂无处理步骤</div>'}</div>`;
+  $("#closeRunDetail").addEventListener("click", () => { state.selectedCollectionRun = null; renderCollectionRunDetail(); });
 }
 function renderFacts() {
   const visible = state.facts.filter((fact) => fact.status === state.activeStatus);
@@ -96,6 +116,7 @@ function updateReleaseSelection() { const selected = $$(".release-check:checked"
 async function reviewFact(id, decision) { const note = window.prompt(decision === "approved" ? "审核说明（可留空）" : "拒绝原因", ""); if (note === null) return; try { await dataApi(`facts/${id}/review`, { method:"POST", body:JSON.stringify({decision,note}) }); notice("审核结果已保存"); await load(); } catch (error) { notice(error.message, true); } }
 async function reviewCalibrationSample(id, decision) { const note = window.prompt(decision === "approved" ? "审核说明（可留空）" : "拒绝原因", ""); if (note === null) return; try { await analysisApi(`calibration-samples/${id}/review`, { method:"POST", body:JSON.stringify({decision,note}) }); notice("校准样本审核结果已保存"); await load(); } catch (error) { notice(error.message, true); } }
 async function runCollection(id) { try { await dataApi(`collection-jobs/${id}/run`, { method:"POST" }); notice("采集完成，已进入待治理资料"); await load(); } catch(error) { notice(error.message,true); } }
+async function showCollectionRun(id) { try { state.selectedCollectionRun = await dataApi(`collection-runs/${id}`); renderCollectionRunDetail(); } catch(error) { notice(error.message,true); } }
 async function resetPassword(userId, username) { const password = window.prompt(`为 ${username} 设置新密码（至少 8 位）`); if (!password) return; try { await api(`users/${userId}/password`, { method:"POST", body:JSON.stringify({password}) }); notice("密码已重置"); await load(); } catch (error) { notice(error.message, true); } }
 function formData(form) { return Object.fromEntries(new FormData(form).entries()); }
 $("#sourceForm").addEventListener("submit", async (event) => { event.preventDefault(); const body=formData(event.currentTarget); if (!body.homepage_url) body.homepage_url=null; try { await dataApi("sources", {method:"POST",body:JSON.stringify(body)}); event.currentTarget.reset(); notice("数据来源已登记"); await load(); } catch(error) { notice(error.message,true); } });
