@@ -36,12 +36,39 @@ def load_data(path: Path) -> dict:
     return json.loads(result.stdout)
 
 
-async def import_data(data: dict) -> dict[str, int | str]:
+async def activate_existing_release(session, release: DataRelease) -> dict[str, int | str]:
+    facts = list(await session.scalars(
+        select(DataFact)
+        .join(DataReleaseItem, DataReleaseItem.fact_id == DataFact.id)
+        .where(DataReleaseItem.release_id == release.id)
+    ))
+    if not facts or any(fact.status != "approved" or fact.reference_year != YEAR for fact in facts):
+        raise RuntimeError("既有版本包含未审核或非 2025 年数据，不能激活")
+    has_rank_curve = any(fact.field == "一分一段参考点" and fact.value.get("points") for fact in facts)
+    school_lines = [fact for fact in facts if fact.field == "录取参考线" and "score" in fact.value]
+    if not has_rank_curve or not school_lines:
+        raise RuntimeError("既有版本缺少位次曲线或学校录取参考，不能激活")
+    release.environment = "production"
+    release.data_purpose = "forecast"
+    release.usable_for_prediction = True
+    release.notes = "中考前预测专用：只含 2025 年及此前可获得的历史参考，不含 2026 年出分后数据。"
+    release.published_by = "legacy-import-reviewed-activation"
+    await session.commit()
+    return {"activated": 1, "facts": len(facts), "school_references": len(school_lines), "release_id": release.id}
+
+
+async def import_data(data: dict, *, activate_existing_reviewed: bool = False) -> dict[str, int | str]:
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
     async with SessionLocal() as session:
         existing = await session.scalar(select(DataRelease).where(DataRelease.name == RELEASE_NAME).limit(1))
         if existing:
+            if activate_existing_reviewed and not (
+                existing.environment == "production"
+                and existing.data_purpose == "forecast"
+                and existing.usable_for_prediction
+            ):
+                return await activate_existing_release(session, existing)
             return {"skipped": 1, "release_id": existing.id}
         source = await session.scalar(select(DataSource).where(DataSource.name == "旧版志愿预测系统结构化整理").limit(1))
         if not source:
@@ -97,10 +124,17 @@ async def import_data(data: dict) -> dict[str, int | str]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", type=Path, required=True)
+    parser.add_argument(
+        "--activate-existing-reviewed",
+        action="store_true",
+        help="校验并激活迁移后被降为测试状态的同名 2025 历史版本",
+    )
     args = parser.parse_args()
     if not args.source.is_file():
         raise SystemExit(f"找不到数据文件：{args.source}")
-    print(json.dumps(asyncio.run(import_data(load_data(args.source))), ensure_ascii=False))
+    print(json.dumps(asyncio.run(import_data(
+        load_data(args.source), activate_existing_reviewed=args.activate_existing_reviewed
+    )), ensure_ascii=False))
 
 
 if __name__ == "__main__":
