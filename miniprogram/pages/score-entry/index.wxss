@@ -1,8 +1,8 @@
 .page-title { margin: 12rpx 0; color: #143F43; font-size: 44rpx; font-weight: 700; }
 .intro { color: #687574; font-size: 27rpx; line-height: 1.7; }
-.upload { display: block; width: 100%; margin-top: 40rpx; padding: 34rpx 28rpx; text-align: left; }
-.voice { display:block; width:100%; margin-top:16rpx; padding:30rpx 28rpx; text-align:left; }.voice-result { margin:14rpx 4rpx 0; color:#2C6194; font-size:23rpx; line-height:1.6; }
-.upload-title { margin-bottom: 8rpx; color: #143F43; font-size: 31rpx; font-weight: 650; }
+.quick-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16rpx; margin-top: 30rpx; }
+.quick-action { min-height: 132rpx; padding: 24rpx; text-align: left; }.quick-title { color: #143F43; font-size: 28rpx; font-weight: 650; }.quick-note { margin-top: 9rpx; color: #687574; font-size: 22rpx; }
+.voice-result { margin:14rpx 4rpx 0; color:#2C6194; font-size:23rpx; line-height:1.6; }
 .divider { display: flex; align-items: center; gap: 18rpx; margin: 34rpx 4rpx 22rpx; color: #687574; font-size: 24rpx; }
 .divider view { height: 1rpx; flex: 1; background: #D8E1DE; }
 .form { padding: 0 28rpx; }
@@ -14,4 +14,5 @@ input, .picker-value { height: 52rpx; color: #1C2828; font-size: 30rpx; line-hei
 input::placeholder { color: #A0ABAA; }
 .privacy { margin: 24rpx 4rpx 30rpx; color: #687574; font-size: 22rpx; line-height: 1.65; }
 .subject-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:16rpx; margin-top:12rpx; }.subject { padding:14rpx 12rpx; background:#F5F7F5; border-radius:10rpx; }.subject text { display:block; color:#687574; font-size:22rpx; }.subject input { height:42rpx; font-size:28rpx; line-height:42rpx; }
+.calculated-total { display:flex; align-items:baseline; justify-content:space-between; min-height:52rpx; }.calculated-total > text { color:#143F43; font-family:ui-monospace, Menlo, monospace; font-size:34rpx; font-weight:700; }.calculated-total view { color:#687574; font-size:22rpx; }
 .save { width: 100%; }

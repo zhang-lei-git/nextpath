@@ -6,13 +6,13 @@
   <view class="topline">
     <view>
       <view class="eyebrow">NEXT PATH · 升学助手</view>
-      <view class="greeting">{{dashboard.profile_complete ? dashboard.student_name + '的升学判断' : '先建立孩子档案'}}</view>
+      <view class="greeting">{{dashboard.profile_complete ? dashboard.student_name + '的升学分析' : '先建立孩子档案'}}</view>
     </view>
     <button class="profile" bindtap="showProfile" aria-label="查看档案">档案</button>
   </view>
 
   <view class="forecast card" wx:if="{{dashboard.forecast}}">
-    <view class="forecast-label">升学判断</view>
+    <view class="forecast-label">升学分析</view>
     <view class="target-block">
       <view class="target-label">目标</view>
       <view class="target-name" wx:if="{{dashboard.target_school}}">{{dashboard.target_school}}</view>
@@ -24,20 +24,20 @@
       <view class="judgement-label">当前现状</view>
       <view class="judgement-score">{{dashboard.forecast.current_snapshot.total_range[0]}}<text>/ {{dashboard.forecast.current_snapshot.total_full_mark}} 分</text></view>
       <view class="judgement-meta" wx:if="{{dashboard.forecast.current_snapshot.range_usable}}">当前位置：全区前 {{dashboard.forecast.current_snapshot.estimated_percentile_range[0]}}%–{{dashboard.forecast.current_snapshot.estimated_percentile_range[1]}}%</view>
-      <view class="judgement-meta" wx:else>当前位置：暂未形成判断</view>
+      <view class="judgement-meta" wx:else>当前位置：暂未形成分析结果</view>
       <view class="gap-copy" wx:if="{{dashboard.forecast.target_comparison && dashboard.forecast.target_comparison.current_relation}}">与目标相比：{{dashboard.forecast.target_comparison.current_relation}}</view>
     </view>
     <view class="judgement-block projection" wx:if="{{dashboard.forecast.reasonable_projection}}">
       <view class="judgement-label">合理预测</view>
       <view class="judgement-score">{{dashboard.forecast.reasonable_projection.total_range[0]}}–{{dashboard.forecast.reasonable_projection.total_range[1]}}<text>/ {{dashboard.forecast.reasonable_projection.total_full_mark}} 分</text></view>
       <view class="judgement-meta" wx:if="{{dashboard.forecast.reasonable_projection.range_usable}}">预测位置：全区前 {{dashboard.forecast.reasonable_projection.estimated_percentile_range[0]}}%–{{dashboard.forecast.reasonable_projection.estimated_percentile_range[1]}}%</view>
-      <view class="judgement-meta" wx:else>预测位置：暂未形成判断</view>
+      <view class="judgement-meta" wx:else>预测位置：暂未形成分析结果</view>
       <view class="gap-copy" wx:if="{{dashboard.forecast.target_comparison && dashboard.forecast.target_comparison.projected_relation}}">与目标相比：{{dashboard.forecast.target_comparison.projected_relation}}</view>
     </view>
-    <button class="basis-link" bindtap="goToAnalysis">查看完整判断</button>
+    <button class="basis-link" bindtap="goToAnalysis">查看完整分析</button>
   </view>
   <view class="first-visit card" wx:else>
-    <view class="first-title">{{dashboard.profile_complete ? '先建立第一份成绩判断' : '只需姓名、初中和年级'}}</view>
+    <view class="first-title">{{dashboard.profile_complete ? '先建立第一份成绩分析' : '只需姓名、初中和年级'}}</view>
     <view class="muted">{{dashboard.profile_complete ? '录入最近一次周考、月考或模考成绩。系统会从这一条记录开始，持续更新孩子的位置和目标差距。' : '这些信息用于建立孩子所在初中与全区升学位置的关系，不要求填写无关资料。'}}</view>
   </view>
 

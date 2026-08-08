@@ -30,6 +30,7 @@ class PredictionInput:
     assessment_stage: str | None = None
     total_full_mark: float | None = None
     physical_score: float | None = None
+    score_includes_pe: bool = False
     analysis_year: int | None = None
     analysis_date: date | None = None
     subject_scores: dict[str, float] | None = None
@@ -168,7 +169,7 @@ class BaselinePredictionEngine:
 
         if current_percentile is None:
             tier = "先补全年级位置，再看升学范围"
-            position_note = "本次模考学科成绩已按体育满分计入中考总分，但缺少可换算的历史数据。补全年级排名和年级人数后，系统会先按校内位置估算。"
+            position_note = "本次模考成绩已计入体育分，但缺少可换算的历史数据。补全年级排名和年级人数后，系统会先估算校内位置。"
         else:
             tier = self._tier(current_percentile)
             position_note = self._position_note(percentile_range, method, input_data)
@@ -229,7 +230,7 @@ class BaselinePredictionEngine:
 
     def build_report(self, input_data: PredictionInput) -> AdmissionReport:
         forecast = self.predict(input_data)
-        trend_summary = "成绩记录不足两次，暂不判断趋势。" if input_data.trend_delta is None else (
+        trend_summary = "成绩记录不足两次，暂不分析趋势。" if input_data.trend_delta is None else (
             f"最近两次学科总分变化 {input_data.trend_delta:+.1f} 分；不同试卷先看年级位置，再看分数变化。"
         )
         target = self._find_school_reference(input_data.target_school)
@@ -262,7 +263,7 @@ class BaselinePredictionEngine:
             trend_summary=trend_summary,
             target_summary=target_summary,
             school_context=self._school_context(input_data),
-            policy_summary="中考前只使用已经发布的往年政策和数据；当年政策、计划和录取结果发布后再分阶段纳入判断。",
+            policy_summary="中考前只使用已经发布的往年政策和数据；当年政策、计划和录取结果发布后再分阶段纳入分析。",
             key_points=basis_with_next_step(forecast.basis),
             data_sources=[
                 self._rank_reference_source(),
@@ -273,7 +274,7 @@ class BaselinePredictionEngine:
 
     def _projected_total_range(self, input_data: PredictionInput) -> tuple[float, float]:
         academic_full_mark = self._academic_full_mark(input_data.total_full_mark, input_data.analysis_year)
-        academic_score = min(input_data.total_score, academic_full_mark)
+        academic_score = min(self._academic_score(input_data), academic_full_mark)
         physical_score = input_data.physical_score if input_data.physical_score is not None else PHYSICAL_EDUCATION_FULL_MARK
         total = round(academic_score + physical_score, 1)
         return (total, total)
@@ -283,12 +284,16 @@ class BaselinePredictionEngine:
     ) -> tuple[float, float]:
         academic_full_mark = self._academic_full_mark(input_data.total_full_mark, input_data.analysis_year)
         physical_score = input_data.physical_score if input_data.physical_score is not None else PHYSICAL_EDUCATION_FULL_MARK
-        rates = [
-            min(1, max(0, score / self._academic_full_mark(full_mark, year)))
-            for score, full_mark, year in input_data.score_history
-            if self._academic_full_mark(full_mark, year) > 0
-        ]
-        current_rate = min(1, max(0, input_data.total_score / academic_full_mark))
+        rates = []
+        for history_item in input_data.score_history:
+            score, full_mark, year = history_item[:3]
+            physical = history_item[3] if len(history_item) > 3 else None
+            includes_pe = bool(history_item[4]) if len(history_item) > 4 else False
+            history_academic = score - (physical if includes_pe and physical is not None else 0)
+            history_full_mark = self._academic_full_mark(full_mark, year)
+            if history_full_mark > 0:
+                rates.append(min(1, max(0, history_academic / history_full_mark)))
+        current_rate = min(1, max(0, self._academic_score(input_data) / academic_full_mark))
         if not rates or abs(rates[-1] - current_rate) > 0.0001:
             rates.append(current_rate)
         if len(rates) < 2:
@@ -306,7 +311,7 @@ class BaselinePredictionEngine:
         difficulty_points = self.position_fusion.score_projection_adjustment(
             input_data.junior_school, input_data.assessment_stage
         )
-        center = min(academic_full_mark, max(0, input_data.total_score + trend_points + difficulty_points)) + physical_score
+        center = min(academic_full_mark, max(0, self._academic_score(input_data) + trend_points + difficulty_points)) + physical_score
         average_rate = sum(recent_rates) / len(recent_rates)
         volatility = sqrt(sum((value - average_rate) ** 2 for value in recent_rates) / len(recent_rates))
         volatility_points = min(
@@ -360,6 +365,13 @@ class BaselinePredictionEngine:
         # 580/760 are accepted for old records created before the form switched
         # to the inclusive total-mark convention.
         return total_full_mark if total_full_mark <= scheme_academic else total_full_mark - PHYSICAL_EDUCATION_FULL_MARK
+
+    @staticmethod
+    def _academic_score(input_data: PredictionInput) -> float:
+        if not input_data.score_includes_pe:
+            return input_data.total_score
+        physical_score = input_data.physical_score if input_data.physical_score is not None else PHYSICAL_EDUCATION_FULL_MARK
+        return max(0, input_data.total_score - physical_score)
 
     @staticmethod
     def _total_full_mark(input_data: PredictionInput) -> float:
@@ -662,7 +674,7 @@ class BaselinePredictionEngine:
         if method == "dual_channel_fusion":
             return "本次同时参考了计分方案换算后的成绩位置和所在初中年级位置；两条信息相互校验后再给出范围。"
         if method == "dual_channel_conflict_review":
-            return "成绩换算与年级位置给出的范围暂不一致，系统已保留更宽的判断范围；后续同类考试会持续校准。"
+            return "成绩换算与年级位置给出的范围暂不一致，系统已保留更宽的分析范围；后续同类考试会持续校准。"
         if method == "rank_only":
             return "当前以所在初中的年级位置为主，并保留学校层次差异带来的不确定性。"
         if method == "score_only":
@@ -682,8 +694,8 @@ class BaselinePredictionEngine:
         if not input_data.junior_school:
             return "补充所在初中后，可持续积累该校与全区位置的校准样本。"
         if input_data.grade_rank and input_data.grade_size:
-            return f"已使用 {input_data.junior_school} 的年级第 {input_data.grade_rank}/{input_data.grade_size} 名作为本次判断的主要输入。"
-        return f"已记录初中：{input_data.junior_school}。下次补全年级排名和年级人数，判断会更贴近孩子所在初中的实际位置。"
+            return f"已使用 {input_data.junior_school} 的年级第 {input_data.grade_rank}/{input_data.grade_size} 名作为本次分析的主要输入。"
+        return f"已记录初中：{input_data.junior_school}。下次补全年级排名和年级人数，分析会更贴近孩子所在初中的实际位置。"
 
     def _reference_year(self) -> int:
         return self.reference_data.reference_year if self.reference_data else 0
@@ -693,4 +705,4 @@ class BaselinePredictionEngine:
 
 
 def basis_with_next_step(basis: list[str]) -> list[str]:
-    return basis + ["下次录入优先补全年级排名和年级人数；体育成绩公布后可直接补录，系统会保留本次判断，不会覆盖历史报告。"]
+    return basis + ["下次录入优先补全年级排名和年级人数；体育成绩公布后可直接补录，系统会保留本次分析，不会覆盖历史报告。"]

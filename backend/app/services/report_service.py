@@ -209,7 +209,8 @@ class StudentReportService:
         position = self._position_text(context.forecast)
         current_scenario = context.forecast.current_snapshot
         reasonable_scenario = context.forecast.reasonable_projection
-        score_note = "" if sum(item["finalScore"] for item in subjects if item.get("table", True)) == context.exam.total_score else "科目分数未完整录入，总分以本次确认记录为准。"
+        inclusive_total = self._inclusive_total(context.exam)
+        score_note = "" if sum(item["finalScore"] for item in subjects if item.get("table", True)) == inclusive_total else "科目分数未完整录入，总分以本次确认记录为准。"
         rank_note = (
             f"本次年级第 {context.exam.grade_rank}/{context.exam.grade_size} 名。"
             if context.exam.grade_rank and context.exam.grade_size else "下次可补全年级排名和年级人数。"
@@ -223,10 +224,10 @@ class StudentReportService:
                 "studentLabel": "孩子",
                 "admissionLabel": context.profile.junior_school or "初中信息待补充",
                 "targetLabel": target,
-                "reportedTotal": context.exam.total_score,
+                "reportedTotal": inclusive_total,
                 "totalNote": score_note,
                 "outputTitle": f"nextpath-{context.exam.id}",
-                "scoreLabel": "本次学科总分",
+                "scoreLabel": "本次总分",
             },
             "validation": {"allowTotalMismatch": True, "totalTolerance": 0.01},
             "glance": {
@@ -254,7 +255,7 @@ class StudentReportService:
                 "takeawayHtml": "持续记录成绩，预测会随最新情况更新。",
             },
             "conclusion": {
-                "title": "当前升学判断",
+                "title": "当前升学分析",
                 "verdictHtml": f"<strong>{context.forecast.tier}</strong><br>目标：{target}",
                 "cards": [
                     {"title": "当前现状", "text": self._scenario_total(current_scenario), "tone": "blue", "icon": "1"},
@@ -268,7 +269,7 @@ class StudentReportService:
                 "lead": "围绕目标持续观察当前位置和差距。",
                 "entrance": {
                     "cityLine": None, "cityLabel": "", "schoolLine": None, "schoolLabel": "",
-                    "studentScore": context.exam.total_score, "studentLabel": "本次成绩",
+                    "studentScore": inclusive_total, "studentLabel": "本次成绩",
                     "cityGapLabel": "", "schoolGapLabel": "", "note": "",
                 },
                 "environmentTitle": "孩子当前信息",
@@ -309,14 +310,14 @@ class StudentReportService:
             "decisions": {
                 "title": "家长决策原则",
                 "cards": [
-                    {"title": "看目标", "text": "目标高中是所有判断的参照。", "icon": "1"},
+                    {"title": "看目标", "text": "目标高中是所有分析的参照。", "icon": "1"},
                     {"title": "看差距", "text": "关注当前现状和合理预测下的差距。", "icon": "2"},
                     {"title": "持续记录", "text": "每次成绩都会带来新的预测。", "icon": "3"},
                 ],
                 "finalVerdictHtml": "围绕目标，持续记录成绩，及时查看变化。",
             },
             "sources": [],
-            "footer": "NextPath · 升学判断。",
+            "footer": "NextPath · 升学分析。",
         }
 
     @staticmethod
@@ -328,7 +329,7 @@ class StudentReportService:
                 rows.append({
                     "key": key, "name": name, "max": full_mark, "finalScore": score,
                     "countInTotal": True, "tone": "mid", "role": "持续观察",
-                    "action": "连续记录后再判断该科对总分位置的影响。",
+                    "action": "连续记录后再分析该科对总分位置的影响。",
                 })
         while len(rows) < 3:
             index = len(rows) + 1
@@ -337,6 +338,12 @@ class StudentReportService:
                 "countInTotal": False, "tone": "mid", "role": "", "action": "", "table": False, "profile": False,
             })
         return rows
+
+    @staticmethod
+    def _inclusive_total(exam: Exam) -> float:
+        if exam.score_includes_pe:
+            return exam.total_score
+        return exam.total_score + (exam.physical_score if exam.physical_score is not None else 60)
 
     @staticmethod
     def _exam_row(exam: Exam, final_id: str) -> dict:
@@ -398,7 +405,7 @@ class StudentReportService:
         if forecast.current_percentile is not None and forecast.estimated_percentile_range:
             lower, upper = forecast.estimated_percentile_range
             return f"当前预估处于全区前 {forecast.current_percentile:.1f}%，区间前 {lower:.1f}%–{upper:.1f}%。"
-        return "信息还不足以形成稳定的位置判断，下次补全年级排名和年级人数。"
+        return "信息还不足以形成稳定的位置分析，下次补全年级排名和年级人数。"
 
     @staticmethod
     def _render_html(report_json: dict) -> str:

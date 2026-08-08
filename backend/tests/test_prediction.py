@@ -166,6 +166,19 @@ def test_missing_physical_score_defaults_to_full_mark_for_position_calculation()
     assert "满分 60 分" in forecast.basis[1]
 
 
+def test_inclusive_total_is_not_counted_with_physical_education_twice() -> None:
+    forecast = BaselinePredictionEngine().predict(PredictionInput(
+        total_score=520,
+        total_full_mark=640,
+        physical_score=60,
+        score_includes_pe=True,
+        class_rank=None,
+        target_school=None,
+    ))
+
+    assert forecast.projected_total_range == (520, 520)
+
+
 def test_two_parent_facing_scenarios_keep_current_and_projected_results_separate() -> None:
     forecast = BaselinePredictionEngine().predict(PredictionInput(
         total_score=520,

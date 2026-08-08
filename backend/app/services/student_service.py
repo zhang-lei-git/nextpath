@@ -57,7 +57,7 @@ class StudentService:
         elif not profile_complete:
             actions.append(ActionItem(
                 title="先完成孩子档案",
-                detail="只需姓名、初中和年级三项，完成后就能看到面向中考的位置判断。",
+                detail="只需姓名、初中和年级三项，完成后就能看到面向中考的位置分析。",
                 priority="high",
             ))
         else:
@@ -128,11 +128,12 @@ class StudentService:
                 assessment_stage=assessment_stage,
                 total_full_mark=exam.total_full_mark,
                 physical_score=exam.physical_score if exam.physical_score is not None else exam.scores.get("pe"),
+                score_includes_pe=exam.score_includes_pe,
                 analysis_year=exam.exam_date.year,
                 analysis_date=exam.exam_date,
                 subject_scores=exam.scores,
                 score_history=tuple(
-                    (item.total_score, item.total_full_mark, item.exam_date.year)
+                    (item.total_score, item.total_full_mark, item.exam_date.year, item.physical_score, item.score_includes_pe)
                     for item in sorted(exams, key=lambda item: item.exam_date)
                     if item.exam_date <= exam.exam_date
                 ),
@@ -171,6 +172,7 @@ class StudentService:
                     "total_score": exam.total_score,
                     "total_full_mark": exam.total_full_mark,
                     "physical_score": exam.physical_score,
+                    "score_includes_pe": exam.score_includes_pe,
                     "grade_rank": exam.grade_rank,
                     "grade_size": exam.grade_size,
                     "assessment_stage": assessment_stage,
@@ -272,7 +274,15 @@ class StudentService:
     def _trend_delta(exam: Exam, exams: list[Exam]) -> float | None:
         earlier = [item for item in exams if item.id != exam.id and item.exam_date <= exam.exam_date]
         previous = sorted(earlier, key=lambda item: item.exam_date, reverse=True)
-        return exam.total_score - previous[0].total_score if previous else None
+        if not previous:
+            return None
+        return StudentService._inclusive_total(exam) - StudentService._inclusive_total(previous[0])
+
+    @staticmethod
+    def _inclusive_total(exam: Exam) -> float:
+        if exam.score_includes_pe:
+            return exam.total_score
+        return exam.total_score + (exam.physical_score if exam.physical_score is not None else 60)
 
     async def get_profile(self, owner_id: str) -> StudentProfileRead:
         profile = await self.profiles.get_or_create_demo(owner_id)

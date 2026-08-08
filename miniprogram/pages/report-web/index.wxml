@@ -12,7 +12,7 @@
     <view class="hero-verdict" wx:if="{{report.content.verdict}}">{{report.content.verdict}}</view>
   </view>
 
-  <view class="section-title">这次判断</view>
+  <view class="section-title">这次分析</view>
   <view class="kpi-grid">
     <view class="kpi card {{item.tone}}" wx:for="{{report.content.kpis}}" wx:key="label">
       <view class="kpi-label">{{item.label}}</view>

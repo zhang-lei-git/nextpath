@@ -38,7 +38,7 @@ def test_exam_creation_and_dashboard() -> None:
                 "participant_scope": "年级",
                 "participant_count": 680,
                 "paper_version": "校内A卷",
-                "scores": {"math": 96},
+                "scores": {},
             },
         )
     dashboard = client.get("/api/v1/dashboard", headers=headers)
@@ -75,10 +75,48 @@ def test_exam_creation_and_dashboard() -> None:
     assert "已使用" not in html.text
 
 
+def test_exam_score_uses_a_single_inclusive_total_definition() -> None:
+    """Manual totals stay intact; subject totals are recalculated with PE included."""
+    headers = {"X-Demo-User": f"inclusive-score-family-{uuid4().hex}"}
+    with TestClient(app) as client:
+        assert client.put(
+            "/api/v1/profile",
+            headers=headers,
+            json={"student_name": "小宁", "junior_school": "示例初中", "grade": "初三"},
+        ).status_code == 200
+        manual = client.post(
+            "/api/v1/exams",
+            headers=headers,
+            json={
+                "name": "一模", "exam_date": "2026-03-18", "total_score": 520,
+                "scores": {},
+            },
+        )
+        subjects = client.post(
+            "/api/v1/exams",
+            headers=headers,
+            json={
+                "name": "二模", "exam_date": "2026-04-18", "total_score": 999,
+                "physical_score": 60,
+                "scores": {"chinese": 108, "math": 112, "english": 110, "pe": 57},
+            },
+        )
+
+    assert manual.status_code == 201
+    assert manual.json()["total_score"] == 520
+    assert manual.json()["physical_score"] == 60
+    assert manual.json()["score_includes_pe"] is True
+    assert subjects.status_code == 201
+    assert subjects.json()["total_score"] == 387
+    assert subjects.json()["physical_score"] == 57
+    assert subjects.json()["scores"] == {"chinese": 108, "math": 112, "english": 110, "pe": 57}
+    assert subjects.json()["score_includes_pe"] is True
+
+
 def test_seven_mock_exams_generate_saved_reports_and_support_correction(monkeypatch) -> None:
     monkeypatch.setattr(settings, "report_signing_secret", "report-test-secret")
     headers = {"X-Demo-User": f"seven-exam-family-{uuid4().hex}"}
-    score_rows = {"chinese": 112, "math": 118, "english": 115, "physics": 78, "history": 60, "politics": 57, "pe": 60}
+    score_rows = {}
     with TestClient(app) as client:
         assert client.put(
             "/api/v1/profile",

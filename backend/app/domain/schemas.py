@@ -10,6 +10,7 @@ class ExamCreate(BaseModel):
     total_score: float = Field(ge=0, le=1000)
     total_full_mark: float | None = Field(default=None, gt=0, le=1000)
     physical_score: float | None = Field(default=60, ge=0, le=60)
+    score_includes_pe: bool = True
     class_rank: int | None = Field(default=None, ge=1)
     grade_rank: int | None = Field(default=None, ge=1)
     grade_size: int | None = Field(default=None, ge=1)
@@ -23,6 +24,18 @@ class ExamCreate(BaseModel):
     def grade_rank_is_within_grade_size(self) -> "ExamCreate":
         if self.physical_score is None:
             self.physical_score = 60
+        academic_scores = {
+            key: value for key, value in self.scores.items()
+            if key != "pe" and isinstance(value, (int, float))
+        }
+        if academic_scores:
+            physical_score = self.scores.get("pe", self.physical_score)
+            if not isinstance(physical_score, (int, float)) or not 0 <= physical_score <= 60:
+                raise ValueError("体育成绩应在 0 到 60 分之间")
+            self.physical_score = float(physical_score)
+            self.scores = {**academic_scores, "pe": self.physical_score}
+            self.total_score = round(sum(self.scores.values()), 1)
+            self.score_includes_pe = True
         if self.grade_rank and self.grade_size and self.grade_rank > self.grade_size:
             raise ValueError("年级排名不能大于年级人数")
         if self.participant_count and self.grade_size and self.participant_scope == "年级" and self.participant_count != self.grade_size:
