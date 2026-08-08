@@ -1,7 +1,12 @@
 {
   "description": "NextPath 中考升学助手 MVP",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "mock"
+      }
+    ],
     "include": []
   },
   "setting": {
