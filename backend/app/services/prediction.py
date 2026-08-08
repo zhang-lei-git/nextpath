@@ -180,11 +180,18 @@ class BaselinePredictionEngine:
         ]
         missing_inputs = self._missing_inputs(input_data, annual_curve)
         prediction_level = self._prediction_level(input_data, annual_curve)
+        comparison_current_range = current_snapshot.estimated_rank_range if current_snapshot.range_usable else (0, 0)
+        comparison_projected_range = reasonable_projection.estimated_rank_range if reasonable_projection.range_usable else (0, 0)
         target_comparison = self._target_comparison(
             target[0] if target else None,
             target_boundary.rank_range if target_boundary else (target_rank, target_rank) if target_rank else None,
-            current_snapshot.estimated_rank_range,
-            reasonable_projection.estimated_rank_range,
+            comparison_current_range,
+            comparison_projected_range,
+        )
+        school_tiers = (
+            self._school_tiers(reasonable_projection.estimated_rank_range, target_base)
+            if prediction_level == "complete" and reasonable_projection.range_usable
+            else {"reach": [], "match": [], "safe": []}
         )
         return Forecast(
             tier=tier,
@@ -216,7 +223,7 @@ class BaselinePredictionEngine:
             reasonable_projection=reasonable_projection,
             prediction_level=prediction_level,
             target_comparison=target_comparison,
-            school_tiers=self._school_tiers(reasonable_projection.estimated_rank_range, target_base),
+            school_tiers=school_tiers,
             missing_inputs=missing_inputs,
         )
 
@@ -395,7 +402,7 @@ class BaselinePredictionEngine:
             target_rank_gap=target_rank_gap,
             summary=summary,
             confidence=position.confidence,
-            range_usable=percentile_range is not None and rank_range != (0, 0),
+            range_usable=self._range_usable(percentile_range, rank_range, candidate_count),
             parent_reasons=[summary],
         )
 
@@ -489,16 +496,25 @@ class BaselinePredictionEngine:
     ) -> TargetComparison | None:
         if not school:
             return None
-        if not school_rank_range or current_range == (0, 0) or projected_range == (0, 0):
+        if not school_rank_range:
             return TargetComparison(school=school, risk="数据不足")
         school_range = school_rank_range
-        current_gap = (current_range[0] - school_range[1], current_range[1] - school_range[0])
-        projected_gap = (projected_range[0] - school_range[1], projected_range[1] - school_range[0])
-        if projected_gap[1] <= 0:
+        current_gap = (
+            (current_range[0] - school_range[1], current_range[1] - school_range[0])
+            if current_range != (0, 0) else None
+        )
+        projected_gap = (
+            (projected_range[0] - school_range[1], projected_range[1] - school_range[0])
+            if projected_range != (0, 0) else None
+        )
+        decision_gap = projected_gap or current_gap
+        if not decision_gap:
+            risk = "数据不足"
+        elif decision_gap[1] <= 0:
             risk = "已进入"
-        elif projected_gap[0] <= 0:
+        elif decision_gap[0] <= 0:
             risk = "边界冲刺"
-        elif projected_gap[0] <= max(500, round(sum(school_range) / 2 * 0.08)):
+        elif decision_gap[0] <= max(500, round(sum(school_range) / 2 * 0.08)):
             risk = "匹配"
         else:
             risk = "仍有差距"
@@ -508,8 +524,8 @@ class BaselinePredictionEngine:
             current_gap_rank_range=current_gap,
             projected_gap_rank_range=projected_gap,
             risk=risk,
-            current_relation=BaselinePredictionEngine._gap_relation(current_gap),
-            projected_relation=BaselinePredictionEngine._gap_relation(projected_gap),
+            current_relation=BaselinePredictionEngine._gap_relation(current_gap) if current_gap else None,
+            projected_relation=BaselinePredictionEngine._gap_relation(projected_gap) if projected_gap else None,
         )
 
     @staticmethod
@@ -594,21 +610,43 @@ class BaselinePredictionEngine:
     def _school_tiers(
         self, student_rank_range: tuple[int, int], target_candidate_count: int | None
     ) -> dict[str, list[str]]:
-        tiers = {"reach": [], "match": [], "safe": []}
+        candidates: dict[str, list[tuple[float, str]]] = {"reach": [], "match": [], "safe": []}
         if not self.reference_data or not target_candidate_count or student_rank_range == (0, 0):
-            return tiers
+            return {"reach": [], "match": [], "safe": []}
+        student_center = sum(student_rank_range) / 2
         for name in sorted({item.name for item in self.reference_data.school_references}):
             boundary = self._school_boundary(name, target_candidate_count)
             if not boundary:
                 continue
             if student_rank_range[0] > boundary.rank_range[1]:
                 bucket = "reach"
+                distance = student_rank_range[0] - boundary.rank_range[1]
             elif student_rank_range[1] < boundary.rank_range[0]:
                 bucket = "safe"
+                distance = boundary.rank_range[0] - student_rank_range[1]
             else:
                 bucket = "match"
-            tiers[bucket].append(name)
-        return tiers
+                distance = abs(student_center - sum(boundary.rank_range) / 2)
+            candidates[bucket].append((distance, name))
+        limit = max(1, int(self.position_parameters.get("school_tier_display_limit", 5)))
+        return {
+            bucket: [name for _, name in sorted(items, key=lambda item: (item[0], item[1]))[:limit]]
+            for bucket, items in candidates.items()
+        }
+
+    def _range_usable(
+        self,
+        percentile_range: tuple[float, float] | None,
+        rank_range: tuple[int, int],
+        candidate_count: int | None,
+    ) -> bool:
+        if percentile_range is None or rank_range == (0, 0) or not candidate_count:
+            return False
+        percentile_width = max(0.0, percentile_range[1] - percentile_range[0])
+        rank_width = max(0, rank_range[1] - rank_range[0])
+        max_percentile_width = float(self.position_parameters.get("max_parent_rank_interval_pp", 18.0))
+        max_rank_width = max(500, int(self.position_parameters.get("max_parent_rank_interval", 9000)))
+        return percentile_width <= max_percentile_width and rank_width <= max_rank_width
 
     def _historical_basis(self) -> str:
         return f"只使用 {self._reference_year()} 年及更早的已发布参考数据（{self._rank_reference_source()}），不使用本年度一分一段表或录取结果。"

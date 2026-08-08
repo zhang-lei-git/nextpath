@@ -209,7 +209,7 @@ def test_target_comparison_keeps_rank_gap_as_a_range() -> None:
     assert forecast.prediction_level == "complete"
     assert forecast.target_comparison is not None
     assert forecast.target_comparison.current_gap_rank_range is not None
-    assert forecast.target_comparison.projected_gap_rank_range is not None
+    assert forecast.target_comparison.projected_gap_rank_range is None
     assert forecast.current_snapshot is not None
     assert forecast.current_snapshot.range_usable is True
 
@@ -254,6 +254,30 @@ def test_multiple_school_observations_create_boundary_and_tiers() -> None:
     assert forecast.target_comparison is not None
     assert forecast.target_comparison.school_rank_range[0] < forecast.target_comparison.school_rank_range[1]
     assert "保底高中" in forecast.school_tiers["safe"] or "保底高中" in forecast.school_tiers["match"]
+    assert all(len(items) <= 5 for items in forecast.school_tiers.values())
+
+
+def test_basic_or_overwide_prediction_does_not_list_specific_schools() -> None:
+    reference_data = PublishedReferenceData(
+        reference_year=2025,
+        rank_source="2025 年一分一段表",
+        rank_points=((820, 1), (780, 2000), (700, 15000), (610, 49900)),
+        rank_full_mark=820,
+        candidate_count=49900,
+        school_references=(PublishedSchoolReference("测试高中", 700, "历史录取参考"),),
+    )
+    forecast = BaselinePredictionEngine(reference_data).predict(PredictionInput(
+        total_score=520,
+        total_full_mark=580,
+        class_rank=None,
+        target_school="测试高中",
+        analysis_year=2026,
+        analysis_date=date(2026, 3, 15),
+    ))
+
+    assert forecast.prediction_level == "basic"
+    assert forecast.reasonable_projection is not None
+    assert forecast.school_tiers == {"reach": [], "match": [], "safe": []}
 
 
 def test_rank_history_changes_the_joint_projection() -> None:
