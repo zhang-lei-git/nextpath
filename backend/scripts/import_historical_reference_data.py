@@ -83,6 +83,7 @@ async def import_data(data: dict) -> dict[str, int | str]:
         await session.flush()
         release = DataRelease(
             name=RELEASE_NAME, region=REGION, reference_year=YEAR,
+            environment="production", data_purpose="forecast", usable_for_prediction=True,
             notes="中考前预测专用：只含 2025 年及此前可获得的历史参考，不含 2026 年出分后数据。",
             published_by="legacy-import",
         )

@@ -1,8 +1,14 @@
-const { API_BASE_URL } = require('../../utils/config')
+const { request } = require('../../utils/request')
 
 Page({
-  data: { url: '' },
-  onLoad(options) {
-    this.setData({ url: `${API_BASE_URL}/reports/published/${options.id}` })
+  data: { url: '', loading: true },
+  async onLoad(options) {
+    try {
+      const access = await request({ path: `/reports/${options.id}/access`, method: 'POST' })
+      this.setData({ url: access.url, loading: false })
+    } catch (error) {
+      this.setData({ loading: false })
+      wx.showToast({ title: error.message, icon: 'none' })
+    }
   }
 })

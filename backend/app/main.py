@@ -25,7 +25,7 @@ app.add_middleware(
     allow_origins=[origin for origin in settings.allowed_origins if origin],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH"],
-    allow_headers=["Content-Type", "X-Demo-User"],
+    allow_headers=["Authorization", "Content-Type", "X-Demo-User"],
 )
 app.include_router(health_router, prefix="/api")
 app.include_router(api_router, prefix=settings.api_prefix)

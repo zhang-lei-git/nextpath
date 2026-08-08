@@ -160,6 +160,11 @@ class StudentReportRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class StudentReportAccess(BaseModel):
+    url: str
+    expires_in: int
+
+
 class ImportResponse(BaseModel):
     import_id: str
     status: str

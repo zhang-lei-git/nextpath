@@ -66,7 +66,8 @@ def test_exam_creation_and_dashboard() -> None:
     assert "已使用" not in html.text
 
 
-def test_seven_mock_exams_generate_saved_reports_and_support_correction() -> None:
+def test_seven_mock_exams_generate_saved_reports_and_support_correction(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "report_signing_secret", "report-test-secret")
     headers = {"X-Demo-User": f"seven-exam-family-{uuid4().hex}"}
     score_rows = {"chinese": 112, "math": 118, "english": 115, "physics": 78, "history": 60, "politics": 57, "pe": 60}
     with TestClient(app) as client:
@@ -106,9 +107,20 @@ def test_seven_mock_exams_generate_saved_reports_and_support_correction() -> Non
         monthly = [item for item in updated_reports.json() if item["report_type"] == "monthly"]
         assert len(monthly) == 7
         assert sum(item["period_key"] == "2025-09" for item in monthly) == 1
-        published = client.get(f"/api/v1/reports/published/{updated_reports.json()[0]['id']}")
+        report_id = updated_reports.json()[0]["id"]
+        unsigned = client.get(f"/api/v1/reports/published/{report_id}")
+        assert unsigned.status_code == 422
+        access = client.post(f"/api/v1/reports/{report_id}/access", headers=headers)
+        assert access.status_code == 200
+        denied = client.post(
+            f"/api/v1/reports/{report_id}/access",
+            headers={"X-Demo-User": f"other-family-{uuid4().hex}"},
+        )
+        assert denied.status_code == 404
+        published = client.get(access.json()["url"])
         assert published.status_code == 200
         assert "历次模考成绩与位置变化" in published.text
+        assert client.get(access.json()["url"] + "x").status_code == 401
 
 
 def test_analysis_records_missing_data_as_idempotent_gap(monkeypatch) -> None:

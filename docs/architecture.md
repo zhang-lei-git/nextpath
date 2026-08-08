@@ -34,6 +34,10 @@ MVP 保持一个代码仓库和模块化单体边界，但生产运行拆为 API
 
 生产预测的数据查询必须同时满足 `environment=production`、`usable_for_prediction=true`、`published_at <= data_cutoff_at`。测试数据、回测结果和当届出分后数据即使存在于同一数据库，也不能通过预测仓储接口返回。
 
+家长身份通过微信 `code2Session` 换取 `openid`，服务端仅向小程序签发带有效期的身份令牌，不把 `session_key` 返回客户端。内部测试身份只用于尚未配置微信密钥的开发阶段；切换微信身份时可一次性认领同设备的内部测试档案。
+
+HTML 报告不提供永久公开地址。小程序必须先通过家长身份校验申请短期签名地址，报告页验证报告编号、签名和有效期后才返回内容，并使用 `private, no-store` 禁止共享缓存。
+
 性能、可靠性、安全、隐私、备份和扩容验收要求见 [non-functional-requirements.md](non-functional-requirements.md)。
 
 统一开发顺序和阶段验收见 [development-plan.md](development-plan.md)。

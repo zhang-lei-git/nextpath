@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import Exam, StudentProfile, StudentReport
 from app.domain.schemas import AdmissionReport, Forecast, StudentReportRead
+from app.core.config import settings
+from app.core.tokens import issue_token, verify_token
 from app.repositories.report_repository import ReportRepository
 from app.services.published_reference_data import PublishedReferenceData
 
@@ -102,6 +104,23 @@ class StudentReportService:
         if not report:
             raise HTTPException(status_code=404, detail="未找到这份报告")
         return report
+
+    def create_access_url(self, report_id: str) -> str:
+        if not settings.report_signing_secret:
+            raise HTTPException(status_code=503, detail="报告访问签名尚未配置")
+        token = issue_token(
+            {"type": "report", "report_id": report_id},
+            settings.report_signing_secret,
+            settings.report_token_ttl_seconds,
+        )
+        return f"{settings.public_api_base_url}/reports/published/{report_id}?token={token}"
+
+    def verify_access_token(self, report_id: str, token: str) -> None:
+        if not settings.report_signing_secret:
+            raise HTTPException(status_code=503, detail="报告访问签名尚未配置")
+        payload = verify_token(token, settings.report_signing_secret, expected_type="report")
+        if payload.get("report_id") != report_id:
+            raise HTTPException(status_code=401, detail="报告链接已失效，请重新打开")
 
     def _build_input(self, context: ReportContext) -> dict:
         subjects = self._subjects(context.exam)

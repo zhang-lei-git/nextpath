@@ -38,16 +38,22 @@ class StudentService:
         report = None
         if latest and profile_complete:
             forecast, report = await self._analyze_exam(profile, latest, exams, publish_report=False)
-            actions.append(ActionItem(
-                title="补齐排名信息",
-                detail="补录年级排名和年级人数后，孩子在全区的大致位置会更清楚。",
-                priority="high",
-            ))
-            actions.append(ActionItem(
-                title="关注大知识点失分",
-                detail="下一次录入可补充科目分数，先看趋势，不进入错题分析。",
-                priority="medium",
-            ))
+            if not latest.grade_rank or not latest.grade_size:
+                actions.append(ActionItem(
+                    title="补齐排名信息",
+                    detail="补录年级排名和年级人数后，孩子在全区的大致位置会更清楚。",
+                    priority="high",
+                ))
+            subject_scores = [
+                value for key, value in latest.scores.items()
+                if key != "pe" and isinstance(value, (int, float))
+            ]
+            if len(subject_scores) < 3:
+                actions.append(ActionItem(
+                    title="补充各科成绩",
+                    detail="补充各科成绩后，可以看清主要差距来自哪些学科。",
+                    priority="medium",
+                ))
         elif not profile_complete:
             actions.append(ActionItem(
                 title="先完成孩子档案",
@@ -318,6 +324,12 @@ class StudentService:
         profile = await self.profiles.get_or_create_demo(owner_id)
         report = await StudentReportService(self.session).get_for_profile(profile.id, report_id)
         return report.html_content
+
+    async def report_access_url(self, owner_id: str, report_id: str) -> str:
+        profile = await self.profiles.get_or_create_demo(owner_id)
+        service = StudentReportService(self.session)
+        await service.get_for_profile(profile.id, report_id)
+        return service.create_access_url(report_id)
 
     async def create_score_import(self, owner_id: str, file: UploadFile) -> ImportResponse:
         if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:

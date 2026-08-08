@@ -37,8 +37,9 @@ function render() { renderOverview(); renderSources(); renderSelectors(); render
 function renderOverview() {
   const pending = state.facts.filter((fact) => fact.status === "pending_review").length;
   const openWork = state.alerts.filter((alert) => alert.status === "open").length + state.gaps.filter((gap) => gap.status === "open").length;
-  $("#metrics").innerHTML = [["数据来源",state.sources.length,"已登记"],["待审核",pending,"暂未进入家长端"],["运营待办",openWork,"告警和补数任务"],["已发布版本",state.releases.length,"家长端可读取"]].map(([label,value,note]) => `<div class="metric"><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join("");
-  $("#releaseList").innerHTML = state.releases.length ? state.releases.slice(0,5).map((release) => `<div class="list-item"><strong>${text(release.name)}</strong><p>${text(release.region)} · ${release.reference_year} · ${release.fact_count} 条数据</p><p>${formatDate(release.published_at)}</p></div>`).join("") : '<div class="empty">还没有发布版本</div>';
+  const productionReleases = state.releases.filter((release) => release.environment === "production" && release.data_purpose === "forecast" && release.usable_for_prediction);
+  $("#metrics").innerHTML = [["数据来源",state.sources.length,"已登记"],["待审核",pending,"暂未进入家长端"],["运营待办",openWork,"告警和补数任务"],["生产预测版本",productionReleases.length,"家长端可读取"]].map(([label,value,note]) => `<div class="metric"><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join("");
+  $("#releaseList").innerHTML = state.releases.length ? state.releases.slice(0,5).map((release) => { const usable=release.environment === "production" && release.data_purpose === "forecast" && release.usable_for_prediction; return `<div class="list-item"><strong>${text(release.name)}</strong><p>${usable ? "生产预测" : "测试/回测"} · ${text(release.region)} · ${release.reference_year} · ${release.fact_count} 条数据</p><p>${formatDate(release.published_at)}</p></div>`; }).join("") : '<div class="empty">还没有发布版本</div>';
   const pendingFacts = state.facts.filter((fact) => fact.status === "pending_review").slice(0,5);
   $("#pendingPreview").innerHTML = pendingFacts.length ? pendingFacts.map((fact) => `<div class="list-item"><strong>${text(fact.entity_name)} · ${text(fact.field)}</strong><p>${text(fact.fact_type)} · ${fact.reference_year} · ${badge(fact.status)}</p></div>`).join("") : '<div class="empty">没有待审核数据</div>';
 }
@@ -49,7 +50,7 @@ function renderSelectors() {
   $("#collectionSource").innerHTML = `<option value="">未指定来源</option>${state.sources.map((source) => `<option value="${source.id}">${text(source.name)}</option>`).join("")}`;
   $("#collectionRule").innerHTML = `<option value="">基础规则</option>${state.governanceRules.filter((rule) => rule.status === "active").map((rule) => `<option value="${text(rule.version)}">${text(rule.name)} · ${text(rule.version)}</option>`).join("")}`;
   $("#factEvidence").innerHTML = `<option value="">请选择</option>${state.evidence.map((item) => `<option value="${item.id}">${text(item.title)}${item.source_name ? `（${text(item.source_name)}）` : ""}</option>`).join("")}`;
-  $("#releaseSelect").innerHTML = state.releases.map((release) => `<option value="${release.id}">${text(release.name)} · ${release.fact_count} 条</option>`).join("");
+  $("#releaseSelect").innerHTML = state.releases.map((release) => { const usable=release.environment === "production" && release.data_purpose === "forecast" && release.usable_for_prediction; return `<option value="${release.id}">${usable ? "生产" : "测试"} · ${text(release.name)} · ${release.fact_count} 条</option>`; }).join("");
   $("#releaseSelect").value = state.selectedReleaseId;
 }
 function renderIngestions() {
