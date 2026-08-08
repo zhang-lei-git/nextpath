@@ -160,6 +160,10 @@ class StudentReportRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class StudentReportDetail(StudentReportRead):
+    content: dict
+
+
 class StudentReportAccess(BaseModel):
     url: str
     expires_in: int

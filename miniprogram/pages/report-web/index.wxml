@@ -1,1 +1,52 @@
-<web-view src="{{url}}"></web-view>
+<block wx:if="{{loading}}"><view class="page"><view class="loading">正在打开报告</view></view></block>
+<block wx:elif="{{loadError}}"><view class="page error-page"><view class="error-title">报告暂时无法打开</view><view class="error-copy">请检查网络后重新试一次。</view><button class="primary-button" bindtap="retry">重新加载</button></view></block>
+<view class="page" wx:elif="{{report}}">
+  <view class="eyebrow">升学报告</view>
+  <view class="report-title">{{report.content.title}}</view>
+  <view class="report-copy">{{report.content.description}}</view>
+
+  <view class="hero card">
+    <view class="hero-label">目标高中</view>
+    <view class="hero-target">{{report.content.target}}</view>
+    <view class="hero-school">{{report.content.junior_school}}</view>
+    <view class="hero-verdict" wx:if="{{report.content.verdict}}">{{report.content.verdict}}</view>
+  </view>
+
+  <view class="section-title">这次判断</view>
+  <view class="kpi-grid">
+    <view class="kpi card {{item.tone}}" wx:for="{{report.content.kpis}}" wx:key="label">
+      <view class="kpi-label">{{item.label}}</view>
+      <view class="kpi-value">{{item.value}}</view>
+      <view class="kpi-note">{{item.note}}</view>
+    </view>
+  </view>
+
+  <view class="section-title" wx:if="{{report.content.subjects.length}}">本次各科</view>
+  <view class="subjects card" wx:if="{{report.content.subjects.length}}">
+    <view class="subject" wx:for="{{report.content.subjects}}" wx:key="name">
+      <view class="subject-name">{{item.name}}</view>
+      <view class="subject-score">{{item.score}}<text>/{{item.full_mark}}</text></view>
+    </view>
+  </view>
+
+  <view class="section-title" wx:if="{{report.content.history.length}}">历次成绩</view>
+  <view class="history card" wx:if="{{report.content.history.length}}">
+    <view class="history-row {{item.is_current ? 'current' : ''}}" wx:for="{{report.content.history}}" wx:key="label">
+      <view><view class="history-label">{{item.label}}</view><view class="history-rank">{{item.rank}}</view></view>
+      <view class="history-total">{{item.total}}<text>分</text></view>
+    </view>
+  </view>
+
+  <view class="section-title" wx:if="{{report.content.observations.length}}">{{report.content.observation_title}}</view>
+  <view class="observations card" wx:if="{{report.content.observations.length}}">
+    <view class="observation" wx:for="{{report.content.observations}}" wx:key="*this"><view class="dot"></view><view>{{item}}</view></view>
+  </view>
+
+  <view class="section-title" wx:if="{{report.content.steps.length}}">接下来</view>
+  <view class="steps card" wx:if="{{report.content.steps.length}}">
+    <view class="step" wx:for="{{report.content.steps}}" wx:key="title">
+      <view class="step-time">{{item.time}}</view>
+      <view><view class="step-title">{{item.title}}</view><view class="step-copy">{{item.text}}</view></view>
+    </view>
+  </view>
+</view>

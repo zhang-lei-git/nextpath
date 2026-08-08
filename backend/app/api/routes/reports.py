@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import current_owner_id
 from app.core.database import get_session
 from app.core.config import settings
-from app.domain.schemas import StudentReportAccess, StudentReportRead
+from app.domain.schemas import StudentReportAccess, StudentReportDetail, StudentReportRead
 from app.services.report_service import StudentReportService
 from app.services.student_service import StudentService
 
@@ -29,6 +29,15 @@ async def report_html(
 ) -> HTMLResponse:
     html_content = await StudentService(session).report_html(owner_id, report_id)
     return HTMLResponse(html_content)
+
+
+@router.get("/{report_id}", response_model=StudentReportDetail)
+async def report_detail(
+    report_id: str,
+    owner_id: str = Depends(current_owner_id),
+    session: AsyncSession = Depends(get_session),
+) -> StudentReportDetail:
+    return await StudentService(session).report_detail(owner_id, report_id)
 
 
 @router.post("/{report_id}/access", response_model=StudentReportAccess)

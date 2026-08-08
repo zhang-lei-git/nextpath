@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.domain.models import Exam, ScoreImport
 from app.domain.schemas import (
-    ActionItem, DashboardResponse, DataGapCreate, ExamCreate, ExamRead, ImportResponse, StudentProfileRead, StudentProfileUpdate,
+    ActionItem, DashboardResponse, DataGapCreate, ExamCreate, ExamRead, ImportResponse, StudentProfileRead, StudentProfileUpdate, StudentReportDetail,
 )
 from app.repositories.exam_repository import ExamRepository
 from app.repositories.profile_repository import ProfileRepository
@@ -324,6 +324,10 @@ class StudentService:
         profile = await self.profiles.get_or_create_demo(owner_id)
         report = await StudentReportService(self.session).get_for_profile(profile.id, report_id)
         return report.html_content
+
+    async def report_detail(self, owner_id: str, report_id: str) -> StudentReportDetail:
+        profile = await self.profiles.get_or_create_demo(owner_id)
+        return await StudentReportService(self.session).detail_for_profile(profile.id, report_id)
 
     async def report_access_url(self, owner_id: str, report_id: str) -> str:
         profile = await self.profiles.get_or_create_demo(owner_id)

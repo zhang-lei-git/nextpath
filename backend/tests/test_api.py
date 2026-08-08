@@ -56,6 +56,15 @@ def test_exam_creation_and_dashboard() -> None:
     assert dashboard.json()["forecast"]["reasonable_projection"]["title"] == "合理预测"
     assert reports.status_code == 200
     assert reports.json()
+    detail = client.get(f"/api/v1/reports/{reports.json()[0]['id']}", headers=headers)
+    assert detail.status_code == 200
+    assert detail.json()["content"]["target"] == "西安高新第一中学"
+    assert detail.json()["content"]["kpis"]
+    unauthorized_detail = client.get(
+        f"/api/v1/reports/{reports.json()[0]['id']}",
+        headers={"X-Demo-User": "another-family"},
+    )
+    assert unauthorized_detail.status_code == 404
     html = client.get(f"/api/v1/reports/{reports.json()[0]['id']}/html", headers=headers)
     assert html.status_code == 200
     assert "升学分析报告" in html.text

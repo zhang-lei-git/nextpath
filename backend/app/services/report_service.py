@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 import tempfile
 from dataclasses import dataclass
@@ -8,7 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import Exam, StudentProfile, StudentReport
-from app.domain.schemas import AdmissionReport, Forecast, StudentReportRead
+from app.domain.schemas import AdmissionReport, Forecast, StudentReportDetail, StudentReportRead
 from app.core.config import settings
 from app.core.tokens import issue_token, verify_token
 from app.repositories.report_repository import ReportRepository
@@ -99,6 +100,19 @@ class StudentReportService:
             raise HTTPException(status_code=404, detail="未找到这份报告")
         return report
 
+    async def detail_for_profile(self, profile_id: str, report_id: str) -> StudentReportDetail:
+        report = await self.get_for_profile(profile_id, report_id)
+        return StudentReportDetail(
+            id=report.id,
+            exam_id=report.exam_id,
+            title=report.title,
+            status=report.status,
+            report_type=report.report_type,
+            period_key=report.period_key,
+            created_at=report.created_at,
+            content=self._native_content(report.report_json),
+        )
+
     async def get_public_html(self, report_id: str) -> StudentReport:
         report = await self.repository.get(report_id)
         if not report:
@@ -121,6 +135,71 @@ class StudentReportService:
         payload = verify_token(token, settings.report_signing_secret, expected_type="report")
         if payload.get("report_id") != report_id:
             raise HTTPException(status_code=401, detail="报告链接已失效，请重新打开")
+
+    @classmethod
+    def _native_content(cls, report_json: dict) -> dict:
+        """Stable, parent-facing payload for the mini program without web-view."""
+        meta = report_json.get("meta") or {}
+        glance = report_json.get("glance") or {}
+        conclusion = report_json.get("conclusion") or {}
+        data = report_json.get("data") or {}
+        action = report_json.get("action") or {}
+        subjects = [
+            {
+                "name": item.get("name", "科目"),
+                "score": cls._display_number(item.get("finalScore")),
+                "full_mark": cls._display_number(item.get("max")),
+            }
+            for item in report_json.get("subjects", [])
+            if item.get("table", True) and isinstance(item.get("finalScore"), (int, float))
+        ]
+        history = []
+        for item in data.get("exams", []):
+            scores = item.get("scores") or {}
+            total = sum(value for value in scores.values() if isinstance(value, (int, float)))
+            history.append({
+                "label": item.get("display") or item.get("label") or "一次考试",
+                "total": cls._display_number(total) if scores else "待补充",
+                "rank": f"年级第 {item['rank']} 名" if item.get("rank") else "排名待补充",
+                "is_current": bool(item.get("final")),
+            })
+        return {
+            "title": meta.get("title") or "升学分析报告",
+            "description": meta.get("description") or "围绕目标，持续记录成绩变化。",
+            "target": meta.get("targetLabel") or "尚未设置目标高中",
+            "junior_school": meta.get("admissionLabel") or "初中信息待补充",
+            "reported_total": cls._display_number(meta.get("reportedTotal")),
+            "verdict": cls._plain_text(conclusion.get("verdictHtml") or glance.get("verdictHtml")),
+            "kpis": [
+                {
+                    "label": item.get("label", ""),
+                    "value": str(item.get("value", "待计算")),
+                    "note": item.get("note", ""),
+                    "tone": item.get("tone", "teal"),
+                }
+                for item in glance.get("kpis", [])
+            ],
+            "subjects": subjects,
+            "history": history,
+            "observation_title": action.get("observationTitle") or "这次重点观察",
+            "observations": [str(item) for item in action.get("observationItems", [])],
+            "steps": [
+                {"time": item.get("time", ""), "title": item.get("title", ""), "text": item.get("text", "")}
+                for item in action.get("timeline", [])
+            ],
+        }
+
+    @staticmethod
+    def _display_number(value: object) -> str:
+        if not isinstance(value, (int, float)):
+            return "待补充"
+        return f"{value:g}"
+
+    @staticmethod
+    def _plain_text(value: object) -> str:
+        if not isinstance(value, str):
+            return ""
+        return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", value)).strip()
 
     def _build_input(self, context: ReportContext) -> dict:
         subjects = self._subjects(context.exam)

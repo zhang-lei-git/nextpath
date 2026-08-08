@@ -1,14 +1,20 @@
 const { request } = require('../../utils/request')
 
 Page({
-  data: { url: '', loading: true },
+  data: { report: null, loading: true, loadError: false },
   async onLoad(options) {
+    this.reportId = options.id
+    await this.loadReport()
+  },
+  async loadReport() {
+    this.setData({ loading: true, loadError: false })
     try {
-      const access = await request({ path: `/reports/${options.id}/access`, method: 'POST' })
-      this.setData({ url: access.url, loading: false })
+      const report = await request({ path: `/reports/${this.reportId}` })
+      this.setData({ report, loadError: false })
     } catch (error) {
-      this.setData({ loading: false })
+      this.setData({ report: null, loadError: true })
       wx.showToast({ title: error.message, icon: 'none' })
-    }
-  }
+    } finally { this.setData({ loading: false }) }
+  },
+  retry() { this.loadReport() }
 })
