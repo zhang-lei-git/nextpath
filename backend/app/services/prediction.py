@@ -167,6 +167,23 @@ class BaselinePredictionEngine:
             summary=self._projection_summary(input_data),
         )
 
+        prediction_level = self._prediction_level(input_data, annual_curve)
+        current_snapshot.school_scope = self._school_scope(
+            current_snapshot.current_percentile, current_snapshot.range_usable
+        )
+        reasonable_projection.school_scope = self._school_scope(
+            reasonable_projection.current_percentile, reasonable_projection.range_usable
+        )
+        if prediction_level == "complete":
+            if current_snapshot.range_usable:
+                current_snapshot.school_tiers = self._school_tiers(
+                    current_snapshot.estimated_rank_range, target_base
+                )
+            if reasonable_projection.range_usable:
+                reasonable_projection.school_tiers = self._school_tiers(
+                    reasonable_projection.estimated_rank_range, target_base
+                )
+
         if current_percentile is None:
             tier = "先补全年级位置，再看升学范围"
             position_note = "本次模考成绩已计入体育分，但缺少可换算的历史数据。补全年级排名和年级人数后，系统会先估算校内位置。"
@@ -180,7 +197,6 @@ class BaselinePredictionEngine:
             self._position_basis(method),
         ]
         missing_inputs = self._missing_inputs(input_data, annual_curve)
-        prediction_level = self._prediction_level(input_data, annual_curve)
         comparison_current_range = current_snapshot.estimated_rank_range if current_snapshot.range_usable else (0, 0)
         comparison_projected_range = reasonable_projection.estimated_rank_range if reasonable_projection.range_usable else (0, 0)
         target_comparison = self._target_comparison(
@@ -189,11 +205,7 @@ class BaselinePredictionEngine:
             comparison_current_range,
             comparison_projected_range,
         )
-        school_tiers = (
-            self._school_tiers(reasonable_projection.estimated_rank_range, target_base)
-            if prediction_level == "complete" and reasonable_projection.range_usable
-            else {"reach": [], "match": [], "safe": []}
-        )
+        school_tiers = reasonable_projection.school_tiers
         return Forecast(
             tier=tier,
             estimated_rank_range=rank_range,
@@ -585,6 +597,22 @@ class BaselinePredictionEngine:
         if percentile <= 35:
             return "优先关注匹配度较高的高中"
         return "先把目标范围稳住"
+
+    @staticmethod
+    def _school_scope(percentile: float | None, range_usable: bool) -> str:
+        if percentile is None or not range_usable:
+            return "学校范围仍需观察"
+        if percentile <= 3:
+            return "头部高中范围"
+        if percentile <= 10:
+            return "示范性高中范围"
+        if percentile <= 25:
+            return "优质高中范围"
+        if percentile <= 45:
+            return "普通高中范围"
+        if percentile <= 65:
+            return "以普通高中范围为主"
+        return "先稳住普高选择"
 
     def _find_school_reference(self, name: str | None) -> tuple[str, float, str] | None:
         if not (self.reference_data and name):

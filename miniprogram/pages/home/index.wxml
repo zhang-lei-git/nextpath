@@ -4,67 +4,73 @@
 </view></block>
 <block wx:else><view class="page" wx:if="{{dashboard}}">
   <view class="topline">
-    <view>
-      <view class="eyebrow">NEXT PATH · 升学助手</view>
-      <view class="greeting">{{dashboard.profile_complete ? dashboard.student_name + '的升学分析' : '先建立孩子档案'}}</view>
-    </view>
-    <button class="profile" bindtap="showProfile" aria-label="查看档案">档案</button>
+    <view><view class="eyebrow">NEXT PATH · 升学助手</view><view class="greeting">{{dashboard.profile_complete ? dashboard.student_name + '的升学范围' : '先建立孩子档案'}}</view></view>
+    <button class="profile" bindtap="showProfile" aria-label="查看档案">我的</button>
   </view>
 
-  <view class="forecast card" wx:if="{{dashboard.forecast}}">
-    <view class="forecast-label">升学分析</view>
-    <view class="target-block">
-      <view class="target-label">目标</view>
-      <view class="target-name" wx:if="{{dashboard.target_school}}">{{dashboard.target_school}}</view>
-      <view class="target-name" wx:else>尚未设置目标高中</view>
-      <view class="target-meta" wx:if="{{dashboard.forecast.target_comparison && dashboard.forecast.target_comparison.school_rank_range}}">近年参考边界：全区第 {{dashboard.forecast.target_comparison.school_rank_range[0]}}–{{dashboard.forecast.target_comparison.school_rank_range[1]}} 名</view>
-      <view class="target-meta" wx:if="{{dashboard.forecast.target_comparison}}">{{dashboard.forecast.target_comparison.risk}}</view>
+  <view class="forecast card" wx:if="{{dashboard.forecast && home}}">
+    <view class="forecast-label">升学范围</view>
+    <button class="target-row" wx:if="{{home.hasTarget}}" bindtap="showProfile">
+      <view><view class="target-label">目标高中</view><view class="target-name">{{dashboard.target_school}}</view></view><view class="row-arrow">›</view>
+    </button>
+
+    <view class="scenario current">
+      <view class="scenario-label">{{home.current.title}}</view>
+      <view class="scope-title">{{home.current.scope}}</view>
+      <view class="scenario-score">{{home.current.score}}<text>/ {{home.current.fullMark}} 分</text></view>
+      <view class="scenario-rank">{{home.current.rankText}}</view>
+      <view class="school-list" wx:if="{{home.current.hasSchoolTiers}}">
+        <view class="school-row" wx:for="{{home.current.schoolTiers}}" wx:key="label"><text>{{item.label}}</text><view>{{item.names}}</view></view>
+      </view>
     </view>
-    <view class="judgement-block" wx:if="{{dashboard.forecast.current_snapshot}}">
-      <view class="judgement-label">当前现状</view>
-      <view class="judgement-score">{{dashboard.forecast.current_snapshot.total_range[0]}}<text>/ {{dashboard.forecast.current_snapshot.total_full_mark}} 分</text></view>
-      <view class="judgement-meta" wx:if="{{dashboard.forecast.current_snapshot.range_usable}}">当前位置：全区前 {{dashboard.forecast.current_snapshot.estimated_percentile_range[0]}}%–{{dashboard.forecast.current_snapshot.estimated_percentile_range[1]}}%</view>
-      <view class="judgement-meta" wx:else>当前位置：暂未形成分析结果</view>
-      <view class="gap-copy" wx:if="{{dashboard.forecast.target_comparison && dashboard.forecast.target_comparison.current_relation}}">与目标相比：{{dashboard.forecast.target_comparison.current_relation}}</view>
+
+    <view class="scenario projection">
+      <view class="scenario-label">{{home.projection.title}}</view>
+      <view class="scope-title">{{home.projection.scope}}</view>
+      <view class="scenario-score">{{home.projection.score}}<text>/ {{home.projection.fullMark}} 分</text></view>
+      <view class="scenario-rank">{{home.projection.rankText}}</view>
+      <view class="school-list" wx:if="{{home.projection.hasSchoolTiers}}">
+        <view class="school-row" wx:for="{{home.projection.schoolTiers}}" wx:key="label"><text>{{item.label}}</text><view>{{item.names}}</view></view>
+      </view>
     </view>
-    <view class="judgement-block projection" wx:if="{{dashboard.forecast.reasonable_projection}}">
-      <view class="judgement-label">合理预测</view>
-      <view class="judgement-score">{{dashboard.forecast.reasonable_projection.total_range[0]}}–{{dashboard.forecast.reasonable_projection.total_range[1]}}<text>/ {{dashboard.forecast.reasonable_projection.total_full_mark}} 分</text></view>
-      <view class="judgement-meta" wx:if="{{dashboard.forecast.reasonable_projection.range_usable}}">预测位置：全区前 {{dashboard.forecast.reasonable_projection.estimated_percentile_range[0]}}%–{{dashboard.forecast.reasonable_projection.estimated_percentile_range[1]}}%</view>
-      <view class="judgement-meta" wx:else>预测位置：暂未形成分析结果</view>
-      <view class="gap-copy" wx:if="{{dashboard.forecast.target_comparison && dashboard.forecast.target_comparison.projected_relation}}">与目标相比：{{dashboard.forecast.target_comparison.projected_relation}}</view>
+
+    <view class="target-gap" wx:if="{{home.hasTarget}}">
+      <view class="target-gap-title">距离 {{dashboard.target_school}}</view>
+      <view wx:if="{{home.targetCurrent}}">当前：{{home.targetCurrent}}</view>
+      <view wx:if="{{home.targetProjection}}">中考预估：{{home.targetProjection}}</view>
+      <view wx:if="{{!home.targetCurrent && !home.targetProjection}}">正在结合最新成绩更新目标差距</view>
     </view>
+    <button class="target-setup" wx:else bindtap="showProfile">想看看某所高中还差多少？<text>设置目标高中 ›</text></button>
     <button class="basis-link" bindtap="goToAnalysis">查看完整分析</button>
   </view>
+
   <view class="first-visit card" wx:else>
-    <view class="first-title">{{dashboard.profile_complete ? '先建立第一份成绩分析' : '只需姓名、初中和年级'}}</view>
-    <view class="muted">{{dashboard.profile_complete ? '录入最近一次周考、月考或模考成绩。系统会从这一条记录开始，持续更新孩子的位置和目标差距。' : '这些信息用于建立孩子所在初中与全区升学位置的关系，不要求填写无关资料。'}}</view>
+    <view class="first-title">{{dashboard.profile_complete ? '先记录第一次成绩' : '只需姓名、初中和年级'}}</view>
+    <view class="muted">{{dashboard.profile_complete ? '录入最近一次周考、月考或模考成绩，就能看到孩子当前的升学范围。' : '填写后即可开始记录成绩；目标高中可以以后再设置。'}}</view>
   </view>
 
-  <view class="latest card" wx:if="{{dashboard.latest_exam}}">
-    <view>
-      <view class="muted">最近一次 · {{dashboard.latest_exam.name}}</view>
-      <view class="score-row"><text>{{dashboard.latest_exam.total_score}}</text><text>分</text></view>
-    </view>
-    <view class="rank" wx:if="{{dashboard.latest_exam.class_rank}}">班级第 {{dashboard.latest_exam.class_rank}} 名</view>
+  <button class="primary-button" bindtap="goToEntry">{{dashboard.latest_exam ? '录入最新成绩' : '录入第一次成绩'}}</button>
+
+  <view class="section-title" wx:if="{{dashboard.latest_exam}}">最近成绩</view>
+  <view class="latest card" wx:if="{{dashboard.latest_exam}}" bindtap="goToScores">
+    <view><view class="latest-name">{{dashboard.latest_exam.name}}</view><view class="muted">{{dashboard.latest_exam.exam_date}} · 年级第 {{dashboard.latest_exam.grade_rank || '—'}} / {{dashboard.latest_exam.grade_size || '—'}} 名</view></view>
+    <view class="latest-side"><view class="score-row"><text>{{dashboard.latest_exam.total_score}}</text><text>分</text></view><view class="row-link">全部成绩 ›</view></view>
   </view>
 
-  <button class="primary-button" bindtap="goToEntry">录入最新成绩</button>
-
-  <view class="section-title">现在更值得做的事</view>
-  <view class="action-list card">
-    <view class="action" wx:for="{{dashboard.action_items}}" wx:key="title">
-      <view class="action-dot {{item.priority}}"></view>
-      <view><view class="action-title">{{item.title}}</view><view class="muted">{{item.detail}}</view></view>
+  <view class="section-title" wx:if="{{home && home.actions.length}}">建议关注</view>
+  <view class="action-list card" wx:if="{{home && home.actions.length}}">
+    <view class="action" wx:for="{{home.actions}}" wx:key="title" bindtap="completeLatestExam">
+      <view class="action-dot {{item.priority}}"></view><view><view class="action-title">{{item.title}}</view><view class="muted">{{item.detail}}</view></view><view class="row-arrow">›</view>
     </view>
   </view>
 
-  <view class="section-title">成绩变化</view>
-  <view class="trend card">
-    <view class="trend-item" wx:for="{{dashboard.trend}}" wx:key="name">
-      <view class="muted">{{item.name}}</view><view class="trend-score">{{item.total_score}}</view>
-    </view>
+  <view class="section-title" wx:if="{{home && home.trend.length > 1}}">成绩变化</view>
+  <view class="trend card" wx:if="{{home && home.trend.length > 1}}" bindtap="goToScores">
+    <view class="trend-item" wx:for="{{home.trend}}" wx:key="id"><view class="muted">{{item.name}}</view><view class="trend-score">{{item.total_score}}</view></view>
+    <view class="trend-link">查看全部 ›</view>
   </view>
+
+  <button class="report-link" wx:if="{{dashboard.latest_exam}}" bindtap="goToReports">查看历次报告 ›</button>
 </view>
 
 <view class="nav">

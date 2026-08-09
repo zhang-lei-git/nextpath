@@ -103,6 +103,8 @@ class ForecastScenario(BaseModel):
     summary: str
     confidence: Literal["low", "medium", "high"] = "low"
     range_usable: bool = False
+    school_scope: str | None = None
+    school_tiers: dict[str, list[str]] = Field(default_factory=lambda: {"reach": [], "match": [], "safe": []})
     parent_reasons: list[str] = Field(default_factory=list)
 
 

@@ -3,7 +3,7 @@
 .summary-label { color:#16766D; font-size:23rpx; font-weight:700; }
 .tier { margin: 10rpx 0 22rpx; color: #143F43; font-size: 30rpx; font-weight: 700; line-height:1.55; }
 .summary-line { padding-top: 20rpx; border-top: 1rpx solid #CFE0DB; color: #2B5452; font-size: 26rpx; }
-.scenario { padding:28rpx; }.scenario.projection { border-color:#9CCFC2; background:#F4FAF8; }.scenario-score { color:#143F43; font-family:ui-monospace, Menlo, monospace; font-size:42rpx; font-weight:700; }.scenario-meta { margin-top:10rpx; color:#2B5452; font-size:27rpx; }.scenario-gap { margin:12rpx 0; color:#9A6614; font-size:26rpx; font-weight:600; }.scenario .muted { line-height:1.6; }
+.scenario { padding:28rpx; }.scenario.projection { border-color:#9CCFC2; background:#F4FAF8; }.scenario-scope { margin-bottom:8rpx; color:#143F43; font-size:31rpx; font-weight:700; }.scenario-score { color:#143F43; font-family:ui-monospace, Menlo, monospace; font-size:42rpx; font-weight:700; }.scenario-meta { margin-top:10rpx; color:#2B5452; font-size:27rpx; }.scenario-gap { margin:12rpx 0; color:#9A6614; font-size:26rpx; font-weight:600; }.scenario .muted { line-height:1.6; }.school-tiers { margin-top:20rpx; padding:16rpx 18rpx; background:#EFF6F4; border-radius:8rpx; }.projection .school-tiers { background:#E7F4F0; }.school-tiers > view { display:flex; gap:16rpx; padding:7rpx 0; color:#2B5452; font-size:25rpx; line-height:1.5; }.school-tiers text { width:52rpx; flex:none; color:#16766D; font-weight:700; }
 .basis, .boundary { padding: 8rpx 28rpx; }
 .basis-item { padding: 22rpx 0; border-bottom: 1rpx solid #E2E8E5; color: #1C2828; font-size: 28rpx; line-height: 1.65; }
 .basis-item:last-child { border-bottom: 0; }

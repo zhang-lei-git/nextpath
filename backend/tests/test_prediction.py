@@ -268,6 +268,31 @@ def test_multiple_school_observations_create_boundary_and_tiers() -> None:
     assert forecast.target_comparison.school_rank_range[0] < forecast.target_comparison.school_rank_range[1]
     assert "保底高中" in forecast.school_tiers["safe"] or "保底高中" in forecast.school_tiers["match"]
     assert all(len(items) <= 5 for items in forecast.school_tiers.values())
+    assert forecast.current_snapshot is not None
+    assert forecast.reasonable_projection is not None
+    assert forecast.current_snapshot.school_scope != "学校范围仍需观察"
+    assert forecast.reasonable_projection.school_scope != "学校范围仍需观察"
+    assert forecast.reasonable_projection.school_tiers == forecast.school_tiers
+    assert any(forecast.current_snapshot.school_tiers.values())
+
+    without_target = BaselinePredictionEngine(reference_data).predict(PredictionInput(
+        total_score=510,
+        total_full_mark=580,
+        class_rank=None,
+        grade_rank=150,
+        grade_size=1000,
+        junior_school="测试初中",
+        class_type_standard="重点",
+        target_school=None,
+        analysis_year=2026,
+        analysis_date=date(2026, 3, 20),
+    ))
+    assert without_target.target_comparison is None
+    assert without_target.current_snapshot is not None
+    assert without_target.reasonable_projection is not None
+    assert without_target.current_snapshot.school_scope != "学校范围仍需观察"
+    assert without_target.reasonable_projection.school_scope != "学校范围仍需观察"
+    assert any(without_target.reasonable_projection.school_tiers.values())
 
 
 def test_basic_or_overwide_prediction_does_not_list_specific_schools() -> None:
@@ -291,6 +316,9 @@ def test_basic_or_overwide_prediction_does_not_list_specific_schools() -> None:
     assert forecast.prediction_level == "basic"
     assert forecast.reasonable_projection is not None
     assert forecast.school_tiers == {"reach": [], "match": [], "safe": []}
+    assert forecast.current_snapshot is not None
+    assert forecast.current_snapshot.school_tiers == {"reach": [], "match": [], "safe": []}
+    assert forecast.reasonable_projection.school_tiers == {"reach": [], "match": [], "safe": []}
 
 
 def test_rank_history_changes_the_joint_projection() -> None:
