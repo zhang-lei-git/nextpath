@@ -3,7 +3,7 @@ from datetime import date
 from math import sqrt
 from typing import Protocol
 
-from app.domain.schemas import AdmissionReport, Forecast, ForecastScenario, TargetComparison
+from app.domain.schemas import AdmissionReport, ExamOutcomeScenario, Forecast, ForecastScenario, TargetComparison
 from app.services.annual_distribution import AnnualDistributionModel, AnnualDistributionProjection
 from app.services.published_reference_data import PublishedReferenceData
 from app.services.position_engine import CalibrationPoint, PositionEngine
@@ -205,6 +205,10 @@ class BaselinePredictionEngine:
             comparison_current_range,
             comparison_projected_range,
         )
+        exam_outcomes = self._exam_outcomes(
+            reasonable_projection, target_base, prediction_level,
+            target_boundary.rank_range if target_boundary else None,
+        )
         school_tiers = reasonable_projection.school_tiers
         return Forecast(
             tier=tier,
@@ -234,6 +238,7 @@ class BaselinePredictionEngine:
             position_conflict_pp=fused_position.conflict_pp,
             current_snapshot=current_snapshot,
             reasonable_projection=reasonable_projection,
+            exam_outcomes=exam_outcomes,
             prediction_level=prediction_level,
             target_comparison=target_comparison,
             school_tiers=school_tiers,
@@ -673,6 +678,32 @@ class BaselinePredictionEngine:
             bucket: [name for _, name in sorted(items, key=lambda item: (item[0], item[1]))[:limit]]
             for bucket, items in candidates.items()
         }
+
+    def _exam_outcomes(self, projection, candidate_count, prediction_level, target_range):
+        if not projection.total_range or not projection.range_usable:
+            return []
+        low, high = projection.total_range
+        rank_low, rank_high = projection.estimated_rank_range
+        score_step = (high - low) / 3
+        rank_step = (rank_high - rank_low) / 3
+        definitions = (
+            ("strong", "发挥较好", (round(low + score_step * 2, 1), high), (rank_low, round(rank_low + rank_step))),
+            ("steady", "正常发挥", (round(low + score_step, 1), round(low + score_step * 2, 1)), (round(rank_low + rank_step), round(rank_low + rank_step * 2))),
+            ("variable", "成绩有波动", (low, round(low + score_step, 1)), (round(rank_low + rank_step * 2), rank_high)),
+        )
+        result = []
+        for key, title, score_range, rank_range in definitions:
+            center_percentile = sum(rank_range) / 2 / candidate_count * 100 if candidate_count else None
+            tiers = self._school_tiers(rank_range, candidate_count) if prediction_level == "complete" else {"reach": [], "match": [], "safe": []}
+            relation = self._gap_relation((rank_range[0] - target_range[1], rank_range[1] - target_range[0])) if target_range else None
+            result.append(ExamOutcomeScenario(
+                key=key, title=title, total_range=score_range, total_full_mark=projection.total_full_mark,
+                tier=self._tier(center_percentile) if center_percentile is not None else "学校范围仍需观察",
+                estimated_rank_range=rank_range, summary="", confidence=projection.confidence,
+                range_usable=True, school_scope=self._school_scope(center_percentile, True),
+                school_tiers=tiers, parent_reasons=[], target_relation=relation,
+            ))
+        return result
 
     def _range_usable(
         self,

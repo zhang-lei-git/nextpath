@@ -13,6 +13,7 @@
       </view>
     </view>
     <view class="field"><view class="label">当前年级</view><picker range="{{grades}}" value="{{gradeIndex}}" bindchange="gradeChange"><view class="picker-value">{{form.grade}}</view></picker></view>
+    <view class="field"><view class="label">中考届别</view><picker range="{{cohorts}}" value="{{cohortIndex}}" bindchange="cohortChange"><view class="picker-value">{{form.cohort_year}} 届</view></picker></view>
     <view class="field"><view class="label">所在班型 <text>选填</text></view><picker range="{{classTypes}}" value="{{classTypeIndex}}" bindchange="classTypeChange"><view class="picker-value">{{form.class_type_standard === '未知' ? '暂不填写' : form.class_type_standard}}</view></picker></view>
     <view class="field last">
       <view class="label">目标高中 <text>选填</text></view>

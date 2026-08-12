@@ -100,3 +100,14 @@ class ScoreBridgeModel:
 
 def scoring_scheme(year: int) -> ScoringScheme | None:
     return SCORING_SCHEMES.get(year)
+
+
+def scoring_scheme_for_cohort(city: str, cohort_year: int) -> ScoringScheme | None:
+    """Return the active policy for a student's graduating cohort.
+
+    City is intentionally part of the contract even while Xi'an is the only
+    configured region. It keeps clients independent of local policy details.
+    """
+    if city != "西安":
+        return None
+    return scoring_scheme(cohort_year)

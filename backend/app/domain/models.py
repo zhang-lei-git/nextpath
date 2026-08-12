@@ -16,6 +16,7 @@ class StudentProfile(Base):
     owner_id: Mapped[str] = mapped_column(String(64), index=True, unique=True)
     student_name: Mapped[str] = mapped_column(String(64))
     grade: Mapped[str] = mapped_column(String(16), default="初三")
+    cohort_year: Mapped[int] = mapped_column(Integer, default=2026, server_default="2026")
     city: Mapped[str] = mapped_column(String(64), default="西安")
     junior_school: Mapped[str | None] = mapped_column(String(128), nullable=True)
     class_type_raw: Mapped[str | None] = mapped_column(String(80), nullable=True)

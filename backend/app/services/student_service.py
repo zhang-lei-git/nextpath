@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.domain.models import Exam, ScoreImport
 from app.domain.schemas import (
-    ActionItem, DashboardResponse, DataGapCreate, ExamCreate, ExamRead, ImportResponse, StudentProfileRead, StudentProfileUpdate, StudentReportDetail,
+    ActionItem, DashboardResponse, DataGapCreate, ExamCreate, ExamRead, ImportResponse, ScoreChangeSummary, StudentProfileRead, StudentProfileUpdate, StudentReportDetail,
 )
 from app.repositories.exam_repository import ExamRepository
 from app.repositories.profile_repository import ProfileRepository
@@ -36,8 +36,10 @@ class StudentService:
         actions: list[ActionItem] = []
         profile_complete = bool(profile.student_name and profile.junior_school and profile.grade)
         report = None
+        change_summary = None
         if latest and profile_complete:
             forecast, report = await self._analyze_exam(profile, latest, exams, publish_report=False)
+            change_summary = await self._change_summary(profile, latest, exams, forecast)
             if not latest.grade_rank or not latest.grade_size:
                 actions.append(ActionItem(
                     title="补齐排名信息",
@@ -76,7 +78,32 @@ class StudentService:
             forecast=forecast,
             action_items=actions,
             trend=[ExamRead.model_validate(item) for item in reversed(exams[:6])],
+            change_summary=change_summary,
             report=report,
+        )
+
+    async def _change_summary(self, profile, latest: Exam, exams: list[Exam], forecast) -> ScoreChangeSummary | None:
+        earlier = [item for item in exams if item.id != latest.id and item.exam_date <= latest.exam_date]
+        if not earlier:
+            return None
+        previous = max(earlier, key=lambda item: item.exam_date)
+        comparable = bool(latest.total_full_mark and previous.total_full_mark and latest.total_full_mark == previous.total_full_mark)
+        latest_rate = self._inclusive_total(latest) / latest.total_full_mark if latest.total_full_mark else None
+        previous_rate = self._inclusive_total(previous) / previous.total_full_mark if previous.total_full_mark else None
+        previous_forecast, _ = await self._analyze_exam(profile, previous, exams, publish_report=False)
+        latest_range = forecast.current_snapshot.estimated_rank_range if forecast.current_snapshot else (0, 0)
+        previous_range = previous_forecast.current_snapshot.estimated_rank_range if previous_forecast.current_snapshot else (0, 0)
+        city_delta = None
+        if latest_range != (0, 0) and previous_range != (0, 0):
+            city_delta = (previous_range[0] - latest_range[0], previous_range[1] - latest_range[1])
+        return ScoreChangeSummary(
+            comparable=comparable,
+            total_delta=round(self._inclusive_total(latest) - self._inclusive_total(previous), 1) if comparable else None,
+            score_rate_delta=round((latest_rate - previous_rate) * 100, 1) if latest_rate is not None and previous_rate is not None else None,
+            grade_rank_delta=(previous.grade_rank - latest.grade_rank) if latest.grade_rank and previous.grade_rank else None,
+            grade_percentile_delta=round((previous.grade_rank / previous.grade_size - latest.grade_rank / latest.grade_size) * 100, 1) if latest.grade_rank and latest.grade_size and previous.grade_rank and previous.grade_size else None,
+            city_rank_delta=city_delta,
+            school_scope_changed=(forecast.current_snapshot.school_scope != previous_forecast.current_snapshot.school_scope) if forecast.current_snapshot and previous_forecast.current_snapshot else False,
         )
 
     async def _analyze_exam(
@@ -129,11 +156,11 @@ class StudentService:
                 total_full_mark=exam.total_full_mark,
                 physical_score=exam.physical_score if exam.physical_score is not None else exam.scores.get("pe"),
                 score_includes_pe=exam.score_includes_pe,
-                analysis_year=exam.exam_date.year,
+                analysis_year=profile.cohort_year,
                 analysis_date=exam.exam_date,
                 subject_scores=exam.scores,
                 score_history=tuple(
-                    (item.total_score, item.total_full_mark, item.exam_date.year, item.physical_score, item.score_includes_pe)
+                    (item.total_score, item.total_full_mark, profile.cohort_year, item.physical_score, item.score_includes_pe)
                     for item in sorted(exams, key=lambda item: item.exam_date)
                     if item.exam_date <= exam.exam_date
                 ),

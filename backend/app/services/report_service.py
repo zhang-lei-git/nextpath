@@ -48,15 +48,26 @@ class StudentReportService:
     async def publish(self, context: ReportContext) -> StudentReportRead:
         report_json = self._build_input(context)
         html_content = self._render_html(report_json)
-        record = await self.repository.add(StudentReport(
-            profile_id=context.profile.id,
-            exam_id=context.exam.id,
-            analysis_run_id=context.analysis_run_id,
-            report_type="exam",
-            title=f"{context.exam.name}升学分析报告",
-            report_json=report_json,
-            html_content=html_content,
-        ))
+        record = await self.repository.latest_exam_report(context.profile.id, context.exam.id)
+        if record:
+            revisions = list(record.report_json.get("revisions", []))
+            revisions.append({"at": str(record.created_at), "title": record.title})
+            record.analysis_run_id = context.analysis_run_id
+            record.title = f"{context.exam.name}升学分析报告"
+            record.report_json = {**report_json, "revisions": revisions[-10:]}
+            record.html_content = html_content
+            record.status = "published"
+            await self.session.flush()
+        else:
+            record = await self.repository.add(StudentReport(
+                profile_id=context.profile.id,
+                exam_id=context.exam.id,
+                analysis_run_id=context.analysis_run_id,
+                report_type="exam",
+                title=f"{context.exam.name}升学分析报告",
+                report_json=report_json,
+                html_content=html_content,
+            ))
         await self._publish_monthly(context)
         await self.session.commit()
         return StudentReportRead.model_validate(record)

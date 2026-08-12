@@ -23,6 +23,15 @@ class ReportRepository:
             ).limit(1)
         )
 
+    async def latest_exam_report(self, profile_id: str, exam_id: str) -> StudentReport | None:
+        return await self.session.scalar(
+            select(StudentReport).where(
+                StudentReport.profile_id == profile_id,
+                StudentReport.exam_id == exam_id,
+                StudentReport.report_type == "exam",
+            ).order_by(desc(StudentReport.created_at)).limit(1)
+        )
+
     async def list_for_profile(self, profile_id: str) -> list[StudentReport]:
         return list(await self.session.scalars(
             select(StudentReport)

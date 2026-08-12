@@ -3,7 +3,7 @@ const { request, uploadScoreImage } = require('../../utils/request')
 Page({
   data: {
     form: { name: '', exam_date: '', total_score: '', class_rank: '', grade_rank: '', grade_size: '', scores: { pe: '60' } },
-    subjects: [{ key: 'chinese', name: '语文' }, { key: 'math', name: '数学' }, { key: 'english', name: '英语' }, { key: 'physics', name: '物理' }, { key: 'history', name: '历史' }, { key: 'politics', name: '道法' }, { key: 'pe', name: '体育' }],
+    subjects: [],
     examFullMark: 640,
     hasSubjectScores: false,
     uploading: false,
@@ -15,7 +15,8 @@ Page({
   async onLoad(options) {
     const now = new Date()
     const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    this.setData({ 'form.exam_date': date, examFullMark: this.fullMarkForDate(date) })
+    this.setData({ 'form.exam_date': date })
+    await this.loadScoringScheme()
     if (options.id) {
       try {
         const exam = await request({ path: `/exams/${options.id}` })
@@ -26,7 +27,7 @@ Page({
         this.setData({
           examId: exam.id,
           form: { ...exam, total_score: String(total), scores, class_rank: exam.class_rank || '', grade_rank: exam.grade_rank || '', grade_size: exam.grade_size || '' },
-          examFullMark: this.fullMarkForDate(exam.exam_date),
+          examFullMark: this.data.examFullMark,
           hasSubjectScores
         })
         wx.setNavigationBarTitle({ title: '修改成绩' })
@@ -37,7 +38,6 @@ Page({
     const key = event.currentTarget.dataset.key
     const value = event.detail.value
     this.setData({ [`form.${key}`]: value })
-    if (key === 'exam_date') this.setData({ examFullMark: this.fullMarkForDate(value) })
   },
   updateSubject(event) {
     const key = event.currentTarget.dataset.key
@@ -143,9 +143,18 @@ Page({
   subjectTotal(scores) {
     return Object.values(scores).reduce((sum, value) => sum + (Number(value) || 0), 0)
   },
-  fullMarkForDate(examDate) {
-    const year = Number(String(examDate).slice(0, 4))
-    return year === 2025 ? 820 : 640
+  async loadScoringScheme() {
+    try {
+      const scheme = await request({ path: '/profile/scoring-scheme' })
+      const labels = { chinese: '语文', math: '数学', english: '英语', physics: '物理', history: '历史', politics: '道法', chemistry: '化学', biology: '生物', geography: '地理', pe: '体育' }
+      const scores = { ...this.data.form.scores }
+      if (scores.pe === undefined) scores.pe = '60'
+      this.setData({
+        examFullMark: scheme.total_full_mark,
+        subjects: Object.keys(scheme.counted_subjects).map((key) => ({ key, name: labels[key] || key, fullMark: scheme.counted_subjects[key] })),
+        'form.scores': scores
+      })
+    } catch (_) { wx.showToast({ title: '暂时无法读取本届计分方案', icon: 'none' }) }
   },
   applyExtractedExam(extraction) {
     const scores = { ...(extraction.scores || {}) }
@@ -162,7 +171,7 @@ Page({
         grade_rank: extraction.grade_rank || '',
         grade_size: extraction.grade_size || ''
       },
-      examFullMark: this.fullMarkForDate(extraction.exam_date || this.data.form.exam_date),
+      examFullMark: this.data.examFullMark,
       hasSubjectScores
     })
   }

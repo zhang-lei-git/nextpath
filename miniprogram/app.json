@@ -6,6 +6,7 @@
     "pages/analysis/index",
     "pages/reports/index",
     "pages/report-web/index",
+    "pages/school-detail/index",
     "pages/profile/index"
   ],
   "window": {

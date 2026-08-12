@@ -21,17 +21,11 @@
     </view>
   </view>
   <view class="section-title">中考预估</view>
-  <view class="scenario card projection" wx:if="{{forecast.reasonable_projection}}">
-    <view class="scenario-scope">{{forecast.reasonable_projection.school_scope}}</view>
-    <view class="scenario-score">{{forecast.reasonable_projection.total_range[0]}}–{{forecast.reasonable_projection.total_range[1]}} / {{forecast.reasonable_projection.total_full_mark}} 分</view>
-    <view class="scenario-meta" wx:if="{{forecast.reasonable_projection.range_usable}}">预计全区第 {{forecast.reasonable_projection.estimated_rank_range[0]}}–{{forecast.reasonable_projection.estimated_rank_range[1]}} 名</view>
-    <view class="scenario-meta" wx:else>暂未形成位置分析</view>
-    <view class="scenario-gap" wx:if="{{forecast.target_comparison && forecast.target_comparison.projected_relation}}">与目标相比：{{forecast.target_comparison.projected_relation}}</view>
-    <view class="school-tiers" wx:if="{{forecast.reasonable_projection.school_tiers.match.length || forecast.reasonable_projection.school_tiers.reach.length || forecast.reasonable_projection.school_tiers.safe.length}}">
-      <view wx:if="{{forecast.reasonable_projection.school_tiers.reach.length}}"><text>冲刺</text><view><text wx:for="{{forecast.reasonable_projection.school_tiers.reach}}" wx:for-item="school" wx:key="*this">{{school}} </text></view></view>
-      <view wx:if="{{forecast.reasonable_projection.school_tiers.match.length}}"><text>匹配</text><view><text wx:for="{{forecast.reasonable_projection.school_tiers.match}}" wx:for-item="school" wx:key="*this">{{school}} </text></view></view>
-      <view wx:if="{{forecast.reasonable_projection.school_tiers.safe.length}}"><text>保底</text><view><text wx:for="{{forecast.reasonable_projection.school_tiers.safe}}" wx:for-item="school" wx:key="*this">{{school}} </text></view></view>
-    </view>
+  <view class="scenario card projection {{item.key === 'steady' ? 'steady' : ''}}" wx:for="{{forecast.exam_outcomes}}" wx:key="key">
+    <view class="scenario-label">{{item.title}}</view><view class="scenario-scope">{{item.school_scope}}</view>
+    <view class="scenario-score">{{item.total_range[0]}}–{{item.total_range[1]}} / {{item.total_full_mark}} 分</view>
+    <view class="scenario-meta">预计全区第 {{item.estimated_rank_range[0]}}–{{item.estimated_rank_range[1]}} 名</view>
+    <view class="scenario-gap" wx:if="{{item.target_relation}}">与目标相比：{{item.target_relation}}</view>
   </view>
   <button class="primary-button" bindtap="goToEntry">更新成绩后重新分析</button>
   <button class="secondary-button report-history" bindtap="goToReports">查看历次报告</button>

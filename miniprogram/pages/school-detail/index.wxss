@@ -1,0 +1,1 @@
+.page-title { margin:12rpx 0 30rpx; color:#143F43; font-size:42rpx; font-weight:700; }.fact { margin-bottom:18rpx; padding:28rpx; }.fact-title { color:#16766D; font-size:24rpx; }.fact-value { margin:10rpx 0; color:#143F43; font-size:30rpx; font-weight:600; }.empty { padding:30rpx; color:#687574; }

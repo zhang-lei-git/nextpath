@@ -84,6 +84,7 @@ class Forecast(BaseModel):
     position_conflict_pp: float | None = None
     current_snapshot: "ForecastScenario | None" = None
     reasonable_projection: "ForecastScenario | None" = None
+    exam_outcomes: list["ExamOutcomeScenario"] = Field(default_factory=list)
     prediction_level: Literal["complete", "basic", "unavailable"] = "basic"
     target_comparison: "TargetComparison | None" = None
     school_tiers: dict[str, list[str]] = Field(default_factory=lambda: {"reach": [], "match": [], "safe": []})
@@ -108,6 +109,11 @@ class ForecastScenario(BaseModel):
     parent_reasons: list[str] = Field(default_factory=list)
 
 
+class ExamOutcomeScenario(ForecastScenario):
+    key: Literal["steady", "strong", "variable"]
+    target_relation: str | None = None
+
+
 class TargetComparison(BaseModel):
     school: str
     school_rank_range: tuple[int, int] | None = None
@@ -128,13 +134,25 @@ class DashboardResponse(BaseModel):
     forecast: Forecast | None
     action_items: list[ActionItem]
     trend: list[ExamRead]
+    change_summary: "ScoreChangeSummary | None" = None
     report: "AdmissionReport | None" = None
+
+
+class ScoreChangeSummary(BaseModel):
+    comparable: bool
+    total_delta: float | None = None
+    score_rate_delta: float | None = None
+    grade_rank_delta: int | None = None
+    grade_percentile_delta: float | None = None
+    city_rank_delta: tuple[int, int] | None = None
+    school_scope_changed: bool = False
 
 
 class StudentProfileUpdate(BaseModel):
     student_name: str = Field(min_length=1, max_length=64)
     junior_school: str = Field(min_length=1, max_length=128)
     grade: str = Field(default="初三", pattern="^(初一|初二|初三)$")
+    cohort_year: int = Field(default=2026, ge=2020, le=2100)
     class_type_raw: str | None = Field(default=None, max_length=80)
     class_type_standard: Literal["创新", "重点", "平行", "未知"] = "未知"
     target_school: str | None = Field(default=None, max_length=128)
@@ -145,11 +163,21 @@ class StudentProfileRead(BaseModel):
     student_name: str
     junior_school: str | None
     grade: str | None
+    cohort_year: int
     class_type_raw: str | None
     class_type_standard: str
     target_school: str | None
 
     model_config = {"from_attributes": True}
+
+
+class AdmissionScoringSchemeRead(BaseModel):
+    city: str
+    cohort_year: int
+    total_full_mark: float
+    counted_subjects: dict[str, float]
+    source_title: str
+    source_url: str
 
 
 class AdmissionReport(BaseModel):

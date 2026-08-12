@@ -44,3 +44,21 @@
 .loading, .error-title { margin-top:180rpx; color:#143F43; font-size:38rpx; font-weight:700; text-align:center; }
 .error-copy { margin:18rpx 0 44rpx; color:#687574; font-size:27rpx; text-align:center; }
 .error-copy + .primary-button { width:100%; }
+.section-title.first { margin-top:0; }
+.current-card, .outcome, .change-card { padding:28rpx; }
+.current-card { border-color:#BFD9D3; background:#F5FBF9; }
+.scope-title { color:#143F43; font-size:33rpx; }
+.scenario-score.dark { color:#143F43; font-size:42rpx; }
+.scenario-score.dark text, .scenario-rank.dark { color:#687574; }
+.metrics { display:flex; flex-wrap:wrap; gap:12rpx 22rpx; margin-top:10rpx; color:#2C6194; font-size:24rpx; }
+.school-list.light { background:#FFFFFF; border:1rpx solid #E2E8E5; }
+.school-row.dark { color:#29413E; }
+.school-row.dark text { color:#16766D; }
+.school-row .school-link { width:auto; color:#2C6194; text-decoration:underline; }
+.change-card { color:#334542; font-size:25rpx; line-height:1.9; }.change-card text { display:inline-block; margin-right:22rpx; color:#2C6194; font-weight:600; }
+.outcome { margin-bottom:16rpx; }.outcome.steady { border:2rpx solid #16766D; background:#F5FBF9; }
+.target-gap { margin-top:26rpx; padding:26rpx 28rpx; color:#334542; background:#FFFDF7; border-color:#E7D9B7; }
+.target-gap-title { color:#725017; }
+.target-setup { margin:26rpx 0 0; padding:22rpx; color:#143F43; background:#EFF6F4; border-radius:12rpx; }
+.target-setup text { color:#2C6194; }
+.basis-link.dark-link { color:#2C6194; }

@@ -150,7 +150,7 @@ def test_seven_mock_exams_generate_saved_reports_and_support_correction(monkeypa
         )
         assert corrected.status_code == 200
         updated_reports = client.get("/api/v1/reports", headers=headers)
-        assert len([item for item in updated_reports.json() if item["report_type"] == "exam"]) == 8
+        assert len([item for item in updated_reports.json() if item["report_type"] == "exam"]) == 7
         monthly = [item for item in updated_reports.json() if item["report_type"] == "monthly"]
         assert len(monthly) == 7
         assert sum(item["period_key"] == "2025-09" for item in monthly) == 1
