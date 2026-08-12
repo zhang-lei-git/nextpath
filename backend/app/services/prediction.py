@@ -82,6 +82,8 @@ class BaselinePredictionEngine:
 
     def predict(self, input_data: PredictionInput) -> Forecast:
         annual_curve = self._annual_curve(input_data)
+        historical_base = self.reference_data.candidate_count if self.reference_data else None
+        target_base = annual_curve.candidate_count if annual_curve else historical_base
         current_total = self._projected_total_range(input_data)
         current_bridge = self._score_bridge(input_data, current_total)
         current_score_percentile = self._score_percentile(current_bridge, current_total, annual_curve)
@@ -102,8 +104,6 @@ class BaselinePredictionEngine:
             assessment_stage=input_data.assessment_stage,
             apply_difficulty=False,
         )
-        historical_base = self.reference_data.candidate_count if self.reference_data else None
-        target_base = annual_curve.candidate_count if annual_curve else historical_base
         projected_grade_rank, projected_grade_size = self._projected_grade_position(input_data)
         rank_channel = self.position_fusion.rank_channel(
             grade_rank=projected_grade_rank,
@@ -168,6 +168,8 @@ class BaselinePredictionEngine:
         )
 
         prediction_level = self._prediction_level(input_data, annual_curve)
+        current_snapshot.clarity = self._clarity(input_data)
+        reasonable_projection.clarity = self._clarity(input_data)
         current_snapshot.school_scope = self._school_scope(
             current_snapshot.current_percentile, current_snapshot.range_usable
         )
@@ -618,6 +620,15 @@ class BaselinePredictionEngine:
         if percentile <= 65:
             return "以普通高中范围为主"
         return "先稳住普高选择"
+
+    @staticmethod
+    def _clarity(input_data: PredictionInput) -> str:
+        records = len(input_data.score_history)
+        if records >= 5 and input_data.grade_rank and input_data.grade_size and input_data.class_type_standard not in {None, "未知"}:
+            return "相对稳定"
+        if records >= 2 or (input_data.grade_rank and input_data.grade_size):
+            return "逐渐清晰"
+        return "初步估算"
 
     def _find_school_reference(self, name: str | None) -> tuple[str, float, str] | None:
         if not (self.reference_data and name):

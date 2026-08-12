@@ -192,6 +192,17 @@ class StudentReportService:
             ],
             "subjects": subjects,
             "history": history,
+            "outcomes": [
+                {
+                    "title": item.title,
+                    "score": cls._scenario_total(item),
+                    "rank": f"全区第 {item.estimated_rank_range[0]:,}–{item.estimated_rank_range[1]:,} 名" if item.estimated_rank_range != (0, 0) else "位置仍需观察",
+                    "scope": item.school_scope or "学校范围仍需观察",
+                    "target": item.target_relation or "",
+                }
+                for item in (report_json.get("outcomes") or [])
+            ],
+            "reference_year": meta.get("year"),
             "observation_title": action.get("observationTitle") or "这次重点观察",
             "observations": [str(item) for item in action.get("observationItems", [])],
             "steps": [
@@ -240,6 +251,16 @@ class StudentReportService:
                 "outputTitle": f"nextpath-{context.exam.id}",
                 "scoreLabel": "本次总分",
             },
+            "outcomes": [
+                {
+                    "title": item.title,
+                    "score": self._scenario_total(item),
+                    "rank": f"全区第 {item.estimated_rank_range[0]:,}–{item.estimated_rank_range[1]:,} 名" if item.estimated_rank_range != (0, 0) else "位置仍需观察",
+                    "scope": item.school_scope or "学校范围仍需观察",
+                    "target": item.target_relation or "",
+                }
+                for item in context.forecast.exam_outcomes
+            ],
             "validation": {"allowTotalMismatch": True, "totalTolerance": 0.01},
             "glance": {
                 "verdictHtml": f"<strong>{context.forecast.tier}</strong><br>目标：{target}",

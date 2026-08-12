@@ -12,6 +12,7 @@
     <view class="scenario-scope">{{forecast.current_snapshot.school_scope}}</view>
     <view class="scenario-score">{{forecast.current_snapshot.total_range[0]}} / {{forecast.current_snapshot.total_full_mark}} 分</view>
     <view class="scenario-meta" wx:if="{{forecast.current_snapshot.range_usable}}">预计全区第 {{forecast.current_snapshot.estimated_rank_range[0]}}–{{forecast.current_snapshot.estimated_rank_range[1]}} 名</view>
+    <view class="scenario-meta">位置范围：{{forecast.current_snapshot.clarity}}</view>
     <view class="scenario-meta" wx:else>暂未形成位置分析</view>
     <view class="scenario-gap" wx:if="{{forecast.target_comparison && forecast.target_comparison.current_relation}}">与目标相比：{{forecast.target_comparison.current_relation}}</view>
     <view class="school-tiers" wx:if="{{forecast.current_snapshot.school_tiers.match.length || forecast.current_snapshot.school_tiers.reach.length || forecast.current_snapshot.school_tiers.safe.length}}">

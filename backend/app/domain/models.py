@@ -43,6 +43,7 @@ class Exam(Base):
     participant_scope: Mapped[str | None] = mapped_column(String(32), nullable=True)
     participant_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     paper_version: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    comparison_mode: Mapped[str] = mapped_column(String(24), default="standard", server_default="standard")
     scores: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

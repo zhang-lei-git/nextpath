@@ -15,4 +15,5 @@ input::placeholder { color: #A0ABAA; }
 .privacy { margin: 24rpx 4rpx 30rpx; color: #687574; font-size: 22rpx; line-height: 1.65; }
 .subject-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:16rpx; margin-top:12rpx; }.subject { padding:14rpx 12rpx; background:#F5F7F5; border-radius:10rpx; }.subject text { display:block; color:#687574; font-size:22rpx; }.subject input { height:42rpx; font-size:28rpx; line-height:42rpx; }
 .calculated-total { display:flex; align-items:baseline; justify-content:space-between; min-height:52rpx; }.calculated-total > text { color:#143F43; font-family:ui-monospace, Menlo, monospace; font-size:34rpx; font-weight:700; }.calculated-total view { color:#687574; font-size:22rpx; }
+.switch-note { display:block; margin-top:10rpx; color:#687574; font-size:23rpx; line-height:1.5; }
 .save { width: 100%; }

@@ -15,6 +15,7 @@
       <view class="scenario-score dark">{{home.current.score}}<text>/ {{home.current.fullMark}} 分</text></view>
       <view class="metrics"><text>得分率 {{home.current.scoreRate}}</text><text>{{home.current.gradeText}}</text></view>
       <view class="scenario-rank dark">{{home.current.rankText}}</view>
+      <view class="clarity">位置范围：{{home.current.clarity}}</view>
       <view class="school-list light" wx:if="{{home.current.hasSchoolTiers}}"><view class="school-row dark" wx:for="{{home.current.schoolTiers}}" wx:key="label"><text>{{item.label}}</text><view><text class="school-link" wx:for="{{item.schools}}" wx:for-item="school" wx:key="*this" data-name="{{school}}" bindtap="goSchool">{{school}} </text></view></view></view>
     </view>
     <view class="section-title" wx:if="{{home.change}}">相比上次</view>

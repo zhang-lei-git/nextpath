@@ -51,6 +51,7 @@
 .scenario-score.dark { color:#143F43; font-size:42rpx; }
 .scenario-score.dark text, .scenario-rank.dark { color:#687574; }
 .metrics { display:flex; flex-wrap:wrap; gap:12rpx 22rpx; margin-top:10rpx; color:#2C6194; font-size:24rpx; }
+.clarity { margin-top:10rpx; color:#16766D; font-size:23rpx; }
 .school-list.light { background:#FFFFFF; border:1rpx solid #E2E8E5; }
 .school-row.dark { color:#29413E; }
 .school-row.dark text { color:#16766D; }

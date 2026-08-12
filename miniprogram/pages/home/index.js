@@ -51,6 +51,7 @@ Page({
         ? `预计全区第 ${this.formatNumber(rankRange[0])}–${this.formatNumber(rankRange[1])} 名`
         : '学校范围仍需继续观察',
       scope: scenario.school_scope || '学校范围仍需继续观察',
+      clarity: scenario.clarity || '初步估算',
       hasSchoolTiers: schoolTiers.length > 0,
       schoolTiers
     }

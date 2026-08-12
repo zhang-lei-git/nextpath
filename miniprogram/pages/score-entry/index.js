@@ -2,7 +2,7 @@ const { request, uploadScoreImage } = require('../../utils/request')
 
 Page({
   data: {
-    form: { name: '', exam_date: '', total_score: '', class_rank: '', grade_rank: '', grade_size: '', scores: { pe: '60' } },
+    form: { name: '', exam_date: '', total_score: '', class_rank: '', grade_rank: '', grade_size: '', comparison_mode: 'standard', scores: { pe: '60' } },
     subjects: [],
     examFullMark: 640,
     hasSubjectScores: false,
@@ -38,6 +38,9 @@ Page({
     const key = event.currentTarget.dataset.key
     const value = event.detail.value
     this.setData({ [`form.${key}`]: value })
+  },
+  comparisonModeChange(event) {
+    this.setData({ 'form.comparison_mode': event.detail.value ? 'special' : 'standard' })
   },
   updateSubject(event) {
     const key = event.currentTarget.dataset.key

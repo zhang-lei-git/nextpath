@@ -18,6 +18,7 @@ class ExamCreate(BaseModel):
     participant_scope: str | None = Field(default=None, max_length=32)
     participant_count: int | None = Field(default=None, ge=1)
     paper_version: str | None = Field(default=None, max_length=80)
+    comparison_mode: Literal["standard", "special"] = "standard"
     scores: dict[str, float] = Field(default_factory=dict)
 
     @model_validator(mode="after")
@@ -105,6 +106,7 @@ class ForecastScenario(BaseModel):
     confidence: Literal["low", "medium", "high"] = "low"
     range_usable: bool = False
     school_scope: str | None = None
+    clarity: Literal["初步估算", "逐渐清晰", "相对稳定"] = "初步估算"
     school_tiers: dict[str, list[str]] = Field(default_factory=lambda: {"reach": [], "match": [], "safe": []})
     parent_reasons: list[str] = Field(default_factory=list)
 

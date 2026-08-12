@@ -37,6 +37,10 @@
     </view>
   </view>
 
+  <view class="section-title" wx:if="{{report.content.outcomes.length}}">中考预估</view>
+  <view class="outcomes card" wx:if="{{report.content.outcomes.length}}"><view class="outcome {{item.title === '正常发挥' ? 'steady' : ''}}" wx:for="{{report.content.outcomes}}" wx:key="title"><view class="outcome-title">{{item.title}}</view><view class="outcome-scope">{{item.scope}}</view><view>{{item.score}} · {{item.rank}}</view><view wx:if="{{item.target}}">与目标相比：{{item.target}}</view></view></view>
+  <view class="source-note" wx:if="{{report.content.reference_year}}">本次分析参考 {{report.content.reference_year}} 年及此前已发布的政策与招录数据。</view>
+
   <view class="section-title" wx:if="{{report.content.observations.length}}">{{report.content.observation_title}}</view>
   <view class="observations card" wx:if="{{report.content.observations.length}}">
     <view class="observation" wx:for="{{report.content.observations}}" wx:key="*this"><view class="dot"></view><view>{{item}}</view></view>

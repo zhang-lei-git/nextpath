@@ -87,7 +87,7 @@ class StudentService:
         if not earlier:
             return None
         previous = max(earlier, key=lambda item: item.exam_date)
-        comparable = bool(latest.total_full_mark and previous.total_full_mark and latest.total_full_mark == previous.total_full_mark)
+        comparable = bool(latest.comparison_mode == "standard" and previous.comparison_mode == "standard" and latest.total_full_mark and previous.total_full_mark and latest.total_full_mark == previous.total_full_mark)
         latest_rate = self._inclusive_total(latest) / latest.total_full_mark if latest.total_full_mark else None
         previous_rate = self._inclusive_total(previous) / previous.total_full_mark if previous.total_full_mark else None
         previous_forecast, _ = await self._analyze_exam(profile, previous, exams, publish_report=False)
