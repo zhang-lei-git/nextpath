@@ -13,7 +13,7 @@ from pathlib import Path
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request, status
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -21,6 +21,10 @@ from pydantic import BaseModel, Field
 ROOT = Path(__file__).resolve().parent
 USER_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,32}$")
 SESSION_COOKIE = "nextpath_ops_session"
+INTERNAL_TOOLS = {
+    "exam-tracker": "http://127.0.0.1:5001",
+    "decision-materials": "http://127.0.0.1:5005",
+}
 
 
 def admin_db_path() -> Path:
@@ -173,6 +177,45 @@ async def logout() -> JSONResponse:
 @app.get("/api/auth/me")
 async def me(username: str = Depends(current_user)) -> dict[str, str]:
     return {"username": username}
+
+
+@app.api_route("/tools/{tool}/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+@app.api_route("/tools/{tool}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+async def proxy_internal_tool(tool: str, request: Request, path: str = "", _: str = Depends(current_user)) -> Response:
+    """Expose internal legacy tools only through the authenticated operations portal."""
+    upstream = INTERNAL_TOOLS.get(tool)
+    if not upstream:
+        raise HTTPException(status_code=404, detail="未找到该内部工具")
+
+    target = f"{upstream}/{path}" if path else f"{upstream}/"
+    content = await request.body()
+    request_headers = {"Accept": request.headers.get("Accept", "*/*")}
+    if content and request.headers.get("Content-Type"):
+        request_headers["Content-Type"] = request.headers["Content-Type"]
+
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
+            upstream_response = await client.request(
+                request.method,
+                target,
+                params=request.query_params,
+                content=content or None,
+                headers=request_headers,
+            )
+    except httpx.HTTPError as error:
+        raise HTTPException(status_code=502, detail="内部工具暂时无法连接") from error
+
+    body = upstream_response.content
+    content_type = upstream_response.headers.get("content-type", "application/octet-stream")
+    if tool == "exam-tracker" and path == "" and "text/html" in content_type:
+        # The legacy page uses root-relative APIs. Keep those calls inside this authenticated gateway.
+        body = body.replace(b"const API_BASE = '';", b"const API_BASE = '/tools/exam-tracker';")
+
+    response_headers = {}
+    if "location" in upstream_response.headers:
+        location = upstream_response.headers["location"]
+        response_headers["Location"] = location if location.startswith("/") else f"/tools/{tool}/"
+    return Response(content=body, status_code=upstream_response.status_code, media_type=content_type, headers=response_headers)
 
 
 @app.get("/api/users")
