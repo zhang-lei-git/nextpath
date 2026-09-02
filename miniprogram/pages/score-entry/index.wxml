@@ -1,7 +1,7 @@
 <view class="page">
   <view class="eyebrow">成绩记录</view>
-  <view class="page-title">{{examId ? '核对后更新' : '先记录，后分析'}}</view>
-  <view class="intro">上传学校通知截图后，系统会生成待确认信息。任何成绩在保存前都由你确认。</view>
+  <view class="page-title">{{examId ? '核对后更新' : '录入这次成绩'}}</view>
+  <view class="intro">支持截图识别、语音或手动录入。成绩在保存前都由你确认。</view>
 
   <view class="quick-actions">
     <button class="quick-action card" bindtap="chooseImage" loading="{{uploading}}"><view class="quick-title">上传成绩截图</view><view class="quick-note">相册或拍照</view></button>
@@ -13,12 +13,17 @@
   <view class="form card">
     <view class="field"><view class="label">考试名称</view><input placeholder="例如：9月月考" value="{{form.name}}" data-key="name" bindinput="updateField" /></view>
     <view class="field"><view class="label">考试日期</view><picker mode="date" value="{{form.exam_date}}" bindchange="updateField" data-key="exam_date"><view class="picker-value">{{form.exam_date}}</view></picker></view>
-    <view class="field"><view class="label">这次考试口径</view><switch checked="{{form.comparison_mode === 'special'}}" bindchange="comparisonModeChange" color="#16766D" /><text class="switch-note">{{form.comparison_mode === 'special' ? '科目或满分不同，主要比较得分率和位次' : '常规模考，可连续比较'}}</text></view>
+    <view class="field"><view class="label">这次考试口径</view><switch checked="{{form.comparison_mode === 'special'}}" bindchange="comparisonModeChange" color="#059669" /><text class="switch-note">{{form.comparison_mode === 'special' ? '科目或满分不同，主要比较得分率和位次' : '常规模考，可连续比较'}}</text></view>
     <view class="field"><view class="label">各科成绩 <text>体育默认按 60 分计入</text></view><view class="subject-grid"><view class="subject" wx:for="{{subjects}}" wx:key="key"><text>{{item.name}} / {{item.fullMark}}</text><input type="digit" placeholder="{{item.key === 'pe' ? '60' : '-'}}" value="{{form.scores[item.key]}}" data-key="{{item.key}}" bindinput="updateSubject" /></view></view></view>
     <view class="field"><view class="label">本次总分 <text>中考满分 {{examFullMark}} 分</text></view><view class="calculated-total" wx:if="{{hasSubjectScores}}"><text>{{form.total_score}}</text><view>已按各科成绩自动汇总</view></view><input wx:else type="digit" placeholder="例如：520" value="{{form.total_score}}" data-key="total_score" bindinput="updateField" /></view>
     <view class="field"><view class="label">班级排名 <text>选填</text></view><input type="number" placeholder="例如：28" value="{{form.class_rank}}" data-key="class_rank" bindinput="updateField" /></view>
     <view class="field"><view class="label">年级排名 <text>建议填写</text></view><input type="number" placeholder="例如：126" value="{{form.grade_rank}}" data-key="grade_rank" bindinput="updateField" /></view>
     <view class="field last"><view class="label">年级人数 <text>有排名时建议填写</text></view><input type="number" placeholder="例如：680" value="{{form.grade_size}}" data-key="grade_size" bindinput="updateField" /></view>
+  </view>
+  <view class="warning-list" wx:if="{{warnings.length}}">
+    <view class="warning-title">发现异常，请核对后重新保存</view>
+    <view class="warning-item" wx:for="{{warnings}}" wx:key="*this">{{item}}</view>
+    <button class="warning-dismiss" bindtap="dismissWarning">我已核对，继续保存</button>
   </view>
   <view class="privacy">每一项成绩都会先由你确认，再用于更新孩子的升学分析。</view>
   <button class="primary-button save" bindtap="submit" loading="{{saving}}">{{examId ? '确认并更新' : '确认并保存'}}</button>

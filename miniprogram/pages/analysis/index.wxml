@@ -1,33 +1,52 @@
 <view class="page" wx:if="{{forecast}}">
   <view class="eyebrow">升学分析</view>
   <view class="page-title">当前位置与中考预估</view>
+  <view class="intro">基于当前成绩和历史参考数据，查看孩子当前位置、目标差距和中考预估范围。</view>
+
   <view class="summary card" wx:if="{{targetSchool}}">
-    <view class="summary-label">目标</view>
-    <view class="tier">{{targetSchool}}</view>
-    <view class="summary-line" wx:if="{{forecast.target_comparison && forecast.target_comparison.school_rank_range}}">近年参考边界：全区第 {{forecast.target_comparison.school_rank_range[0]}}–{{forecast.target_comparison.school_rank_range[1]}} 名</view>
-    <view class="summary-line" wx:if="{{forecast.target_comparison}}">当前分析：{{forecast.target_comparison.risk}}</view>
-  </view>
-  <view class="section-title">当前现状</view>
-  <view class="scenario card" wx:if="{{forecast.current_snapshot}}">
-    <view class="scenario-scope">{{forecast.current_snapshot.school_scope}}</view>
-    <view class="scenario-score">{{forecast.current_snapshot.total_range[0]}} / {{forecast.current_snapshot.total_full_mark}} 分</view>
-    <view class="scenario-meta" wx:if="{{forecast.current_snapshot.range_usable}}">预计全区第 {{forecast.current_snapshot.estimated_rank_range[0]}}–{{forecast.current_snapshot.estimated_rank_range[1]}} 名</view>
-    <view class="scenario-meta">位置范围：{{forecast.current_snapshot.clarity}}</view>
-    <view class="scenario-meta" wx:else>暂未形成位置分析</view>
-    <view class="scenario-gap" wx:if="{{forecast.target_comparison && forecast.target_comparison.current_relation}}">与目标相比：{{forecast.target_comparison.current_relation}}</view>
-    <view class="school-tiers" wx:if="{{forecast.current_snapshot.school_tiers.match.length || forecast.current_snapshot.school_tiers.reach.length || forecast.current_snapshot.school_tiers.safe.length}}">
-      <view wx:if="{{forecast.current_snapshot.school_tiers.reach.length}}"><text>冲刺</text><view><text wx:for="{{forecast.current_snapshot.school_tiers.reach}}" wx:for-item="school" wx:key="*this">{{school}} </text></view></view>
-      <view wx:if="{{forecast.current_snapshot.school_tiers.match.length}}"><text>匹配</text><view><text wx:for="{{forecast.current_snapshot.school_tiers.match}}" wx:for-item="school" wx:key="*this">{{school}} </text></view></view>
-      <view wx:if="{{forecast.current_snapshot.school_tiers.safe.length}}"><text>保底</text><view><text wx:for="{{forecast.current_snapshot.school_tiers.safe}}" wx:for-item="school" wx:key="*this">{{school}} </text></view></view>
+    <view class="summary-label">目标高中</view>
+    <view class="summary-title">{{targetSchool}}</view>
+    <view class="summary-item" wx:if="{{forecast.target_comparison && forecast.target_comparison.school_rank_range}}">
+      <text>近年参考边界</text>
+      <view>全区第 {{forecast.target_comparison.school_rank_range[0]}}–{{forecast.target_comparison.school_rank_range[1]}} 名</view>
+    </view>
+    <view class="summary-item" wx:if="{{forecast.target_comparison}}">
+      <text>当前关系</text>
+      <view>{{forecast.target_comparison.risk}}</view>
     </view>
   </view>
-  <view class="section-title">中考预估</view>
-  <view class="scenario card projection {{item.key === 'steady' ? 'steady' : ''}}" wx:for="{{forecast.exam_outcomes}}" wx:key="key">
-    <view class="scenario-label">{{item.title}}</view><view class="scenario-scope">{{item.school_scope}}</view>
-    <view class="scenario-score">{{item.total_range[0]}}–{{item.total_range[1]}} / {{item.total_full_mark}} 分</view>
-    <view class="scenario-meta">预计全区第 {{item.estimated_rank_range[0]}}–{{item.estimated_rank_range[1]}} 名</view>
-    <view class="scenario-gap" wx:if="{{item.target_relation}}">与目标相比：{{item.target_relation}}</view>
+
+  <view class="section-block">
+    <view class="section-title">当前现状</view>
+    <view class="scenario card" wx:if="{{forecast.current_snapshot}}">
+      <view class="scenario-tag">{{forecast.current_snapshot.school_scope}}</view>
+      <view class="scenario-score">{{forecast.current_snapshot.total_range[0]}}<text> / {{forecast.current_snapshot.total_full_mark}} 分</text></view>
+      <view class="scenario-meta" wx:if="{{forecast.current_snapshot.range_usable}}">预计全区第 {{forecast.current_snapshot.estimated_rank_range[0]}}–{{forecast.current_snapshot.estimated_rank_range[1]}} 名</view>
+      <view class="scenario-meta">位置范围：{{forecast.current_snapshot.clarity}}</view>
+      <view class="scenario-gap" wx:if="{{forecast.target_comparison && forecast.target_comparison.current_relation}}">与目标相比：{{forecast.target_comparison.current_relation}}</view>
+      <view class="school-tiers" wx:if="{{forecast.current_snapshot.school_tiers.match.length || forecast.current_snapshot.school_tiers.reach.length || forecast.current_snapshot.school_tiers.safe.length}}">
+        <view class="tier-row" wx:if="{{forecast.current_snapshot.school_tiers.reach.length}}"><text class="tier-name">冲刺</text><view class="tier-values"><text class="school-name" wx:for="{{forecast.current_snapshot.school_tiers.reach}}" wx:for-item="school" wx:key="*this">{{school}}</text></view></view>
+        <view class="tier-row" wx:if="{{forecast.current_snapshot.school_tiers.match.length}}"><text class="tier-name">匹配</text><view class="tier-values"><text class="school-name" wx:for="{{forecast.current_snapshot.school_tiers.match}}" wx:for-item="school" wx:key="*this">{{school}}</text></view></view>
+        <view class="tier-row" wx:if="{{forecast.current_snapshot.school_tiers.safe.length}}"><text class="tier-name">保底</text><view class="tier-values"><text class="school-name" wx:for="{{forecast.current_snapshot.school_tiers.safe}}" wx:for-item="school" wx:key="*this">{{school}}</text></view></view>
+      </view>
+    </view>
   </view>
-  <button class="primary-button" bindtap="goToEntry">更新成绩后重新分析</button>
-  <button class="secondary-button report-history" bindtap="goToReports">查看历次报告</button>
+
+  <view class="section-block">
+    <view class="section-title">中考预估</view>
+    <view class="scenario card projection {{item.key === 'steady' ? 'steady' : ''}}" wx:for="{{forecast.exam_outcomes}}" wx:key="key">
+      <view class="scenario-head">
+        <view class="scenario-label">{{item.title}}</view>
+        <view class="scenario-scope">{{item.school_scope}}</view>
+      </view>
+      <view class="scenario-score">{{item.total_range[0]}}–{{item.total_range[1]}}<text> / {{item.total_full_mark}} 分</text></view>
+      <view class="scenario-meta">预计全区第 {{item.estimated_rank_range[0]}}–{{item.estimated_rank_range[1]}} 名</view>
+      <view class="scenario-gap" wx:if="{{item.target_relation}}">{{item.target_relation}}</view>
+    </view>
+  </view>
+
+  <view class="analysis-actions">
+    <button class="primary-button" bindtap="goToEntry">更新成绩后重新分析</button>
+    <button class="secondary-button report-history" bindtap="goToReports">查看历次报告</button>
+  </view>
 </view>

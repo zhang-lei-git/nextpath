@@ -60,6 +60,19 @@ class ActionItem(BaseModel):
     priority: Literal["high", "medium", "low"]
 
 
+class HomeFirstScreen(BaseModel):
+    """Compact parent-facing summary for the homepage status card."""
+    student_name: str
+    score: str
+    full_mark: float | None = None
+    score_rate: str
+    grade_text: str
+    rank_text: str
+    school_scope: str
+    clarity: str
+    school_tiers: list[dict] = Field(default_factory=list)
+
+
 class Forecast(BaseModel):
     tier: str
     estimated_rank_range: tuple[int, int]
@@ -138,6 +151,7 @@ class DashboardResponse(BaseModel):
     trend: list[ExamRead]
     change_summary: "ScoreChangeSummary | None" = None
     report: "AdmissionReport | None" = None
+    first_screen: "HomeFirstScreen | None" = None
 
 
 class ScoreChangeSummary(BaseModel):
@@ -148,6 +162,22 @@ class ScoreChangeSummary(BaseModel):
     grade_percentile_delta: float | None = None
     city_rank_delta: tuple[int, int] | None = None
     school_scope_changed: bool = False
+
+
+class TrendPoint(BaseModel):
+    exam_id: str
+    exam_name: str
+    exam_date: date
+    total_score: float
+    full_mark: float
+    score_rate: float
+    grade_percentile: float | None = None
+    comparison_mode: str = "standard"
+
+
+class TrendResponse(BaseModel):
+    points: list[TrendPoint]
+    full_mark_label: str = ""
 
 
 class StudentProfileUpdate(BaseModel):
@@ -201,6 +231,7 @@ class StudentReportRead(BaseModel):
     report_type: Literal["exam", "monthly"] = "exam"
     period_key: str | None = None
     created_at: datetime
+    preview: dict = Field(default_factory=dict)
 
     model_config = {"from_attributes": True}
 

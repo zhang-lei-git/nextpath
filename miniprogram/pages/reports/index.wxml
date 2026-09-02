@@ -1,8 +1,22 @@
 <view class="page">
   <view class="eyebrow">升学报告</view>
-  <view class="page-title">每次分析都能回看</view>
-  <view class="empty card" wx:if="{{!loading && !reports.length}}">保存一次成绩后，会在这里生成报告</view>
+  <view class="page-title">历次升学分析报告</view>
+  <view class="intro">每份报告都保留当时的判断、依据和下一步建议，方便对比孩子位置变化。</view>
+  <view class="empty card" wx:if="{{!loading && !reports.length}}">还没有报告。录入成绩后，系统会自动生成升学分析报告。</view>
   <button class="report-card card" wx:for="{{reports}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
-    <view><view class="report-kind">{{item.report_type === 'monthly' ? '月度报告' : '单次报告'}}</view><view class="report-title">{{item.title}}</view><view class="muted">{{item.display_date}}</view></view><view class="arrow">查看</view>
+    <view class="report-head">
+      <view class="report-kind">{{item.report_type === 'monthly' ? '月度报告' : '单次报告'}}</view>
+      <view class="report-date">{{item.display_date}}</view>
+    </view>
+    <view class="report-title">{{item.title}}</view>
+    <view class="report-verdict">{{item.preview.scope || '学校范围仍需观察'}}</view>
+    <view class="report-meta-row">
+      <view><text>位置</text>{{item.preview.rank || '位置仍需观察'}}</view>
+      <view><text>目标</text>{{item.preview.target_relation || '目标关系仍需观察'}}</view>
+    </view>
+    <view class="report-action">
+      <text>{{item.preview.next_step || '查看报告详情'}}</text>
+      <text>查看 ›</text>
+    </view>
   </button>
 </view>

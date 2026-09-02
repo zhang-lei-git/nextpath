@@ -1,8 +1,17 @@
-.page-title { margin: 12rpx 0; color: #143F43; font-size: 44rpx; font-weight: 700; }
-.intro { margin-bottom: 30rpx; color: #687574; font-size: 27rpx; line-height: 1.7; }
+.intro { margin-bottom: 24rpx; color: #64748B; font-size: 27rpx; line-height: 1.7; }
+.top-add { margin: 0 0 32rpx; }
+.trend-section { margin-bottom: 32rpx; }
+.tab-bar { display:flex; gap:0; margin-bottom: 16rpx; background:#FFFFFF; border:1rpx solid #E2E8F0; border-radius:12rpx; overflow:hidden; }
+.tab { flex:1; padding:18rpx 0; color:#64748B; font-size:26rpx; text-align:center; }
+.tab.active { color:#1E293B; font-weight:700; background:#ECFDF5; }
+.chart-card { padding:24rpx; margin-bottom:24rpx; }
+.chart-title { margin-bottom:16rpx; color:#1E293B; font-size:30rpx; font-weight:650; }
+.chart-note { margin-top:12rpx; color:#64748B; font-size:22rpx; line-height:1.6; }
+.trend-empty { margin-bottom: 28rpx; padding:34rpx 28rpx; color:#64748B; font-size:27rpx; text-align:center; }
 .score-card { display:flex; align-items:center; justify-content:space-between; margin-bottom:16rpx; padding:26rpx; }
-.score-name { margin-bottom:8rpx; color:#143F43; font-size:30rpx; font-weight:650; }
-.score-side { display:flex; flex-direction:column; align-items:flex-end; gap:8rpx; }
-.score-total { color:#143F43; font-size:40rpx; font-weight:700; }
-.text-button { color:#16766D; font-size:25rpx; }
-.empty { margin-bottom:20rpx; padding:34rpx 28rpx; color:#687574; font-size:27rpx; text-align:center; }
+.score-main { flex: 1; min-width: 0; padding-right: 24rpx; }
+.score-name { margin-bottom:8rpx; color:#1E293B; font-size:30rpx; font-weight:650; }
+.score-side { display:flex; flex:none; flex-direction:column; align-items:flex-end; gap:8rpx; }
+.score-total { color:#1E293B; font-size:40rpx; font-weight:700; }
+.text-button { color:#0EA5E9; font-size:25rpx; }
+.empty { margin-bottom:20rpx; padding:34rpx 28rpx; color:#94A3B8; font-size:27rpx; text-align:center; }

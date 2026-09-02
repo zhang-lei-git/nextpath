@@ -6,14 +6,13 @@
   <view class="report-copy">{{report.content.description}}</view>
 
   <view class="hero card">
-    <view class="hero-label">目标高中</view>
-    <view class="hero-target">{{report.content.target}}</view>
-    <view class="hero-school">{{report.content.junior_school}}</view>
+    <view class="hero-label">一页结论</view>
+    <view class="hero-target">{{report.content.preview.scope || report.content.target}}</view>
+    <view class="hero-school">目标：{{report.content.target}} · {{report.content.junior_school}}</view>
     <view class="hero-verdict" wx:if="{{report.content.verdict}}">{{report.content.verdict}}</view>
   </view>
 
-  <view class="section-title">这次分析</view>
-  <view class="kpi-grid">
+  <view class="kpi-grid" wx:if="{{report.content.kpis.length}}">
     <view class="kpi card {{item.tone}}" wx:for="{{report.content.kpis}}" wx:key="label">
       <view class="kpi-label">{{item.label}}</view>
       <view class="kpi-value">{{item.value}}</view>
@@ -21,15 +20,61 @@
     </view>
   </view>
 
-  <view class="section-title" wx:if="{{report.content.subjects.length}}">本次各科</view>
-  <view class="subjects card" wx:if="{{report.content.subjects.length}}">
-    <view class="subject" wx:for="{{report.content.subjects}}" wx:key="name">
-      <view class="subject-name">{{item.name}}</view>
-      <view class="subject-score">{{item.score}}<text>/{{item.full_mark}}</text></view>
+  <view class="section-title" wx:if="{{report.content.takeaway}}">核心判断</view>
+  <view class="decision-card card" wx:if="{{report.content.takeaway}}">{{report.content.takeaway}}</view>
+
+  <view class="section-title" wx:if="{{report.content.decision_cards.length}}">家长现在先看这三件事</view>
+  <view class="decision-grid" wx:if="{{report.content.decision_cards.length}}">
+    <view class="decision-item card" wx:for="{{report.content.decision_cards}}" wx:key="title">
+      <view class="decision-index">{{item.icon || index + 1}}</view>
+      <view class="decision-title">{{item.title}}</view>
+      <view class="decision-copy">{{item.text}}</view>
     </view>
   </view>
 
-  <view class="section-title" wx:if="{{report.content.history.length}}">历次成绩</view>
+  <view class="section-title" wx:if="{{report.content.outcomes.length}}">中考预估与学校范围</view>
+  <view class="outcome-list" wx:if="{{report.content.outcomes.length}}">
+    <view class="outcome card {{item.title === '正常发挥' ? 'steady' : ''}}" wx:for="{{report.content.outcomes}}" wx:key="title">
+      <view class="outcome-head"><text>{{item.title}}</text><view>{{item.scope}}</view></view>
+      <view class="outcome-score">{{item.score}}</view>
+      <view class="outcome-rank">{{item.rank}}</view>
+      <view class="outcome-target" wx:if="{{item.target}}">{{item.target}}</view>
+    </view>
+  </view>
+
+  <view class="section-title" wx:if="{{report.content.subjects.length}}">学科结构</view>
+  <view class="subject-list" wx:if="{{report.content.subjects.length}}">
+    <view class="subject card {{item.tone}}" wx:for="{{report.content.subjects}}" wx:key="name">
+      <view class="subject-head"><view class="subject-name">{{item.name}}</view><view class="subject-score">{{item.score}}<text>/{{item.full_mark}}</text></view></view>
+      <view class="subject-role">{{item.role}}</view>
+      <view class="subject-action">{{item.action}}</view>
+    </view>
+  </view>
+
+  <view class="section-title" wx:if="{{report.content.school.interpretation || report.content.school.tiers.length}}">学校层次判断</view>
+  <view class="school-card card" wx:if="{{report.content.school.interpretation || report.content.school.tiers.length}}">
+    <view class="school-title">{{report.content.school.interpretation_title}}</view>
+    <view class="school-copy" wx:if="{{report.content.school.interpretation}}">{{report.content.school.interpretation}}</view>
+    <view class="tier-card" wx:for="{{report.content.school.tiers}}" wx:key="label">
+      <view class="tier-head"><text>{{item.label}}</text><view>{{item.judgement}}</view></view>
+      <view class="tier-detail">{{item.detail}}</view>
+    </view>
+    <view class="school-takeaway" wx:if="{{report.content.school.takeaway}}">{{report.content.school.takeaway}}</view>
+  </view>
+
+  <view class="section-title" wx:if="{{report.content.path.milestones.length || report.content.path.scenarios.length}}">升学路径</view>
+  <view class="path-card card" wx:if="{{report.content.path.milestones.length || report.content.path.scenarios.length}}">
+    <view class="milestone" wx:for="{{report.content.path.milestones}}" wx:key="time">
+      <view class="milestone-time">{{item.time}}</view>
+      <view class="milestone-goal">{{item.goal}}</view>
+    </view>
+    <view class="scenario-row" wx:for="{{report.content.path.scenarios}}" wx:key="title">
+      <view class="scenario-title">{{item.title}}</view>
+      <view class="scenario-text">{{item.text}}</view>
+    </view>
+  </view>
+
+  <view class="section-title" wx:if="{{report.content.history.length}}">成绩依据</view>
   <view class="history card" wx:if="{{report.content.history.length}}">
     <view class="history-row {{item.is_current ? 'current' : ''}}" wx:for="{{report.content.history}}" wx:key="label">
       <view><view class="history-label">{{item.label}}</view><view class="history-rank">{{item.rank}}</view></view>
@@ -37,20 +82,25 @@
     </view>
   </view>
 
-  <view class="section-title" wx:if="{{report.content.outcomes.length}}">中考预估</view>
-  <view class="outcomes card" wx:if="{{report.content.outcomes.length}}"><view class="outcome {{item.title === '正常发挥' ? 'steady' : ''}}" wx:for="{{report.content.outcomes}}" wx:key="title"><view class="outcome-title">{{item.title}}</view><view class="outcome-scope">{{item.scope}}</view><view>{{item.score}} · {{item.rank}}</view><view wx:if="{{item.target}}">与目标相比：{{item.target}}</view></view></view>
-  <view class="source-note" wx:if="{{report.content.reference_year}}">本次分析参考 {{report.content.reference_year}} 年及此前已发布的政策与招录数据。</view>
-
-  <view class="section-title" wx:if="{{report.content.observations.length}}">{{report.content.observation_title}}</view>
-  <view class="observations card" wx:if="{{report.content.observations.length}}">
-    <view class="observation" wx:for="{{report.content.observations}}" wx:key="*this"><view class="dot"></view><view>{{item}}</view></view>
-  </view>
-
-  <view class="section-title" wx:if="{{report.content.steps.length}}">接下来</view>
+  <view class="section-title" wx:if="{{report.content.steps.length || report.content.course_check_items.length}}">接下来怎么做</view>
   <view class="steps card" wx:if="{{report.content.steps.length}}">
     <view class="step" wx:for="{{report.content.steps}}" wx:key="title">
       <view class="step-time">{{item.time}}</view>
       <view><view class="step-title">{{item.title}}</view><view class="step-copy">{{item.text}}</view></view>
     </view>
   </view>
+  <view class="check-card card" wx:if="{{report.content.course_check_items.length}}">
+    <view class="check-title">{{report.content.course_check_title}}</view>
+    <view class="check-item" wx:for="{{report.content.course_check_items}}" wx:key="*this">{{item}}</view>
+    <view class="check-note" wx:if="{{report.content.course_check_note}}">{{report.content.course_check_note}}</view>
+  </view>
+
+  <view class="section-title" wx:if="{{report.content.school.evidence.length || report.content.data_boundary}}">数据来源与边界</view>
+  <view class="evidence card" wx:if="{{report.content.school.evidence.length}}">
+    <view class="evidence-row" wx:for="{{report.content.school.evidence}}" wx:key="title">
+      <view class="evidence-metric">{{item.metric}}</view>
+      <view><view class="evidence-title">{{item.title}}</view><view class="evidence-detail">{{item.detail}}</view></view>
+    </view>
+  </view>
+  <view class="source-note card" wx:if="{{report.content.data_boundary}}">{{report.content.data_boundary}}</view>
 </view>

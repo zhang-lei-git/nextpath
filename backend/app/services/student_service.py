@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.domain.models import Exam, ScoreImport
 from app.domain.schemas import (
-    ActionItem, DashboardResponse, DataGapCreate, ExamCreate, ExamRead, ImportResponse, ScoreChangeSummary, StudentProfileRead, StudentProfileUpdate, StudentReportDetail,
+    ActionItem, DashboardResponse, DataGapCreate, ExamCreate, ExamRead, HomeFirstScreen, ImportResponse, ScoreChangeSummary, StudentProfileRead, StudentProfileUpdate, StudentReportDetail, TrendPoint, TrendResponse,
 )
 from app.repositories.exam_repository import ExamRepository
 from app.repositories.profile_repository import ProfileRepository
@@ -68,6 +68,7 @@ class StudentService:
                 detail="上传成绩截图或手动录入。先有一条准确成绩，才能看清孩子现在的位置。",
                 priority="high",
             ))
+        first_screen = self._build_first_screen(profile.student_name, latest, forecast) if latest and forecast else None
         return DashboardResponse(
             student_name=profile.student_name,
             profile_complete=profile_complete,
@@ -80,6 +81,7 @@ class StudentService:
             trend=[ExamRead.model_validate(item) for item in reversed(exams[:6])],
             change_summary=change_summary,
             report=report,
+            first_screen=first_screen,
         )
 
     async def _change_summary(self, profile, latest: Exam, exams: list[Exam], forecast) -> ScoreChangeSummary | None:
@@ -400,3 +402,65 @@ class StudentService:
             extraction=candidate,
             message="截图已收到。请核对并补全本次成绩，确认后再保存。",
         )
+
+    def _build_first_screen(self, student_name: str, latest: Exam, forecast) -> HomeFirstScreen:
+        """Create the compact, parent-facing status summary shown on the homepage."""
+        current = forecast.current_snapshot
+        projected = forecast.reasonable_projection
+        source = current if current and current.range_usable else projected
+        total_range = current.total_range if current and current.total_range else None
+        if total_range:
+            score = str(total_range[0]) if total_range[0] == total_range[1] else f"{total_range[0]}–{total_range[1]}"
+        else:
+            score = str(self._inclusive_total(latest))
+        full_mark = (
+            latest.total_full_mark
+            or (current.total_full_mark if current else None)
+            or (projected.total_full_mark if projected else None)
+        )
+        score_rate = f"{self._inclusive_total(latest) / full_mark * 100:.1f}%" if full_mark else "—"
+        grade_text = f"年级第 {latest.grade_rank} / {latest.grade_size} 名" if latest.grade_rank and latest.grade_size else "年级排名待补充"
+        rank_range = source.estimated_rank_range if source and source.range_usable else (0, 0)
+        rank_text = f"预计全区第 {rank_range[0]:,}–{rank_range[1]:,} 名" if rank_range != (0, 0) else "学校范围仍需继续观察"
+        tiers = source.school_tiers if source else {}
+        school_tiers = [
+            {"label": "冲刺", "schools": (tiers.get("reach") or [])[:2]},
+            {"label": "匹配", "schools": (tiers.get("match") or [])[:2]},
+            {"label": "保底", "schools": (tiers.get("safe") or [])[:2]},
+        ]
+        return HomeFirstScreen(
+            student_name=student_name,
+            score=score,
+            full_mark=full_mark,
+            score_rate=score_rate,
+            grade_text=grade_text,
+            rank_text=rank_text,
+            school_scope=(source.school_scope if source else None) or "学校范围仍需继续观察",
+            clarity=source.clarity if source else "初步估算",
+            school_tiers=[item for item in school_tiers if item["schools"]],
+        )
+
+    async def trend_data(self, owner_id: str) -> TrendResponse:
+        """Return comparable exam trend points for the parent-facing score page."""
+        from app.services.scoring_scheme import scoring_scheme
+
+        profile = await self.profiles.get_or_create_demo(owner_id)
+        exams = await self.exams.list(profile.id)
+        if not exams:
+            return TrendResponse(points=[])
+        scheme = scoring_scheme(profile.cohort_year)
+        points = []
+        for exam in sorted(exams, key=lambda item: item.exam_date)[-20:]:
+            inclusive_total = self._inclusive_total(exam)
+            full_mark = exam.total_full_mark or (scheme.total_full_mark if scheme else 640)
+            points.append(TrendPoint(
+                exam_id=exam.id,
+                exam_name=exam.name,
+                exam_date=exam.exam_date,
+                total_score=inclusive_total,
+                full_mark=full_mark,
+                score_rate=round(inclusive_total / full_mark * 100, 1) if full_mark else 0,
+                grade_percentile=round(exam.grade_rank / exam.grade_size * 100, 1) if exam.grade_rank and exam.grade_size else None,
+                comparison_mode=exam.comparison_mode,
+            ))
+        return TrendResponse(points=points, full_mark_label=f"{scheme.total_full_mark:g}" if scheme else "")

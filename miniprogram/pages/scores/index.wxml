@@ -1,11 +1,42 @@
 <view class="page">
   <view class="eyebrow">成绩记录</view>
-  <view class="page-title">每次考试都留一份</view>
-  <view class="intro">保存后会自动更新分析，并保留当时的报告。</view>
-  <view class="empty card" wx:if="{{!loading && !exams.length}}">还没有成绩记录</view>
-  <view class="score-card card" wx:for="{{exams}}" wx:key="id">
-    <view><view class="score-name">{{item.name}}</view><view class="muted">{{item.exam_date}} · 年级第 {{item.grade_rank || '—'}} / {{item.grade_size || '—'}} 名</view><view class="muted">得分率 {{item.score_rate}} · {{item.grade_percentile}}</view></view>
-    <view class="score-side"><view class="score-total">{{item.total_score}}</view><button class="text-button" data-id="{{item.id}}" bindtap="edit">修改</button></view>
+  <view class="page-title">历次考试成绩与趋势</view>
+  <view class="intro">所有成绩和变化趋势集中在这里。录入新成绩后，趋势会自动更新。</view>
+  <button class="primary-button top-add" bindtap="add">录入新成绩</button>
+
+  <view class="empty card" wx:if="{{!loading && !exams.length}}">还没有成绩。录入一次后就能看到升学范围。</view>
+
+  <view class="trend-section" wx:if="{{points.length > 1}}">
+    <view class="section-title">成绩变化趋势</view>
+    <view class="tab-bar">
+      <view class="tab {{activeTab === 'score' ? 'active' : ''}}" bindtap="switchTab" data-tab="score">总分</view>
+      <view class="tab {{activeTab === 'rate' ? 'active' : ''}}" bindtap="switchTab" data-tab="rate">得分率</view>
+      <view class="tab {{activeTab === 'percentile' ? 'active' : ''}}" bindtap="switchTab" data-tab="percentile">年级位置</view>
+    </view>
+    <view class="chart-card card">
+      <view class="chart-title">{{chartTitle}}</view>
+      <trend-chart points="{{points}}" mode="{{activeTab}}" fullMark="{{fullMark}}"></trend-chart>
+      <view class="chart-note" wx:if="{{activeTab === 'percentile' && hasIncomplete}}">部分考试缺少排名数据，仅展示有数据的点。</view>
+    </view>
   </view>
-  <button class="primary-button" bindtap="add">录入一次成绩</button>
+  <view class="trend-empty card" wx:if="{{!loading && exams.length === 1}}">再录入一次成绩后，就能看到变化趋势。</view>
+
+  <view class="section-title" wx:if="{{exams.length}}">考试记录</view>
+  <view class="score-card card" wx:for="{{exams}}" wx:key="id">
+    <view class="score-main">
+      <view class="score-name">{{item.name}}</view>
+      <view class="muted">{{item.exam_date}} · 年级第 {{item.grade_rank || '—'}} / {{item.grade_size || '—'}} 名</view>
+      <view class="muted">得分率 {{item.score_rate}} · {{item.grade_percentile}}</view>
+    </view>
+    <view class="score-side">
+      <view class="score-total">{{item.total_score}}</view>
+      <button class="text-button" data-id="{{item.id}}" bindtap="edit">修改</button>
+    </view>
+  </view>
+</view>
+
+<view class="nav">
+  <view class="nav-item" bindtap="goHome"><view>首页</view><view class="nav-marker"></view></view>
+  <view class="nav-item active"><view>成绩</view><view class="nav-marker"></view></view>
+  <view class="nav-item" bindtap="showProfile"><view>我的</view><view class="nav-marker"></view></view>
 </view>

@@ -70,7 +70,16 @@ class StudentReportService:
             ))
         await self._publish_monthly(context)
         await self.session.commit()
-        return StudentReportRead.model_validate(record)
+        return StudentReportRead(
+            id=record.id,
+            exam_id=record.exam_id,
+            title=record.title,
+            status=record.status,
+            report_type=record.report_type,
+            period_key=record.period_key,
+            created_at=record.created_at,
+            preview=self._list_preview(record.report_json),
+        )
 
     async def _publish_monthly(self, context: ReportContext) -> None:
         period_key = context.exam.exam_date.strftime("%Y-%m")
@@ -103,7 +112,20 @@ class StudentReportService:
         ))
 
     async def list_for_profile(self, profile_id: str) -> list[StudentReportRead]:
-        return [StudentReportRead.model_validate(item) for item in await self.repository.list_for_profile(profile_id)]
+        reports = await self.repository.list_for_profile(profile_id)
+        return [
+            StudentReportRead(
+                id=item.id,
+                exam_id=item.exam_id,
+                title=item.title,
+                status=item.status,
+                report_type=item.report_type,
+                period_key=item.period_key,
+                created_at=item.created_at,
+                preview=self._list_preview(item.report_json),
+            )
+            for item in reports
+        ]
 
     async def get_for_profile(self, profile_id: str, report_id: str) -> StudentReport:
         report = await self.repository.get_for_profile(profile_id, report_id)
@@ -174,6 +196,19 @@ class StudentReportService:
                 "rank": f"年级第 {item['rank']} 名" if item.get("rank") else "排名待补充",
                 "is_current": bool(item.get("final")),
             })
+        school = report_json.get("school") or {}
+        path = report_json.get("path") or {}
+        decisions = report_json.get("decisions") or {}
+        outcomes = [
+            {
+                "title": item.get("title", ""),
+                "score": item.get("score") or "待计算",
+                "rank": item.get("rank") or "位置仍需观察",
+                "scope": item.get("scope") or "学校范围仍需观察",
+                "target": item.get("target") or "",
+            }
+            for item in (report_json.get("outcomes") or [])
+        ]
         return {
             "title": meta.get("title") or "升学分析报告",
             "description": meta.get("description") or "围绕目标，持续记录成绩变化。",
@@ -181,6 +216,8 @@ class StudentReportService:
             "junior_school": meta.get("admissionLabel") or "初中信息待补充",
             "reported_total": cls._display_number(meta.get("reportedTotal")),
             "verdict": cls._plain_text(conclusion.get("verdictHtml") or glance.get("verdictHtml")),
+            "takeaway": cls._plain_text(conclusion.get("takeawayHtml") or glance.get("verdictHtml")),
+            "preview": cls._list_preview(report_json),
             "kpis": [
                 {
                     "label": item.get("label", ""),
@@ -190,18 +227,58 @@ class StudentReportService:
                 }
                 for item in glance.get("kpis", [])
             ],
-            "subjects": subjects,
-            "history": history,
-            "outcomes": [
-                {
-                    "title": item.title,
-                    "score": cls._scenario_total(item),
-                    "rank": f"全区第 {item.estimated_rank_range[0]:,}–{item.estimated_rank_range[1]:,} 名" if item.estimated_rank_range != (0, 0) else "位置仍需观察",
-                    "scope": item.school_scope or "学校范围仍需观察",
-                    "target": item.target_relation or "",
-                }
-                for item in (report_json.get("outcomes") or [])
+            "conditions": [
+                {"label": item.get("label", ""), "text": item.get("text", ""), "tone": item.get("tone", "good")}
+                for item in glance.get("conditions", [])
             ],
+            "decision_cards": [
+                {"title": item.get("title", ""), "text": item.get("text", ""), "icon": item.get("icon", "")}
+                for item in decisions.get("cards", [])
+            ],
+            "final_verdict": cls._plain_text(decisions.get("finalVerdictHtml")),
+            "subjects": [
+                {
+                    **item,
+                    "role": src.get("role") or "持续观察",
+                    "action": src.get("action") or "连续记录后再判断该科变化。",
+                    "tone": src.get("tone", "mid"),
+                }
+                for item, src in zip(subjects, [src for src in report_json.get("subjects", []) if src.get("table", True) and isinstance(src.get("finalScore"), (int, float))])
+            ],
+            "history": history,
+            "outcomes": outcomes,
+            "school": {
+                "title": school.get("title") or "学校层次判断",
+                "lead": school.get("lead") or "围绕目标持续观察当前位置和差距。",
+                "environment_title": school.get("environmentTitle") or "参考信息",
+                "environment": cls._plain_text(school.get("environmentHtml")),
+                "interpretation_title": school.get("interpretationTitle") or "当前判断",
+                "interpretation": cls._plain_text(school.get("interpretationHtml")),
+                "takeaway": cls._plain_text(school.get("takeawayHtml")),
+                "tiers": (school.get("position") or {}).get("tiers", []),
+                "evidence": [
+                    {
+                        "level": item.get("level", "third_party"),
+                        "metric": item.get("metric", "参考"),
+                        "title": item.get("title", ""),
+                        "detail": item.get("detail", ""),
+                    }
+                    for item in school.get("evidence", [])
+                ],
+            },
+            "path": {
+                "title": path.get("title") or "后续观察路径",
+                "milestones": [
+                    {
+                        "time": item.get("time", ""),
+                        "goal": cls._plain_text(item.get("goalHtml") or item.get("goal") or ""),
+                        "tone": item.get("tone", "next"),
+                    }
+                    for item in path.get("milestones", [])
+                ],
+                "scenarios": path.get("scenarios", []),
+                "takeaway": cls._plain_text(path.get("takeawayHtml")),
+            },
             "reference_year": meta.get("year"),
             "observation_title": action.get("observationTitle") or "这次重点观察",
             "observations": [str(item) for item in action.get("observationItems", [])],
@@ -209,6 +286,29 @@ class StudentReportService:
                 {"time": item.get("time", ""), "title": item.get("title", ""), "text": item.get("text", "")}
                 for item in action.get("timeline", [])
             ],
+            "course_check_title": action.get("courseCheckTitle") or "还需要补充的信息",
+            "course_check_items": [str(item) for item in action.get("courseCheckItems", [])],
+            "course_check_note": action.get("courseCheckNote") or "",
+            "data_boundary": cls._plain_text(report_json.get("footer")),
+        }
+
+    @classmethod
+    def _list_preview(cls, report_json: dict) -> dict:
+        meta = report_json.get("meta") or {}
+        glance = report_json.get("glance") or {}
+        action = report_json.get("action") or {}
+        conclusion = report_json.get("conclusion") or {}
+        kpis = glance.get("kpis") or []
+        outcomes = report_json.get("outcomes") or []
+        primary_outcome = next((item for item in outcomes if item.get("title") == "正常发挥"), outcomes[0] if outcomes else {})
+        observations = [str(item) for item in action.get("observationItems", [])]
+        return {
+            "target": meta.get("targetLabel") or "尚未设置目标高中",
+            "verdict": cls._plain_text(conclusion.get("verdictHtml") or glance.get("verdictHtml")),
+            "scope": primary_outcome.get("scope") or (kpis[0].get("value") if kpis else "学校范围仍需观察"),
+            "rank": primary_outcome.get("rank") or (kpis[2].get("value") if len(kpis) > 2 else "位置仍需观察"),
+            "target_relation": primary_outcome.get("target") or (observations[1] if len(observations) > 1 else "目标关系仍需观察"),
+            "next_step": (action.get("timeline") or [{}])[0].get("title", "查看详情"),
         }
 
     @staticmethod

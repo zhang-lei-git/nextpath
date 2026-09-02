@@ -54,8 +54,16 @@ def test_exam_creation_and_dashboard() -> None:
     assert dashboard.json()["forecast"]["target_gap"] is None
     assert dashboard.json()["forecast"]["current_snapshot"]["title"] == "当前现状"
     assert dashboard.json()["forecast"]["reasonable_projection"]["title"] == "合理预测"
+    assert dashboard.json()["first_screen"]["score_rate"] == "96.1%"
+    assert dashboard.json()["first_screen"]["grade_text"] == "年级第 28 / 680 名"
+    trend = client.get("/api/v1/exams/trend", headers=headers)
+    assert trend.status_code == 200
+    assert trend.json()["points"][0]["exam_name"] == "测试月考"
+    point = trend.json()["points"][0]
+    assert point["score_rate"] == round(point["total_score"] / point["full_mark"] * 100, 1)
     assert reports.status_code == 200
     assert reports.json()
+    assert reports.json()[0]["preview"]
     detail = client.get(f"/api/v1/reports/{reports.json()[0]['id']}", headers=headers)
     assert detail.status_code == 200
     assert detail.json()["content"]["target"] == "西安高新第一中学"

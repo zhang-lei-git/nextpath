@@ -1,14 +1,57 @@
-.page-title { margin: 12rpx 0 30rpx; color: #143F43; font-size: 44rpx; font-weight: 700; }
-.summary { padding: 30rpx; background: #EFF6F4; }
-.summary-label { color:#16766D; font-size:23rpx; font-weight:700; }
-.tier { margin: 10rpx 0 22rpx; color: #143F43; font-size: 30rpx; font-weight: 700; line-height:1.55; }
-.summary-line { padding-top: 20rpx; border-top: 1rpx solid #CFE0DB; color: #2B5452; font-size: 26rpx; }
-.scenario { padding:28rpx; }.scenario.projection { border-color:#9CCFC2; background:#F4FAF8; }.scenario-scope { margin-bottom:8rpx; color:#143F43; font-size:31rpx; font-weight:700; }.scenario-score { color:#143F43; font-family:ui-monospace, Menlo, monospace; font-size:42rpx; font-weight:700; }.scenario-meta { margin-top:10rpx; color:#2B5452; font-size:27rpx; }.scenario-gap { margin:12rpx 0; color:#9A6614; font-size:26rpx; font-weight:600; }.scenario .muted { line-height:1.6; }.school-tiers { margin-top:20rpx; padding:16rpx 18rpx; background:#EFF6F4; border-radius:8rpx; }.projection .school-tiers { background:#E7F4F0; }.school-tiers > view { display:flex; gap:16rpx; padding:7rpx 0; color:#2B5452; font-size:25rpx; line-height:1.5; }.school-tiers text { width:52rpx; flex:none; color:#16766D; font-weight:700; }
-.scenario.projection.steady { border:2rpx solid #16766D; }
-.basis, .boundary { padding: 8rpx 28rpx; }
-.basis-item { padding: 22rpx 0; border-bottom: 1rpx solid #E2E8E5; color: #1C2828; font-size: 28rpx; line-height: 1.65; }
-.basis-item:last-child { border-bottom: 0; }
-.boundary view:first-child { margin: 20rpx 0 8rpx; color: #9A6614; font-size: 28rpx; font-weight: 600; }
-.boundary .muted { padding-bottom: 22rpx; }
-.model { margin: 20rpx 4rpx 30rpx; color: #687574; font-size: 22rpx; }
-.report { padding: 4rpx 28rpx; }.report-headline { padding:24rpx 0; color:#143F43; font-size:31rpx; font-weight:700; }.report-block { padding:20rpx 0; border-top:1rpx solid #E2E8E5; color:#334542; font-size:26rpx; line-height:1.65; }.report-block.last { padding-bottom:24rpx; }.report-label { margin-bottom:6rpx; color:#16766D; font-size:23rpx; font-weight:700; }.report-history { width:100%; margin-top:18rpx; }
+.intro { margin-bottom: 28rpx; }
+.summary {
+  margin-bottom: 36rpx;
+  padding: 32rpx;
+  background: #FFFFFF;
+  border-color: #D1FAE5;
+}
+.summary-label { color:#059669; font-size:23rpx; font-weight:700; }
+.summary-title { margin: 10rpx 0 22rpx; color: #1E293B; font-size: 32rpx; font-weight: 700; line-height:1.5; }
+.summary-item { padding: 20rpx 0 0; border-top: 1rpx solid #E2E8F0; color: #475569; font-size: 26rpx; line-height: 1.6; }
+.summary-item + .summary-item { margin-top: 16rpx; }
+.summary-item text { display: block; margin-bottom: 4rpx; color: #94A3B8; font-size: 22rpx; }
+
+.section-block { margin-top: 36rpx; }
+.section-block .section-title { margin-top: 0; }
+.scenario {
+  margin-bottom: 20rpx;
+  padding: 30rpx 32rpx;
+}
+.scenario.projection {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+}
+.scenario.projection.steady {
+  border-color: #059669;
+  background: #ECFDF5;
+}
+.scenario-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  align-items: flex-start;
+  margin-bottom: 18rpx;
+}
+.scenario-label { color:#64748B; font-size:26rpx; font-weight:600; }
+.scenario-scope { color:#1E293B; font-size:30rpx; font-weight:700; line-height:1.4; text-align:right; }
+.scenario-tag {
+  display: inline-block;
+  margin-bottom: 18rpx;
+  padding: 6rpx 18rpx;
+  background: #ECFDF5;
+  color: #059669;
+  font-size: 24rpx;
+  font-weight: 650;
+  border-radius: 8rpx;
+}
+.scenario-score { color:#1E293B; font-family:ui-monospace, Menlo, monospace; font-size:44rpx; font-weight:700; line-height:1.35; }
+.scenario-score text { color:#64748B; font-family:-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; font-size:26rpx; font-weight:500; }
+.scenario-meta { margin-top:12rpx; color:#64748B; font-size:26rpx; line-height:1.55; }
+.scenario-gap { margin-top:16rpx; padding-top:16rpx; border-top:1rpx solid #E2E8F0; color:#D97706; font-size:26rpx; font-weight:600; line-height:1.55; }
+.school-tiers { margin-top:24rpx; padding:18rpx 20rpx; background:#F8FAFC; border-radius:12rpx; }
+.tier-row { display:flex; gap:16rpx; padding:8rpx 0; color:#475569; font-size:25rpx; line-height:1.5; }
+.tier-name { width:56rpx; flex:none; color:#059669; font-weight:700; }
+.tier-values { display:flex; flex-wrap:wrap; gap:6rpx 18rpx; }
+.school-name { color:#475569; }
+.analysis-actions { margin-top: 44rpx; }
+.report-history { margin-top: 16rpx; }

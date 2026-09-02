@@ -1,19 +1,28 @@
-.page-title { margin: 12rpx 0; color: #143F43; font-size: 44rpx; font-weight: 700; }
-.intro { color: #687574; font-size: 27rpx; line-height: 1.7; }
-.quick-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16rpx; margin-top: 30rpx; }
-.quick-action { min-height: 132rpx; padding: 24rpx; text-align: left; }.quick-title { color: #143F43; font-size: 28rpx; font-weight: 650; }.quick-note { margin-top: 9rpx; color: #687574; font-size: 22rpx; }
-.voice-result { margin:14rpx 4rpx 0; color:#2C6194; font-size:23rpx; line-height:1.6; }
-.divider { display: flex; align-items: center; gap: 18rpx; margin: 34rpx 4rpx 22rpx; color: #687574; font-size: 24rpx; }
-.divider view { height: 1rpx; flex: 1; background: #D8E1DE; }
+.intro { margin-bottom: 28rpx; color: #64748B; font-size: 27rpx; line-height: 1.7; }
+.quick-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16rpx; }
+.quick-action { min-height: 132rpx; padding: 24rpx; text-align: left; }
+.quick-title { color: #1E293B; font-size: 28rpx; font-weight: 650; }
+.quick-note { margin-top: 9rpx; color: #64748B; font-size: 22rpx; }
+.voice-result { margin:14rpx 4rpx 0; color:#0EA5E9; font-size:23rpx; line-height:1.6; }
+.divider { display: flex; align-items: center; gap: 18rpx; margin: 34rpx 4rpx 22rpx; color: #64748B; font-size: 24rpx; }
+.divider view { height: 1rpx; flex: 1; background: #E2E8F0; }
 .form { padding: 0 28rpx; }
-.field { padding: 27rpx 0 20rpx; border-bottom: 1rpx solid #E2E8E5; }
+.field { padding: 27rpx 0 20rpx; border-bottom: 1rpx solid #E2E8F0; }
 .field.last { border-bottom: 0; }
-.label { margin-bottom: 10rpx; color: #143F43; font-size: 28rpx; font-weight: 600; }
-.label text { margin-left: 8rpx; color: #687574; font-size: 22rpx; font-weight: 400; }
-input, .picker-value { height: 52rpx; color: #1C2828; font-size: 30rpx; line-height: 52rpx; }
-input::placeholder { color: #A0ABAA; }
-.privacy { margin: 24rpx 4rpx 30rpx; color: #687574; font-size: 22rpx; line-height: 1.65; }
-.subject-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:16rpx; margin-top:12rpx; }.subject { padding:14rpx 12rpx; background:#F5F7F5; border-radius:10rpx; }.subject text { display:block; color:#687574; font-size:22rpx; }.subject input { height:42rpx; font-size:28rpx; line-height:42rpx; }
-.calculated-total { display:flex; align-items:baseline; justify-content:space-between; min-height:52rpx; }.calculated-total > text { color:#143F43; font-family:ui-monospace, Menlo, monospace; font-size:34rpx; font-weight:700; }.calculated-total view { color:#687574; font-size:22rpx; }
-.switch-note { display:block; margin-top:10rpx; color:#687574; font-size:23rpx; line-height:1.5; }
-.save { width: 100%; }
+.label { margin-bottom: 10rpx; color: #1E293B; font-size: 28rpx; font-weight: 600; }
+.label text { margin-left: 8rpx; color: #64748B; font-size: 22rpx; font-weight: 400; }
+input, .picker-value { height: 52rpx; color: #334155; font-size: 30rpx; line-height: 52rpx; }
+input::placeholder { color: #94A3B8; }
+.privacy { margin: 24rpx 4rpx 30rpx; color: #64748B; font-size: 22rpx; line-height: 1.65; }
+.subject-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:16rpx; margin-top:12rpx; }
+.subject { padding:14rpx 12rpx; background:#F8FAFC; border-radius:10rpx; }
+.subject text { display:block; color:#64748B; font-size:22rpx; }
+.subject input { height:42rpx; font-size:28rpx; line-height:42rpx; }
+.calculated-total { display:flex; align-items:baseline; justify-content:space-between; min-height:52rpx; }
+.calculated-total > text { color:#1E293B; font-family:ui-monospace, Menlo, monospace; font-size:34rpx; font-weight:700; }
+.calculated-total view { color:#64748B; font-size:22rpx; }
+.switch-note { display:block; margin-top:10rpx; color:#64748B; font-size:23rpx; line-height:1.5; }
+.warning-list { margin:20rpx 0; padding:24rpx; background:#FFFBEB; border:1rpx solid #FDE68A; border-radius:12rpx; }
+.warning-title { color:#92400E; font-size:28rpx; font-weight:650; margin-bottom:12rpx; }
+.warning-item { color:#D97706; font-size:24rpx; line-height:1.7; padding:4rpx 0; }
+.warning-dismiss { margin-top:16rpx; padding:16rpx 0; color:#0EA5E9; font-size:26rpx; text-align:center; }

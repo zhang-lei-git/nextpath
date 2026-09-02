@@ -10,13 +10,16 @@ Page({
     saving: false,
     recording: false,
     voiceText: '',
-    examId: ''
+    examId: '',
+    warnings: [],
+    profileGradeSize: ''
   },
   async onLoad(options) {
     const now = new Date()
     const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     this.setData({ 'form.exam_date': date })
     await this.loadScoringScheme()
+    await this.loadProfileDefaults()
     if (options.id) {
       try {
         const exam = await request({ path: `/exams/${options.id}` })
@@ -37,7 +40,7 @@ Page({
   updateField(event) {
     const key = event.currentTarget.dataset.key
     const value = event.detail.value
-    this.setData({ [`form.${key}`]: value })
+    this.setData({ [`form.${key}`]: value, warnings: [] })
   },
   comparisonModeChange(event) {
     this.setData({ 'form.comparison_mode': event.detail.value ? 'special' : 'standard' })
@@ -47,7 +50,7 @@ Page({
     const scores = { ...this.data.form.scores, [key]: event.detail.value }
     const hasSubjectScores = this.hasAcademicScores(scores)
     const total = hasSubjectScores ? this.subjectTotal(scores) : this.data.form.total_score
-    this.setData({ 'form.scores': scores, 'form.total_score': total, hasSubjectScores })
+    this.setData({ 'form.scores': scores, 'form.total_score': total, hasSubjectScores, warnings: [] })
   },
   chooseImage() {
     wx.chooseMedia({
@@ -57,20 +60,61 @@ Page({
       success: async ({ tempFiles }) => {
         this.setData({ uploading: true })
         try {
-          const result = await uploadScoreImage(tempFiles[0].tempFilePath)
-          const extraction = result.extraction
-          this.applyExtractedExam(extraction)
-          wx.showToast({ title: '已生成待确认记录', icon: 'none' })
+          const ocrResult = await this.ocrFromImage(tempFiles[0].tempFilePath)
+          if (ocrResult) {
+            this.applyExtractedExam(ocrResult)
+            wx.showToast({ title: '已识别并填入成绩', icon: 'none' })
+          } else {
+            const result = await uploadScoreImage(tempFiles[0].tempFilePath)
+            this.applyExtractedExam(result.extraction)
+            wx.showToast({ title: '已生成待确认记录', icon: 'none' })
+          }
         } catch (error) { wx.showToast({ title: error.message, icon: 'none' }) }
         finally { this.setData({ uploading: false }) }
       }
     })
   },
-  voiceInput() {
-    if (this.data.recording) {
-      wx.stopRecord()
-      return
+  ocrFromImage(imagePath) {
+    return new Promise((resolve) => {
+      wx.ocr.generalBasicOcr({
+        path: imagePath,
+        success: ({ textDetections }) => {
+          if (!textDetections || !textDetections.length) { resolve(null); return }
+          const text = textDetections.map((item) => item.text).join('\n')
+          const parsed = this.parseOcrText(text)
+          resolve(parsed)
+        },
+        fail: () => resolve(null)
+      })
+    })
+  },
+  parseOcrText(text) {
+    const labels = { chinese: '语文', math: '数学', english: '英语', physics: '物理', history: '历史', politics: '(?:道法|政治)', pe: '体育', chemistry: '化学', biology: '生物', geography: '地理' }
+    const scores = {}
+    Object.entries(labels).forEach(([key, label]) => {
+      const matched = text.match(new RegExp(`${label}[：: ]*(\\d+(?:\\.\\d+)?)`))
+      if (matched) scores[key] = matched[1]
+    })
+    if (scores.pe === undefined) scores.pe = '60'
+    if (!Object.keys(scores).some((key) => key !== 'pe')) return null
+    const totalMatch = text.match(/总分[：: ]*(\d+(?:\.\d+)?)/)
+    const nameMatch = text.match(/([^\n]*(?:月考|期中|期末|模考|测验|考试)[^\n]*)/i)
+    const gradeRankMatch = text.match(/年级(?:第)?(\d+)名/)
+    const classRankMatch = text.match(/班(?:级)?(?:第)?(\d+)名/)
+    const gradeSizeMatch = text.match(/年级(?:共|总)?(\d+)人/)
+    const hasSubjectScores = this.hasAcademicScores(scores)
+    return {
+      name: nameMatch ? nameMatch[1].trim() : '',
+      total_score: totalMatch ? Number(totalMatch[1]) : (hasSubjectScores ? this.subjectTotal(scores) : 0),
+      scores,
+      class_rank: classRankMatch ? Number(classRankMatch[1]) : null,
+      grade_rank: gradeRankMatch ? Number(gradeRankMatch[1]) : null,
+      grade_size: gradeSizeMatch ? Number(gradeSizeMatch[1]) : null,
+      physical_score: scores.pe ? Number(scores.pe) : 60
     }
+  },
+  voiceInput() {
+    if (this.data.recording) { wx.stopRecord(); return }
     wx.startRecord({
       timeout: 60000,
       success: (record) => {
@@ -96,8 +140,8 @@ Page({
     if (scores.pe === undefined || scores.pe === '') scores.pe = '60'
     const hasSubjectScores = this.hasAcademicScores(scores)
     const total = hasSubjectScores ? this.subjectTotal(scores) : this.data.form.total_score
-    const classRank = text.match(/班(?:级)?(?:第)?(\\d+)名/)
-    const gradeRank = text.match(/年级(?:第)?(\\d+)名/)
+    const classRank = text.match(/班(?:级)?(?:第)?(\d+)名/)
+    const gradeRank = text.match(/年级(?:第)?(\d+)名/)
     this.setData({
       voiceText: text,
       'form.scores': scores,
@@ -112,6 +156,12 @@ Page({
     const form = this.data.form
     if (!form.name || !form.exam_date || form.total_score === '') {
       wx.showToast({ title: '请填写考试名称、日期和总分', icon: 'none' })
+      return
+    }
+    const warnings = this.validateAnomalies()
+    if (warnings.length) {
+      this.setData({ warnings })
+      wx.showToast({ title: `发现 ${warnings.length} 项异常，请核对`, icon: 'none', duration: 2500 })
       return
     }
     this.setData({ saving: true })
@@ -140,6 +190,27 @@ Page({
     } catch (error) { wx.showToast({ title: error.message, icon: 'none' }) }
     finally { this.setData({ saving: false }) }
   },
+  validateAnomalies() {
+    const form = this.data.form
+    const warnings = []
+    const total = Number(form.total_score)
+    if (total > this.data.examFullMark) warnings.push(`总分 ${total} 超过满分 ${this.data.examFullMark}`)
+    if (total < 0) warnings.push('总分不能为负数')
+    this.data.subjects.forEach((subject) => {
+      const value = Number(form.scores[subject.key])
+      if (value && value > subject.fullMark) warnings.push(`${subject.name} ${value} 超过满分 ${subject.fullMark}`)
+    })
+    const gradeRank = Number(form.grade_rank)
+    const gradeSize = Number(form.grade_size)
+    if (gradeRank && gradeSize && gradeRank > gradeSize) warnings.push(`年级排名 ${gradeRank} 超过年级人数 ${gradeSize}`)
+    if (gradeRank && !gradeSize) warnings.push('已填年级排名，建议同时填写年级人数')
+    return warnings
+  },
+  dismissWarning() {
+    if (this.data.warnings.length) {
+      this.setData({ warnings: [] })
+    }
+  },
   hasAcademicScores(scores) {
     return Object.entries(scores).some(([key, value]) => key !== 'pe' && value !== '' && value !== undefined && value !== null)
   },
@@ -159,6 +230,17 @@ Page({
       })
     } catch (_) { wx.showToast({ title: '暂时无法读取本届计分方案', icon: 'none' }) }
   },
+  async loadProfileDefaults() {
+    try {
+      const dashboard = await request({ path: '/dashboard' })
+      if (dashboard.latest_exam && dashboard.latest_exam.grade_size) {
+        this.setData({
+          profileGradeSize: String(dashboard.latest_exam.grade_size),
+          'form.grade_size': String(dashboard.latest_exam.grade_size)
+        })
+      }
+    } catch (_) { /* silent */ }
+  },
   applyExtractedExam(extraction) {
     const scores = { ...(extraction.scores || {}) }
     scores.pe = scores.pe === undefined ? (extraction.physical_score === undefined || extraction.physical_score === null ? '60' : String(extraction.physical_score)) : String(scores.pe)
@@ -168,11 +250,12 @@ Page({
       form: {
         ...this.data.form,
         ...extraction,
+        name: extraction.name || this.data.form.name,
         total_score: hasSubjectScores ? this.subjectTotal(scores) : (extractedTotal > 0 ? String(extractedTotal) : this.data.form.total_score),
         scores,
-        class_rank: extraction.class_rank || '',
-        grade_rank: extraction.grade_rank || '',
-        grade_size: extraction.grade_size || ''
+        class_rank: extraction.class_rank || this.data.form.class_rank,
+        grade_rank: extraction.grade_rank || this.data.form.grade_rank,
+        grade_size: extraction.grade_size || this.data.form.grade_size || this.data.profileGradeSize
       },
       examFullMark: this.data.examFullMark,
       hasSubjectScores
