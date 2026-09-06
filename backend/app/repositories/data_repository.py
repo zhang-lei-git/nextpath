@@ -213,6 +213,18 @@ class DataRepository:
             statement = statement.where(DataFact.entity_name == entity_name)
         return list(await self.session.scalars(statement))
 
+    async def approved_facts_for_region(self, region: str, fact_type: str) -> list[DataFact]:
+        """Return approved facts for consumer fallback when a year release is absent."""
+        return list(await self.session.scalars(
+            select(DataFact)
+            .where(
+                DataFact.region == region,
+                DataFact.fact_type == fact_type,
+                DataFact.status == "approved",
+            )
+            .order_by(DataFact.entity_name)
+        ))
+
     async def all_facts_in_release(self, release_id: str) -> list[DataFact]:
         statement = (
             select(DataFact)

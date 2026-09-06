@@ -953,14 +953,19 @@ class DataService:
         school_stage: str,
     ) -> ConsumerDataResponse:
         release = await self.repository.latest_release(region, reference_year)
-        if not release:
-            return ConsumerDataResponse(release=None, facts=[])
-
         normalized_query = self._normalize_school_name(query)
-        facts = await self.repository.facts_in_release(release.id, "school")
+        # School profiles can be published once and remain useful across a cohort.
+        # Fall back to approved facts when the current cohort release has not yet
+        # been published; this keeps school selection usable during data updates.
+        facts = (
+            await self.repository.facts_in_release(release.id, "school")
+            if release
+            else await self.repository.approved_facts_for_region(region, "school")
+        )
         candidates = []
         for fact in facts:
-            if fact.value.get("school_stage") != school_stage:
+            fact_stage = fact.value.get("school_stage")
+            if fact_stage != school_stage:
                 continue
             names = [fact.entity_name, fact.value.get("short_name", "")]
             normalized_names = [self._normalize_school_name(name) for name in names if name]
@@ -973,7 +978,7 @@ class DataService:
             candidates.append((ranking, fact))
         matched = [fact for _, fact in sorted(candidates, key=lambda item: (item[0], item[1].entity_name))[:12]]
         return ConsumerDataResponse(
-            release=self._release_read(release, len(matched)),
+            release=self._release_read(release, len(matched)) if release else None,
             facts=[await self._consumer_fact(fact) for fact in matched],
         )
 
