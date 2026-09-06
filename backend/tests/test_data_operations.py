@@ -680,3 +680,21 @@ def test_consecutive_collection_failures_create_and_auto_resolve_alert(monkeypat
             "/api/v1/data/alerts", headers=headers, params={"status": "resolved"}
         ).json()
         assert any(item["id"] == alert["id"] for item in resolved)
+def test_school_search_falls_back_to_approved_facts_without_current_release() -> None:
+    headers = {"X-Demo-User": "school-search-family"}
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/data/consumer/school-search",
+            headers=headers,
+            params={
+                "region": "西安",
+                "reference_year": 2099,
+                "query": "高新",
+                "school_stage": "senior",
+            },
+        )
+    assert response.status_code == 200
+    assert response.json()["facts"] == [] or all(
+        item["value"].get("school_stage") == "senior"
+        for item in response.json()["facts"]
+    )
