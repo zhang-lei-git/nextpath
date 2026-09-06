@@ -76,6 +76,12 @@ Page({
   },
   ocrFromImage(imagePath) {
     return new Promise((resolve) => {
+      // wx.ocr is not available in every developer-tool/base-library version.
+      // Let the existing server upload flow handle those environments.
+      if (!wx.ocr || typeof wx.ocr.generalBasicOcr !== 'function') {
+        resolve(null)
+        return
+      }
       wx.ocr.generalBasicOcr({
         path: imagePath,
         success: ({ textDetections }) => {
