@@ -1,4 +1,5 @@
 import hashlib
+import asyncio
 from datetime import datetime, time, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -19,6 +20,7 @@ from app.services.analysis_model_service import AnalysisModelService
 from app.services.data_service import DataService
 from app.services.position_engine import CalibrationPoint
 from app.services.report_service import ReportContext, StudentReportService
+from app.services.ocr_service import is_configured as ocr_is_configured, parse_score_text, recognize_image
 
 
 class StudentService:
@@ -386,8 +388,33 @@ class StudentService:
         settings.upload_dir.mkdir(parents=True, exist_ok=True)
         (settings.upload_dir / stored_name).write_bytes(content)
 
-        # MVP keeps recognition behind a service boundary. Returning a candidate mandates parent confirmation.
-        candidate = ExamCreate(name="待确认成绩", exam_date=__import__("datetime").date.today(), total_score=0)
+        candidate_data = None
+        ocr_message = "图片已收到，请核对并补全本次成绩后保存。"
+        if ocr_is_configured():
+            try:
+                result = await asyncio.to_thread(recognize_image, content)
+                candidate_data = parse_score_text(result.text)
+                ocr_message = "已完成文字识别，请核对识别结果后保存。"
+            except Exception:
+                # OCR is an enhancement; a provider outage must not block manual entry.
+                candidate_data = None
+        candidate_data = candidate_data or {
+            "name": "待确认成绩",
+            "exam_date": __import__("datetime").date.today(),
+            "total_score": 0,
+            "scores": {"pe": 60},
+            "physical_score": 60,
+        }
+        candidate = ExamCreate(
+            name=candidate_data.get("name") or "待确认成绩",
+            exam_date=candidate_data.get("exam_date") or __import__("datetime").date.today(),
+            total_score=float(candidate_data.get("total_score") or 0),
+            scores=candidate_data.get("scores") or {},
+            physical_score=candidate_data.get("physical_score", 60),
+            class_rank=candidate_data.get("class_rank"),
+            grade_rank=candidate_data.get("grade_rank"),
+            grade_size=candidate_data.get("grade_size"),
+        )
         score_import = ScoreImport(
             profile_id=profile.id,
             file_path=stored_name,
@@ -400,7 +427,7 @@ class StudentService:
             import_id=score_import.id,
             status=score_import.status,
             extraction=candidate,
-            message="截图已收到。请核对并补全本次成绩，确认后再保存。",
+            message=ocr_message,
         )
 
     def _build_first_screen(self, student_name: str, latest: Exam, forecast) -> HomeFirstScreen:

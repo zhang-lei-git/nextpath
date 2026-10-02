@@ -22,6 +22,10 @@ class Settings:
     auth_token_ttl_seconds = int(os.getenv("AUTH_TOKEN_TTL_SECONDS", str(30 * 24 * 60 * 60)))
     report_token_ttl_seconds = int(os.getenv("REPORT_TOKEN_TTL_SECONDS", "600"))
     allow_demo_identity = os.getenv("ALLOW_DEMO_IDENTITY", "true").lower() in {"1", "true", "yes"}
+    aliyun_ocr_access_key_id = os.getenv("ALIYUN_OCR_ACCESS_KEY_ID")
+    aliyun_ocr_access_key_secret = os.getenv("ALIYUN_OCR_ACCESS_KEY_SECRET")
+    aliyun_ocr_endpoint = os.getenv("ALIYUN_OCR_ENDPOINT", "ocr-api.cn-hangzhou.aliyuncs.com")
+    aliyun_ocr_instance_id = os.getenv("ALIYUN_OCR_INSTANCE_ID")
 
 
 settings = Settings()

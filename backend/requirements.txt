@@ -9,4 +9,7 @@ pydantic==2.11.5
 pytest==8.3.5
 pytest-asyncio==0.25.3
 httpx==0.28.1
+alibabacloud_ocr_api20210707>=3.1.0
+alibabacloud_tea_openapi>=0.4.2
+alibabacloud_tea_util>=0.3.13
 pypdf==5.9.0
