@@ -1,5 +1,6 @@
 """Optional Aliyun OCR adapter with a safe manual-entry fallback."""
 
+import json
 import re
 from dataclasses import dataclass
 
@@ -37,7 +38,12 @@ def recognize_image(content: bytes) -> OCRResult:
     response = client.recognize_general(request)
     body = getattr(response, "body", None)
     data = getattr(body, "data", None)
-    text = getattr(data, "content", None) if data else None
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except json.JSONDecodeError:
+            data = None
+    text = data.get("content") if isinstance(data, dict) else getattr(data, "content", None)
     if not isinstance(text, str) or not text.strip():
         raise RuntimeError("阿里云 OCR 未返回文字")
     return OCRResult(text=text, provider="aliyun-general")
