@@ -75,8 +75,13 @@ def parse_score_text(text: str) -> dict:
     grade_rank = re.search(r"年级\s*(?:第\s*)?(\d+)\s*名", text)
     class_rank = re.search(r"班(?:级)?\s*(?:第\s*)?(\d+)\s*名", text)
     grade_size = re.search(r"年级\s*(?:共|总)?\s*(\d+)\s*人", text)
+    exam_name = exam_match.group(1).strip() if exam_match else ""
+    if exam_name:
+        subject_start = re.search(r"(?:语文|数学|英语|物理|道法|政治|历史|化学|生物|地理|体育)\s*[：:]", exam_name)
+        if subject_start:
+            exam_name = exam_name[:subject_start.start()].strip()
     return {
-        "name": exam_match.group(1).strip() if exam_match else "",
+        "name": exam_name,
         "total_score": float(total_match.group(1)) if total_match else round(sum(academic) + scores["pe"], 1),
         "scores": scores,
         "physical_score": scores["pe"],
