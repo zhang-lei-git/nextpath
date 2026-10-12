@@ -2,6 +2,7 @@
 
 import json
 import re
+from datetime import date
 from dataclasses import dataclass
 
 from app.core.config import settings
@@ -73,21 +74,37 @@ def parse_score_text(text: str) -> dict:
     scores.setdefault("pe", 60.0)
     academic = [value for key, value in scores.items() if key != "pe"]
     total_match = re.search(r"总分\s*[：: ]\s*(\d+(?:\.\d+)?)", text)
-    exam_match = re.search(r"([^\n]*(?:月考|期中|期末|模考|测验|考试)[^\n]*)", text)
+    exam_match = re.search(
+        r"(?:(?:20\d{2}年)?\d{1,2}月)?(?:初[一二三]|九年级)?(?:第?[一二三四五六七八九十\d]+次)?"
+        r"(?:[一二三]模(?:考试)?|模考[一二三四五六七八九十\d]*|月考|期中(?:考试)?|期末(?:考试)?|测验)", text
+    )
     grade_rank = re.search(r"年级\s*(?:第\s*)?(\d+)\s*名", text)
     class_rank = re.search(r"班(?:级)?\s*(?:第\s*)?(\d+)\s*名", text)
+    class_rank_value = int(class_rank.group(1)) if class_rank else None
+    if class_rank_value is None:
+        labelled = re.search(r"班级排名\s*[：:]?\s*(\d+)\b", text)
+        above_labels = re.search(r"\b(\d+)\s+\d+(?:\.\d+)?\s+班级排名\s+总分", text)
+        matched_rank = labelled or above_labels
+        if matched_rank:
+            class_rank_value = int(matched_rank.group(1))
     grade_size = re.search(r"年级\s*(?:共|总)?\s*(\d+)\s*人", text)
-    exam_name = exam_match.group(1).strip() if exam_match else ""
-    if exam_name:
-        subject_start = re.search(r"(?:语文|数学|英语|物理|道法|政治|历史|化学|生物|地理|体育)\s*[：:]", exam_name)
-        if subject_start:
-            exam_name = exam_name[:subject_start.start()].strip()
-    return {
+    exam_name = exam_match.group(0).strip() if exam_match else ""
+    date_match = re.search(r"(?:考试时间|考试日期)\s*[：:]?\s*(20\d{2})[-/.年](\d{1,2})[-/.月](\d{1,2})", text)
+    exam_date = None
+    if date_match:
+        try:
+            exam_date = date(*(int(part) for part in date_match.groups()))
+        except ValueError:
+            pass
+    parsed = {
         "name": exam_name,
         "total_score": float(total_match.group(1)) if total_match else round(sum(academic) + scores["pe"], 1),
         "scores": scores,
         "physical_score": scores["pe"],
-        "class_rank": int(class_rank.group(1)) if class_rank else None,
+        "class_rank": class_rank_value,
         "grade_rank": int(grade_rank.group(1)) if grade_rank else None,
         "grade_size": int(grade_size.group(1)) if grade_size else None,
     }
+    if exam_date:
+        parsed["exam_date"] = exam_date
+    return parsed
