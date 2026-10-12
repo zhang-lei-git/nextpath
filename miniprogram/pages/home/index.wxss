@@ -210,6 +210,8 @@
   background: #F8FAFC;
   border-color: #E2E8F0;
 }
+.empty-action { cursor: pointer; }
+.empty-link { margin-top: 20rpx; color: #0EA5E9; font-size: 27rpx; font-weight: 600; }
 .empty-title {
   margin-bottom: 8rpx;
   color: #1E293B;

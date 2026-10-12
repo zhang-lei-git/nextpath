@@ -53,6 +53,7 @@ Page({
     this.setData({ 'form.scores': scores, 'form.total_score': total, hasSubjectScores, warnings: [] })
   },
   chooseImage() {
+    if (this.data.uploading) return
     wx.chooseMedia({
       count: 1,
       mediaType: ['image'],
@@ -60,15 +61,10 @@ Page({
       success: async ({ tempFiles }) => {
         this.setData({ uploading: true })
         try {
-          const ocrResult = await this.ocrFromImage(tempFiles[0].tempFilePath)
-          if (ocrResult) {
-            this.applyExtractedExam(ocrResult)
-            wx.showToast({ title: '已识别并填入成绩', icon: 'none' })
-          } else {
-            const result = await uploadScoreImage(tempFiles[0].tempFilePath)
-            this.applyExtractedExam(result.extraction)
-            wx.showToast({ title: '已生成待确认记录', icon: 'none' })
-          }
+          const result = await uploadScoreImage(tempFiles[0].tempFilePath)
+          if (!result.extraction) throw new Error('暂时无法识别这张图片，请重试或手动录入')
+          this.applyExtractedExam(result.extraction)
+          wx.showToast({ title: '请核对并补全成绩', icon: 'none' })
         } catch (error) { wx.showToast({ title: error.message, icon: 'none' }) }
         finally { this.setData({ uploading: false }) }
       }

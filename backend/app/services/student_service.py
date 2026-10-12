@@ -392,7 +392,7 @@ class StudentService:
         ocr_message = "图片已收到，请核对并补全本次成绩后保存。"
         if ocr_is_configured():
             try:
-                result = await asyncio.to_thread(recognize_image, content)
+                result = await asyncio.wait_for(asyncio.to_thread(recognize_image, content), timeout=30)
                 candidate_data = parse_score_text(result.text)
                 ocr_message = "已完成文字识别，请核对识别结果后保存。"
             except Exception:

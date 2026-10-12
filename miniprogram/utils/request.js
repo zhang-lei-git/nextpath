@@ -32,7 +32,19 @@ function uploadScoreImage(filePath) {
   return new Promise((resolve, reject) => {
     app.whenIdentityReady().then(() => {
       const authorization = app.globalData.accessToken ? `Bearer ${app.globalData.accessToken}` : ''
-      wx.uploadFile({
+      let settled = false
+      let uploadTask = null
+      const finish = (callback, value) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timeout)
+        callback(value)
+      }
+      const timeout = setTimeout(() => {
+        finish(reject, new Error('图片识别等待时间较长，请稍后重试或改用手动录入'))
+        if (uploadTask && typeof uploadTask.abort === 'function') uploadTask.abort()
+      }, 45000)
+      uploadTask = wx.uploadFile({
         url: `${API_BASE_URL}/score-imports`,
         filePath,
         name: 'image',
@@ -41,11 +53,12 @@ function uploadScoreImage(filePath) {
           'X-Demo-User': app.globalData.demoUser
         },
         success(response) {
-          const body = JSON.parse(response.data)
-          if (response.statusCode >= 200 && response.statusCode < 300) resolve(body)
-          else reject(new Error(body.detail || '上传失败'))
+          let body = {}
+          try { body = JSON.parse(response.data || '{}') } catch (_) { body = {} }
+          if (response.statusCode >= 200 && response.statusCode < 300) finish(resolve, body)
+          else finish(reject, new Error(body.detail || '上传失败，请稍后重试'))
         },
-        fail() { reject(new Error('图片上传失败，请检查网络')) }
+        fail(error) { finish(reject, new Error(error && error.errMsg ? '图片上传失败，请检查网络' : '图片上传失败，请稍后重试')) }
       })
     })
   })

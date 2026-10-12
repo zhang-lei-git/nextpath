@@ -32,6 +32,8 @@ def recognize_image(content: bytes) -> OCRResult:
         access_key_id=settings.aliyun_ocr_access_key_id,
         access_key_secret=settings.aliyun_ocr_access_key_secret,
         endpoint=settings.aliyun_ocr_endpoint,
+        connect_timeout=5000,
+        read_timeout=20000,
     )
     client = Client(config)
     request = RecognizeGeneralRequest(body=content)

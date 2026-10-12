@@ -88,9 +88,10 @@
     </view>
   </block>
 
-  <view class="empty card" wx:if="{{!firstScreen && !home && dashboard.profile_complete}}">
+  <view class="empty card empty-action" wx:if="{{!firstScreen && !home && dashboard.profile_complete}}" bindtap="goToEntry">
     <view class="empty-title">先记录第一次成绩</view>
     <view class="empty-copy">录入最近一次周考、月考或模考成绩，就能看到孩子当前的升学范围。</view>
+    <view class="empty-link">立即录入成绩 ›</view>
   </view>
   <view class="empty card" wx:if="{{!firstScreen && !home && !dashboard.profile_complete}}">
     <view class="empty-title">只需姓名、初中和年级</view>
