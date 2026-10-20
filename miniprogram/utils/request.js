@@ -8,22 +8,23 @@ function request({ path, method = 'GET', data }) {
       wx.request({
         url: `${API_BASE_URL}${path}`,
         method,
+        timeout: 15000,
         data,
         header: {
           'content-type': 'application/json',
           ...(authorization ? { Authorization: authorization } : {}),
-          'X-Demo-User': app.globalData.demoUser
         },
         success(response) {
           if (response.statusCode >= 200 && response.statusCode < 300) {
             resolve(response.data)
           } else {
+            if (response.statusCode === 401) { app.clearIdentity(); app.openLogin() }
             reject(new Error(response.data.detail || '服务暂时不可用'))
           }
         },
         fail() { reject(new Error('网络连接失败，请稍后重试')) }
       })
-    })
+    }).catch(reject)
   })
 }
 
@@ -50,7 +51,6 @@ function uploadScoreImage(filePath) {
         name: 'image',
         header: {
           ...(authorization ? { Authorization: authorization } : {}),
-          'X-Demo-User': app.globalData.demoUser
         },
         success(response) {
           let body = {}
@@ -60,7 +60,7 @@ function uploadScoreImage(filePath) {
         },
         fail(error) { finish(reject, new Error(error && error.errMsg ? '图片上传失败，请检查网络' : '图片上传失败，请稍后重试')) }
       })
-    })
+    }).catch(reject)
   })
 }
 

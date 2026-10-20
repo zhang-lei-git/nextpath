@@ -1,61 +1,57 @@
+const { API_BASE_URL } = require('./utils/config')
+const PRIVACY_VERSION = '2026-10-20'
+
 App({
   onLaunch() {
-    const startIdentity = () => this.startIdentity()
-    if (typeof wx.requirePrivacyAuthorize === 'function') {
-      wx.requirePrivacyAuthorize({
-        success: startIdentity,
-        fail: () => wx.showModal({
-          title: '需要隐私授权',
-          content: '同意隐私保护指引后，才能保存孩子的成绩并生成升学分析。',
-          confirmText: '查看说明',
-          success: ({ confirm }) => {
-            if (confirm) wx.navigateTo({ url: '/pages/privacy/index' })
-          }
-        })
-      })
-      return
-    }
-    startIdentity()
-  },
-  startIdentity() {
-    let demoUser = wx.getStorageSync('nextpath_demo_user')
-    if (!demoUser) {
-      demoUser = `internal-${Date.now()}-${Math.random().toString(16).slice(2)}`
-      wx.setStorageSync('nextpath_demo_user', demoUser)
-    }
-    this.globalData.demoUser = demoUser
-    this.identityReady = new Promise((resolve) => this.login(resolve))
+    this.globalData.accessToken = wx.getStorageSync('nextpath_access_token') || ''
+    this.globalData.privacyAccepted = wx.getStorageSync('nextpath_privacy_version') === PRIVACY_VERSION
   },
   whenIdentityReady() {
-    return this.identityReady || Promise.resolve()
+    if (this.globalData.accessToken && this.globalData.privacyAccepted) return Promise.resolve()
+    this.openLogin()
+    return Promise.reject(new Error('请先同意隐私说明并完成微信登录'))
   },
-  login(done) {
-    const finish = () => done && done()
-    wx.login({
-      success: ({ code }) => {
-        if (!code) { finish(); return }
-        wx.request({
-          url: 'https://nextpath.top/api/v1/auth/wechat',
-          method: 'POST',
-          data: { code, legacy_owner_id: this.globalData.demoUser },
-          success: (response) => {
-            if (response.statusCode >= 200 && response.statusCode < 300 && response.data.access_token) {
-              this.globalData.accessToken = response.data.access_token
-              wx.setStorageSync('nextpath_access_token', response.data.access_token)
-            } else {
-              this.globalData.accessToken = ''
-              wx.removeStorageSync('nextpath_access_token')
-            }
-            finish()
-          },
-          fail: finish
-        })
+  openLogin() {
+    const pages = getCurrentPages()
+    if (!pages.length || pages[pages.length - 1].route !== 'pages/login/index') wx.reLaunch({ url: '/pages/login/index' })
+  },
+  clearIdentity() {
+    this.globalData.accessToken = ''
+    this.globalData.privacyAccepted = false
+    wx.removeStorageSync('nextpath_access_token')
+    wx.removeStorageSync('nextpath_privacy_version')
+  },
+  async login() {
+    if (this.loginPromise) return this.loginPromise
+    this.loginPromise = this.performLogin()
+    try { return await this.loginPromise } finally { this.loginPromise = null }
+  },
+  async performLogin() {
+    if (typeof wx.requirePrivacyAuthorize === 'function') {
+      await new Promise((resolve, reject) => wx.requirePrivacyAuthorize({
+        success: resolve,
+        fail: () => reject(new Error('请先同意微信隐私保护指引'))
+      }))
+    }
+    const code = await new Promise((resolve, reject) => wx.login({
+      timeout: 10000,
+      success: (result) => result.code ? resolve(result.code) : reject(new Error('暂时无法获取微信登录凭证，请重试')),
+      fail: () => reject(new Error('微信登录未完成，请重试'))
+    }))
+    const token = await new Promise((resolve, reject) => wx.request({
+      url: `${API_BASE_URL}/auth/wechat`,
+      method: 'POST', timeout: 15000,
+      data: { code, guardian_consent: true, privacy_version: PRIVACY_VERSION },
+      success: ({ statusCode, data }) => {
+        if (statusCode >= 200 && statusCode < 300 && data && data.access_token) resolve(data.access_token)
+        else reject(new Error(data && typeof data.detail === 'string' ? data.detail : '登录失败，请稍后重试'))
       },
-      fail: finish
-    })
+      fail: () => reject(new Error('暂时无法连接，请检查网络后重试'))
+    }))
+    this.globalData.accessToken = token
+    this.globalData.privacyAccepted = true
+    wx.setStorageSync('nextpath_access_token', token)
+    wx.setStorageSync('nextpath_privacy_version', PRIVACY_VERSION)
   },
-  globalData: {
-    demoUser: '',
-    accessToken: wx.getStorageSync('nextpath_access_token') || ''
-  }
+  globalData: { accessToken: '', privacyAccepted: false }
 })

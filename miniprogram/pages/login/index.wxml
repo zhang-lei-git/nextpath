@@ -1,0 +1,15 @@
+<view class="page welcome">
+  <view class="eyebrow">NEXT PATH · 升学助手</view>
+  <view class="page-title">孩子升学，心里有底</view>
+  <view class="intro">记录成绩，了解当前可关注的高中范围，持续看清与目标的差距。</view>
+  <view class="card welcome-card">
+    <view class="section-title">从一次成绩开始</view>
+    <view class="intro">登录后填写孩子称呼、所在初中和年级，即可开始记录。目标高中可以以后再选。</view>
+    <checkbox-group bindchange="agree">
+      <label class="consent"><checkbox value="agree" checked="{{agreed}}" color="#059669" /><text>我已阅读隐私说明，确认我是孩子的监护人或已获监护人授权，同意处理档案、成绩及排名用于升学分析。</text></label>
+    </checkbox-group>
+    <button class="text-button policy-link" bindtap="showPrivacy">查看隐私说明</button>
+    <view class="login-error" wx:if="{{error}}">{{error}}</view>
+    <button class="primary-button" bindtap="login" loading="{{loggingIn || checking}}" disabled="{{loggingIn || checking}}">微信登录并开始</button>
+  </view>
+</view>

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_session
 from app.core.tokens import issue_token
-from app.domain.models import StudentProfile
+from app.domain.models import ConsentRecord, StudentProfile
 
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -16,6 +16,8 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 class WeChatLoginRequest(BaseModel):
     code: str = Field(min_length=1, max_length=256)
     legacy_owner_id: str | None = Field(default=None, min_length=8, max_length=64, pattern=r"^internal-[A-Za-z0-9.-]+$")
+    guardian_consent: bool = False
+    privacy_version: str | None = Field(default=None, max_length=32)
 
 
 class LoginResponse(BaseModel):
@@ -47,11 +49,20 @@ async def wechat_login(
     if not openid:
         raise HTTPException(status_code=401, detail="微信登录失败，请重新进入小程序")
     owner_id = f"wx:{openid}"
-    if payload.legacy_owner_id:
+    if payload.legacy_owner_id and settings.allow_demo_identity:
         current = await session.scalar(select(StudentProfile).where(StudentProfile.owner_id == owner_id))
         legacy = await session.scalar(select(StudentProfile).where(StudentProfile.owner_id == payload.legacy_owner_id))
         if legacy and not current:
             legacy.owner_id = owner_id
+            await session.commit()
+    if payload.guardian_consent and payload.privacy_version:
+        purpose = f"service:{payload.privacy_version}"
+        existing = await session.scalar(select(ConsentRecord).where(
+            ConsentRecord.owner_id == owner_id, ConsentRecord.purpose == purpose,
+            ConsentRecord.status == "granted",
+        ))
+        if not existing:
+            session.add(ConsentRecord(owner_id=owner_id, purpose=purpose, status="granted"))
             await session.commit()
     token = issue_token(
         {"type": "family", "owner_id": owner_id},
