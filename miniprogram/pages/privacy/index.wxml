@@ -12,4 +12,5 @@
     <view class="policy-copy">成绩图片会发送给阿里云 OCR 进行文字识别，识别结果必须经过你确认后才会保存。</view>
     <view class="policy-copy muted">如需查询、更正或删除数据，请通过小程序反馈与投诉联系运营方。</view>
   </view>
+  <button class="primary-button continue" bindtap="continue">同意并继续使用</button>
 </view>

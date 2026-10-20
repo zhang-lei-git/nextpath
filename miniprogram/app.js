@@ -1,5 +1,23 @@
 App({
   onLaunch() {
+    const startIdentity = () => this.startIdentity()
+    if (typeof wx.requirePrivacyAuthorize === 'function') {
+      wx.requirePrivacyAuthorize({
+        success: startIdentity,
+        fail: () => wx.showModal({
+          title: '需要隐私授权',
+          content: '同意隐私保护指引后，才能保存孩子的成绩并生成升学分析。',
+          confirmText: '查看说明',
+          success: ({ confirm }) => {
+            if (confirm) wx.navigateTo({ url: '/pages/privacy/index' })
+          }
+        })
+      })
+      return
+    }
+    startIdentity()
+  },
+  startIdentity() {
     let demoUser = wx.getStorageSync('nextpath_demo_user')
     if (!demoUser) {
       demoUser = `internal-${Date.now()}-${Math.random().toString(16).slice(2)}`
