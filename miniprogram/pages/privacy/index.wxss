@@ -1,0 +1,5 @@
+.policy { padding: 32rpx; }
+.policy-title { margin: 24rpx 0 10rpx; color: #1E293B; font-size: 30rpx; font-weight: 700; }
+.policy-title:first-child { margin-top: 0; }
+.policy-copy { color: #475569; font-size: 27rpx; line-height: 1.75; }
+.muted { margin-top: 28rpx; color: #94A3B8; font-size: 24rpx; }

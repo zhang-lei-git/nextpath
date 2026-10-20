@@ -5,10 +5,11 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import HTTPException, UploadFile
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.domain.models import Exam, ScoreImport
+from app.domain.models import AnalysisRun, ConsentRecord, Exam, OutcomeSample, ScoreImport, StudentProfile, StudentReport
 from app.domain.schemas import (
     ActionItem, DashboardResponse, DataGapCreate, ExamCreate, ExamRead, HomeFirstScreen, ImportResponse, ScoreChangeSummary, StudentProfileRead, StudentProfileUpdate, StudentReportDetail, TrendPoint, TrendResponse,
 )
@@ -318,6 +319,22 @@ class StudentService:
     async def get_profile(self, owner_id: str) -> StudentProfileRead:
         profile = await self.profiles.get_or_create_demo(owner_id)
         return StudentProfileRead.model_validate(profile)
+
+    async def delete_account_data(self, owner_id: str) -> None:
+        profile = await self.profiles.get_or_create_demo(owner_id)
+        imports = list(await self.session.scalars(select(ScoreImport).where(ScoreImport.profile_id == profile.id)))
+        consent_ids = list(await self.session.scalars(select(ConsentRecord.id).where(ConsentRecord.owner_id == owner_id)))
+        await self.session.execute(delete(StudentReport).where(StudentReport.profile_id == profile.id))
+        await self.session.execute(delete(AnalysisRun).where(AnalysisRun.profile_id == profile.id))
+        if consent_ids:
+            await self.session.execute(delete(OutcomeSample).where(OutcomeSample.consent_id.in_(consent_ids)))
+        await self.session.execute(delete(ConsentRecord).where(ConsentRecord.owner_id == owner_id))
+        await self.session.execute(delete(Exam).where(Exam.profile_id == profile.id))
+        await self.session.execute(delete(ScoreImport).where(ScoreImport.profile_id == profile.id))
+        await self.session.execute(delete(StudentProfile).where(StudentProfile.id == profile.id))
+        await self.session.commit()
+        for item in imports:
+            (settings.upload_dir / item.file_path).unlink(missing_ok=True)
 
     async def update_profile(self, owner_id: str, payload: StudentProfileUpdate) -> StudentProfileRead:
         profile = await self.profiles.get_or_create_demo(owner_id)

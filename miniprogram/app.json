@@ -7,7 +7,8 @@
     "pages/reports/index",
     "pages/report-web/index",
     "pages/school-detail/index",
-    "pages/profile/index"
+    "pages/profile/index",
+    "pages/privacy/index"
   ],
   "window": {
     "navigationBarTitleText": "NextPath",

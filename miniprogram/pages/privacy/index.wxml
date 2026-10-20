@@ -1,0 +1,15 @@
+<view class="page">
+  <view class="eyebrow">NextPath</view>
+  <view class="page-title">隐私说明</view>
+  <view class="card policy">
+    <view class="policy-title">我们会收集什么</view>
+    <view class="policy-copy">为了提供升学位置分析，你可以主动填写孩子称呼、所在初中、年级、考试成绩和排名。上传成绩图片只用于识别本次成绩。</view>
+    <view class="policy-title">数据怎么使用</view>
+    <view class="policy-copy">成绩和档案只用于生成你孩子的成绩变化、升学范围和分析报告。未经过你的单独同意，不用于模型训练或对外共享。</view>
+    <view class="policy-title">你可以做什么</view>
+    <view class="policy-copy">你可以随时修改成绩，也可以在“我的”页面删除孩子的档案、成绩、报告和上传图片。</view>
+    <view class="policy-title">识别说明</view>
+    <view class="policy-copy">成绩图片会发送给阿里云 OCR 进行文字识别，识别结果必须经过你确认后才会保存。</view>
+    <view class="policy-copy muted">如需查询、更正或删除数据，请通过小程序反馈与投诉联系运营方。</view>
+  </view>
+</view>

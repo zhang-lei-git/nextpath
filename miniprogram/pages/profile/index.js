@@ -80,5 +80,22 @@ Page({
       setTimeout(() => wx.navigateBack(), 400)
     } catch (error) { wx.showToast({ title: error.message, icon: 'none' }) }
     finally { this.setData({ saving: false }) }
-  }
+  },
+  deleteData() {
+    wx.showModal({
+      title: '删除孩子数据',
+      content: '将删除档案、成绩、报告和成绩图片，删除后无法恢复。',
+      confirmText: '确认删除',
+      confirmColor: '#B42318',
+      success: async ({ confirm }) => {
+        if (!confirm) return
+        try {
+          await request({ path: '/profile', method: 'DELETE' })
+          wx.showToast({ title: '数据已删除', icon: 'success' })
+          setTimeout(() => wx.redirectTo({ url: '/pages/home/index' }), 500)
+        } catch (error) { wx.showToast({ title: error.message, icon: 'none' }) }
+      }
+    })
+  },
+  showPrivacy() { wx.navigateTo({ url: '/pages/privacy/index' }) }
 })

@@ -26,4 +26,6 @@
     </view>
   </view>
   <button class="primary-button save" bindtap="save" loading="{{saving}}">保存并开始记录</button>
+  <button class="text-button delete-data" bindtap="deleteData">删除孩子的全部数据</button>
+  <button class="text-button privacy-link" bindtap="showPrivacy">隐私说明</button>
 </view>

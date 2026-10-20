@@ -121,6 +121,23 @@ def test_exam_score_uses_a_single_inclusive_total_definition() -> None:
     assert subjects.json()["score_includes_pe"] is True
 
 
+def test_family_can_delete_profile_scores_and_reports() -> None:
+    headers = {"X-Demo-User": f"delete-family-{uuid4().hex}"}
+    with TestClient(app) as client:
+        assert client.put(
+            "/api/v1/profile", headers=headers,
+            json={"student_name": "待删除", "junior_school": "示例初中", "grade": "初三"},
+        ).status_code == 200
+        assert client.post(
+            "/api/v1/exams", headers=headers,
+            json={"name": "一模", "exam_date": "2026-03-10", "total_score": 490.5},
+        ).status_code == 201
+        assert client.delete("/api/v1/profile", headers=headers).status_code == 204
+        profile = client.get("/api/v1/profile", headers=headers)
+        assert profile.status_code == 200
+        assert profile.json()["student_name"] == ""
+
+
 def test_seven_mock_exams_generate_saved_reports_and_support_correction(monkeypatch) -> None:
     monkeypatch.setattr(settings, "report_signing_secret", "report-test-secret")
     headers = {"X-Demo-User": f"seven-exam-family-{uuid4().hex}"}

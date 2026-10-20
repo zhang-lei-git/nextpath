@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import current_owner_id
@@ -39,3 +39,11 @@ async def update_profile(
     session: AsyncSession = Depends(get_session),
 ) -> StudentProfileRead:
     return await StudentService(session).update_profile(owner_id, payload)
+
+
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_profile_data(
+    owner_id: str = Depends(current_owner_id), session: AsyncSession = Depends(get_session)
+) -> Response:
+    await StudentService(session).delete_account_data(owner_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
