@@ -38,45 +38,21 @@
   </block>
 
   <block wx:if="{{home}}">
-    <view class="summary-card card" wx:if="{{home.hasTarget}}">
+    <view class="summary-card card target-card" wx:if="{{home.hasTarget}}" bindtap="goToAnalysis">
       <view class="summary-label">目标高中</view>
       <view class="summary-value">{{dashboard.target_school}}</view>
       <view class="summary-hint" wx:if="{{home.targetCurrent}}">当前：{{home.targetCurrent}}</view>
       <view class="summary-hint" wx:if="{{home.targetProjection}}">预估：{{home.targetProjection}}</view>
     </view>
-    <view class="summary-card card" wx:if="{{!home.hasTarget}}" bindtap="showProfile">
-      <view class="summary-label">还没有设置目标高中</view>
-      <view class="summary-link">设置目标高中，看看差距有多大 ›</view>
-    </view>
-
-    <view class="section" wx:if="{{dashboard.latest_exam}}">
-      <view class="section-bar" bindtap="goToScores">
-        <text class="section-label">最近成绩</text>
-        <text class="section-toggle">全部成绩 ›</text>
+    <view class="change-card card" wx:if="{{dashboard.change_summary}}" bindtap="goToScores">
+      <view class="section-label">相比上次</view>
+      <view class="change-grid" wx:if="{{dashboard.change_summary.comparable}}">
+        <view><text>总分</text><strong>{{dashboard.change_summary.total_delta >= 0 ? '+' : ''}}{{dashboard.change_summary.total_delta}}</strong></view>
+        <view><text>得分率</text><strong>{{dashboard.change_summary.score_rate_delta >= 0 ? '+' : ''}}{{dashboard.change_summary.score_rate_delta}}%</strong></view>
+        <view><text>年级位次</text><strong>{{dashboard.change_summary.grade_rank_delta >= 0 ? '前移 ' : '后移 '}}{{dashboard.change_summary.grade_rank_delta ? (dashboard.change_summary.grade_rank_delta > 0 ? dashboard.change_summary.grade_rank_delta : -dashboard.change_summary.grade_rank_delta) : '—'}} 名</strong></view>
       </view>
-      <view class="latest-card card">
-        <view class="latest-info">
-          <view class="latest-name">{{dashboard.latest_exam.name}}</view>
-          <view class="latest-date">{{dashboard.latest_exam.exam_date}} · 年级第 {{dashboard.latest_exam.grade_rank || '—'}} 名</view>
-        </view>
-        <view class="latest-score">
-          <text class="score-num">{{dashboard.latest_exam.total_score}}</text>
-          <text class="score-unit">分</text>
-        </view>
-      </view>
-    </view>
-
-    <view class="section" wx:if="{{home.trend.length > 1}}">
-      <view class="section-bar" bindtap="goToTrend">
-        <text class="section-label">成绩变化</text>
-        <text class="section-toggle">查看成绩 ›</text>
-      </view>
-      <view class="trend-card card">
-        <view class="trend-item" wx:for="{{home.trend}}" wx:key="id">
-          <view class="trend-name">{{item.name}}</view>
-          <view class="trend-score">{{item.total_score}}</view>
-        </view>
-      </view>
+      <view class="change-note" wx:else>本次考试口径不同，主要比较得分率和位次变化。</view>
+      <view class="section-toggle">查看成绩变化 ›</view>
     </view>
 
     <view class="actions">

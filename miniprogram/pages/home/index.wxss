@@ -108,6 +108,12 @@
   font-size: 26rpx;
   font-weight: 500;
 }
+.change-card { margin-top: 28rpx; padding: 28rpx 32rpx; }
+.change-grid { display: flex; gap: 20rpx; margin-top: 18rpx; }
+.change-grid view { flex: 1; min-width: 0; }
+.change-grid text { display: block; color: #64748B; font-size: 23rpx; }
+.change-grid strong { display: block; margin-top: 8rpx; color: #1E293B; font-size: 27rpx; }
+.change-note { margin-top: 18rpx; color: #64748B; font-size: 25rpx; }
 
 /* ── Collapsible Sections ── */
 .section { margin-top: 28rpx; }

@@ -10,4 +10,14 @@ Page({
   },
   goToEntry() { wx.navigateTo({ url: '/pages/score-entry/index' }) },
   goToReports() { wx.navigateTo({ url: '/pages/reports/index' }) }
+  ,openSchool(event) { wx.navigateTo({ url: `/pages/school-detail/index?name=${encodeURIComponent(event.currentTarget.dataset.school)}` }) }
+  ,openTier(event) {
+    const schools = (this.data.forecast.current_snapshot.school_tiers[event.currentTarget.dataset.tier] || []).join('|')
+    wx.navigateTo({ url: `/pages/school-detail/index?tier=${event.currentTarget.dataset.tier}&names=${encodeURIComponent(schools)}` })
+  }
+  ,openOutcomeSchools(event) {
+    const outcome = (this.data.forecast.exam_outcomes || []).find((item) => item.key === event.currentTarget.dataset.key)
+    const schools = outcome ? Object.values(outcome.school_tiers || {}).flat().join('|') : ''
+    wx.navigateTo({ url: `/pages/school-detail/index?scope=${event.currentTarget.dataset.key}&names=${encodeURIComponent(schools)}` })
+  }
 })

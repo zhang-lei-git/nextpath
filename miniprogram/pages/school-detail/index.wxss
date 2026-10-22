@@ -1,1 +1,4 @@
 .fact { margin-bottom:18rpx; padding:28rpx; }.fact-title { color:#059669; font-size:24rpx; }.fact-value { margin:10rpx 0; color:#1E293B; font-size:30rpx; font-weight:600; }.empty { padding:30rpx; color:#94A3B8; }
+.school-item { margin-bottom: 16rpx; padding: 28rpx; }
+.school-item-name { color: #1E293B; font-size: 30rpx; font-weight: 700; }
+.school-item-meta { margin-top: 8rpx; color: #64748B; font-size: 24rpx; }

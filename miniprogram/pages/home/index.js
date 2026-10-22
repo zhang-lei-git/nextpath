@@ -24,7 +24,7 @@ Page({
       hasTarget: Boolean(dashboard.target_school),
       targetCurrent: forecast.target_comparison && forecast.target_comparison.current_relation,
       targetProjection: forecast.target_comparison && forecast.target_comparison.projected_relation,
-      trend: (dashboard.trend || []).slice(-3)
+      trend: []
     }
   },
   retry() { this.loadDashboard() },

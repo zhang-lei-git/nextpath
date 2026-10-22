@@ -1,1 +1,14 @@
-<view class="page"><view class="eyebrow">高中信息</view><view class="page-title">{{name}}</view><view class="empty card" wx:if="{{!loading && !facts.length}}">学校信息正在持续补充</view><view class="fact card" wx:for="{{facts}}" wx:key="id"><view class="fact-title">{{item.field}}</view><view class="fact-value">{{item.value.summary || item.value.level || item.value.district || '已收录'}}</view><view class="muted">{{item.reference_year}} 年 · {{item.confidence}}</view></view></view>
+<view class="page">
+  <view class="eyebrow">高中信息</view>
+  <view class="page-title">{{tier ? (tier === 'reach' ? '冲刺范围' : tier === 'match' ? '匹配范围' : '保底范围') : (scope ? '中考预估范围' : name)}}</view>
+  <view class="intro" wx:if="{{tier || scope}}">这里列出当前判断对应的代表学校。点击学校可查看已收录的录取、层次和基础信息。</view>
+  <view wx:if="{{schools.length}}">
+    <view class="school-item card" wx:for="{{schools}}" wx:key="name" data-name="{{item.name}}" bindtap="openSchool">
+      <view class="school-item-name">{{item.name}}</view>
+      <view class="school-item-meta" wx:if="{{item.facts.length}}">{{item.facts[0].value.level || item.facts[0].value.district || '查看基础数据'}} · {{item.facts[0].reference_year}} 年</view>
+      <view class="school-item-meta" wx:else>学校信息正在补充</view>
+    </view>
+  </view>
+  <view class="empty card" wx:if="{{!loading && !schools.length && !facts.length}}">学校信息正在持续补充</view>
+  <view class="fact card" wx:for="{{facts}}" wx:key="id"><view class="fact-title">{{item.field}}</view><view class="fact-value">{{item.value.summary || item.value.level || item.value.district || '已收录'}}</view><view class="muted">{{item.reference_year}} 年 · {{item.confidence}}</view></view>
+</view>

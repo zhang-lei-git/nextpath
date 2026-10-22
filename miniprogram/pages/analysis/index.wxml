@@ -25,9 +25,9 @@
       <view class="scenario-meta">位置范围：{{forecast.current_snapshot.clarity}}</view>
       <view class="scenario-gap" wx:if="{{forecast.target_comparison && forecast.target_comparison.current_relation}}">与目标相比：{{forecast.target_comparison.current_relation}}</view>
       <view class="school-tiers" wx:if="{{forecast.current_snapshot.school_tiers.match.length || forecast.current_snapshot.school_tiers.reach.length || forecast.current_snapshot.school_tiers.safe.length}}">
-        <view class="tier-row" wx:if="{{forecast.current_snapshot.school_tiers.reach.length}}"><text class="tier-name">冲刺</text><view class="tier-values"><text class="school-name" wx:for="{{forecast.current_snapshot.school_tiers.reach}}" wx:for-item="school" wx:key="*this">{{school}}</text></view></view>
-        <view class="tier-row" wx:if="{{forecast.current_snapshot.school_tiers.match.length}}"><text class="tier-name">匹配</text><view class="tier-values"><text class="school-name" wx:for="{{forecast.current_snapshot.school_tiers.match}}" wx:for-item="school" wx:key="*this">{{school}}</text></view></view>
-        <view class="tier-row" wx:if="{{forecast.current_snapshot.school_tiers.safe.length}}"><text class="tier-name">保底</text><view class="tier-values"><text class="school-name" wx:for="{{forecast.current_snapshot.school_tiers.safe}}" wx:for-item="school" wx:key="*this">{{school}}</text></view></view>
+        <view class="tier-row" wx:if="{{forecast.current_snapshot.school_tiers.reach.length}}" bindtap="openTier" data-tier="reach"><text class="tier-name">冲刺</text><view class="tier-values"><text class="school-name" wx:for="{{forecast.current_snapshot.school_tiers.reach}}" wx:for-item="school" wx:key="*this" data-school="{{school}}" bindtap="openSchool">{{school}}</text></view></view>
+        <view class="tier-row" wx:if="{{forecast.current_snapshot.school_tiers.match.length}}" bindtap="openTier" data-tier="match"><text class="tier-name">匹配</text><view class="tier-values"><text class="school-name" wx:for="{{forecast.current_snapshot.school_tiers.match}}" wx:for-item="school" wx:key="*this" data-school="{{school}}" bindtap="openSchool">{{school}}</text></view></view>
+        <view class="tier-row" wx:if="{{forecast.current_snapshot.school_tiers.safe.length}}" bindtap="openTier" data-tier="safe"><text class="tier-name">保底</text><view class="tier-values"><text class="school-name" wx:for="{{forecast.current_snapshot.school_tiers.safe}}" wx:for-item="school" wx:key="*this" data-school="{{school}}" bindtap="openSchool">{{school}}</text></view></view>
       </view>
     </view>
   </view>
@@ -42,6 +42,7 @@
       <view class="scenario-score">{{item.total_range[0]}}–{{item.total_range[1]}}<text> / {{item.total_full_mark}} 分</text></view>
       <view class="scenario-meta">预计全区第 {{item.estimated_rank_range[0]}}–{{item.estimated_rank_range[1]}} 名</view>
       <view class="scenario-gap" wx:if="{{item.target_relation}}">{{item.target_relation}}</view>
+      <view class="tier-link" bindtap="openOutcomeSchools" data-key="{{item.key}}">查看该范围的代表学校 ›</view>
     </view>
   </view>
 
