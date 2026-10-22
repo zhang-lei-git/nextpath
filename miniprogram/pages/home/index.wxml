@@ -13,73 +13,53 @@
 
   <view class="header">
     <view class="eyebrow">NEXT PATH · 升学助手</view>
-    <view class="greeting">{{dashboard.profile_complete ? dashboard.student_name + '的升学概览' : '先建立孩子档案'}}</view>
+    <view class="greeting">{{dashboard.profile_complete ? dashboard.student_name + '的升学位置' : '先建立孩子档案'}}</view>
   </view>
 
-  <block wx:if="{{firstScreen}}">
-    <view class="status-card card">
-      <view class="status-scope">{{firstScreen.school_scope}}</view>
-      <view class="status-score">{{firstScreen.score}}<text class="status-fm"> / {{firstScreen.full_mark}} 分</text></view>
-      <view class="status-meta">
-        <text>得分率 {{firstScreen.score_rate}}</text>
-        <text class="meta-sep">·</text>
-        <text>{{firstScreen.grade_text}}</text>
+  <view class="decision-card card" wx:if="{{home && dashboard.latest_exam}}">
+    <view class="decision-block current">
+      <view class="decision-kicker">按最近一次成绩</view>
+      <view class="decision-answer">{{firstScreen.school_scope}}</view>
+      <view class="decision-rank" wx:if="{{firstScreen.rank_text && firstScreen.rank_text !== '学校范围仍需继续观察'}}">{{firstScreen.rank_text}}</view>
+      <view class="decision-score">{{dashboard.latest_exam.total_score}} / {{dashboard.latest_exam.total_full_mark || firstScreen.full_mark}} 分 · 得分率 {{firstScreen.score_rate}}</view>
+      <view class="decision-grade">{{firstScreen.grade_text}}</view>
+      <view class="school-heading" wx:if="{{home.currentSchools.length}}">可以重点了解</view>
+      <view class="school-chips" wx:if="{{home.currentSchools.length}}">
+        <text class="school-chip" wx:for="{{home.currentSchools}}" wx:key="*this" data-name="{{item}}" bindtap="openSchool">{{item}} ›</text>
       </view>
-      <view class="status-rank" wx:if="{{firstScreen.rank_text && firstScreen.rank_text !== '学校范围仍需继续观察'}}">{{firstScreen.rank_text}}</view>
-      <view class="school-list" wx:if="{{firstScreen.school_tiers.length}}">
-        <view class="school-row" wx:for="{{firstScreen.school_tiers}}" wx:key="label">
-          <text class="tier-label">{{item.label}}</text>
-          <view class="tier-schools">
-            <text class="school-name" wx:for="{{item.schools}}" wx:for-item="school" wx:key="*this">{{school}}</text>
-          </view>
-        </view>
-      </view>
+      <view class="uncertain" wx:if="{{!home.currentSchools.length}}">学校范围还不够清晰，继续记录成绩后会补充可参考的高中。</view>
     </view>
-  </block>
 
-  <view class="forecast-section" wx:if="{{dashboard.forecast && dashboard.forecast.exam_outcomes.length}}">
-    <view class="section-label">按现在的表现，中考可能到哪里</view>
-    <view class="forecast-card card {{item.key === 'steady' ? 'steady' : ''}}" wx:for="{{dashboard.forecast.exam_outcomes}}" wx:key="key">
-      <view class="forecast-head"><text>{{item.title}}</text><text>{{item.school_scope}}</text></view>
-      <view class="forecast-score">{{item.total_range[0]}}–{{item.total_range[1]}}<text>/ {{item.total_full_mark}} 分</text></view>
-      <view class="forecast-rank">预计全区第 {{item.estimated_rank_range[0]}}–{{item.estimated_rank_range[1]}} 名</view>
-      <view class="forecast-link" bindtap="goToAnalysis">查看对应学校范围 ›</view>
+    <view class="decision-divider"></view>
+
+    <view class="decision-block projection" wx:if="{{home.projection}}">
+      <view class="decision-kicker">按目前趋势估计中考</view>
+      <view class="decision-answer">{{home.projection.school_scope}}</view>
+      <view class="decision-rank">{{home.projectionRank}}</view>
+      <view class="decision-score" wx:if="{{home.projectionRange}}">{{home.projectionRange}} / {{home.projection.total_full_mark}} 分</view>
+      <view class="school-heading" wx:if="{{home.projectionSchools.length}}">可重点了解</view>
+      <view class="school-chips" wx:if="{{home.projectionSchools.length}}">
+        <text class="school-chip" wx:for="{{home.projectionSchools}}" wx:key="*this" data-name="{{item}}" bindtap="openSchool">{{item}} ›</text>
+      </view>
+      <view class="uncertain" wx:if="{{!home.projectionSchools.length}}">目前暂时只能估到学校层次。</view>
     </view>
+
+    <view class="target-line" wx:if="{{home.hasTarget}}" bindtap="goToAnalysis">
+      <text>目标：{{dashboard.target_school}}</text>
+      <text>{{home.targetRelation || '查看目标差距'}} ›</text>
+    </view>
+    <view class="target-line target-empty" wx:else bindtap="showProfile">
+      <text>还没有设置目标高中</text><text>设置目标，查看差距 ›</text>
+    </view>
+    <view class="analysis-link" bindtap="goToAnalysis">查看三种中考情景和完整分析 ›</view>
   </view>
 
-  <block wx:if="{{home}}">
-    <view class="summary-card card target-card" wx:if="{{home.hasTarget}}" bindtap="goToAnalysis">
-      <view class="summary-label">目标高中</view>
-      <view class="summary-value">{{dashboard.target_school}}</view>
-      <view class="summary-hint" wx:if="{{home.targetCurrent}}">当前：{{home.targetCurrent}}</view>
-      <view class="summary-hint" wx:if="{{home.targetProjection}}">预估：{{home.targetProjection}}</view>
-    </view>
-    <view class="change-card card" wx:if="{{dashboard.change_summary}}" bindtap="goToScores">
-      <view class="section-label">相比上次</view>
-      <view class="change-grid" wx:if="{{dashboard.change_summary.comparable}}">
-        <view><text>总分</text><strong>{{dashboard.change_summary.total_delta >= 0 ? '+' : ''}}{{dashboard.change_summary.total_delta}}</strong></view>
-        <view><text>得分率</text><strong>{{dashboard.change_summary.score_rate_delta >= 0 ? '+' : ''}}{{dashboard.change_summary.score_rate_delta}}%</strong></view>
-        <view><text>年级位次</text><strong>{{dashboard.change_summary.grade_rank_delta >= 0 ? '前移 ' : '后移 '}}{{dashboard.change_summary.grade_rank_delta ? (dashboard.change_summary.grade_rank_delta > 0 ? dashboard.change_summary.grade_rank_delta : -dashboard.change_summary.grade_rank_delta) : '—'}} 名</strong></view>
-      </view>
-      <view class="change-note" wx:else>本次考试口径不同，主要比较得分率和位次变化。</view>
-      <view class="section-toggle">查看成绩变化 ›</view>
-    </view>
-
-    <view class="actions">
-      <button class="primary-button" bindtap="goToAnalysis">查看完整分析</button>
-      <button class="secondary-button" bindtap="goToEntry">{{dashboard.latest_exam ? '录入最新成绩' : '录入第一次成绩'}}</button>
-      <view class="action-row">
-        <text class="action-link" wx:if="{{dashboard.latest_exam}}" bindtap="goToReports">查看历次报告 ›</text>
-      </view>
-    </view>
-  </block>
-
-  <view class="empty card empty-action" wx:if="{{!firstScreen && !home && dashboard.profile_complete}}" bindtap="goToEntry">
+  <view class="empty card empty-action" wx:if="{{!dashboard.latest_exam && dashboard.profile_complete}}" bindtap="goToEntry">
     <view class="empty-title">先记录第一次成绩</view>
     <view class="empty-copy">录入最近一次周考、月考或模考成绩，就能看到孩子当前的升学范围。</view>
     <view class="empty-link">立即录入成绩 ›</view>
   </view>
-  <view class="empty card empty-action" wx:if="{{!firstScreen && !home && !dashboard.profile_complete}}" bindtap="showProfile">
+  <view class="empty card empty-action" wx:if="{{!dashboard.profile_complete}}" bindtap="showProfile">
     <view class="empty-title">只需姓名、初中和年级</view>
     <view class="empty-copy">填写后即可开始记录成绩；目标高中可以以后再设置。</view>
     <view class="empty-link">建立孩子档案 ›</view>
