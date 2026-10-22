@@ -67,6 +67,7 @@ class HomeFirstScreen(BaseModel):
     full_mark: float | None = None
     score_rate: str
     grade_text: str
+    class_text: str | None = None
     rank_text: str
     school_scope: str
     clarity: str

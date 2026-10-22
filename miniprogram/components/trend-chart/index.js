@@ -74,7 +74,8 @@ Component({
         ctx.fillStyle = '#64748B'
         ctx.font = '10px -apple-system'
         ctx.textAlign = 'right'
-        ctx.fillText(this.data.mode === 'percentile' ? `${label}%` : label, padding.left - 6, y + 3)
+        const axisValue = this.data.mode === 'rank' ? (minVal + (range / 4) * i).toFixed(0) : label
+        ctx.fillText(this.data.mode === 'percentile' ? `${label}%` : axisValue, padding.left - 6, y + 3)
       }
 
       ctx.textAlign = 'center'
@@ -94,14 +95,18 @@ Component({
       values.forEach((value, index) => {
         if (value === null) { started = false; return }
         const x = values.length > 1 ? padding.left + index * xStep : padding.left + chartW / 2
-        const y = padding.top + chartH * (1 - (value - minVal) / range)
+        const y = this.data.mode === 'rank'
+          ? padding.top + chartH * ((value - minVal) / range)
+          : padding.top + chartH * (1 - (value - minVal) / range)
         if (!started) { ctx.moveTo(x, y); started = true } else ctx.lineTo(x, y)
       })
       ctx.stroke()
       values.forEach((value, index) => {
         if (value === null) return
         const x = values.length > 1 ? padding.left + index * xStep : padding.left + chartW / 2
-        const y = padding.top + chartH * (1 - (value - minVal) / range)
+        const y = this.data.mode === 'rank'
+          ? padding.top + chartH * ((value - minVal) / range)
+          : padding.top + chartH * (1 - (value - minVal) / range)
         ctx.fillStyle = '#059669'
         ctx.beginPath()
         ctx.arc(x, y, 4, 0, Math.PI * 2)

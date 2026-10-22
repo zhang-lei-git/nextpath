@@ -598,28 +598,28 @@ class BaselinePredictionEngine:
     @staticmethod
     def _tier(percentile: float) -> str:
         if percentile <= 5:
-            return "优先关注头部高中"
+            return "头部高中竞争范围"
         if percentile <= 15:
-            return "优先关注示范高中"
+            return "示范高中竞争范围"
         if percentile <= 35:
-            return "优先关注匹配度较高的高中"
-        return "先把目标范围稳住"
+            return "优质高中竞争范围"
+        return "普通高中竞争范围"
 
     @staticmethod
     def _school_scope(percentile: float | None, range_usable: bool) -> str:
         if percentile is None or not range_usable:
-            return "学校范围仍需观察"
+            return "学校层次暂时无法判断"
         if percentile <= 3:
-            return "头部高中范围"
+            return "头部高中"
         if percentile <= 10:
-            return "示范性高中范围"
+            return "示范高中"
         if percentile <= 25:
-            return "优质高中范围"
+            return "优质普通高中"
         if percentile <= 45:
-            return "普通高中范围"
+            return "普通高中中上段"
         if percentile <= 65:
-            return "以普通高中范围为主"
-        return "先稳住普高选择"
+            return "普通高中"
+        return "普高录取位置仍有差距"
 
     @staticmethod
     def _clarity(input_data: PredictionInput) -> str:

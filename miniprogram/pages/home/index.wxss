@@ -10,10 +10,20 @@
 .decision-grade { margin-top:8rpx; color:#64748B; font-size:24rpx; }
 .school-heading { margin-top:22rpx; color:#475569; font-size:24rpx; font-weight:650; }
 .school-chips { display:flex; flex-wrap:wrap; gap:12rpx; margin-top:12rpx; }
+.school-groups { display:flex; flex-direction:column; gap:10rpx; margin-top:10rpx; }
+.school-group { display:flex; align-items:flex-start; gap:10rpx; }
+.group-label { flex:none; min-width:100rpx; padding-top:10rpx; color:#64748B; font-size:22rpx; }
+.school-basis-note { margin-top:14rpx; color:#94A3B8; font-size:21rpx; line-height:1.5; }
 .school-chip { padding:12rpx 18rpx; border-radius:999rpx; background:#EFF8F5; color:#176B53; font-size:24rpx; font-weight:600; }
 .uncertain { margin-top:16rpx; color:#64748B; font-size:24rpx; line-height:1.55; }
 .decision-divider { height:1rpx; margin:0 30rpx; background:#E2E8F0; }
 .target-line { display:flex; justify-content:space-between; gap:16rpx; padding:22rpx 30rpx; border-top:1rpx solid #E2E8F0; color:#1E293B; font-size:25rpx; }
+.target-block { padding:28rpx 30rpx; border-top:1rpx solid #E2E8F0; background:#F0F9FF; }
+.target-kicker { color:#64748B; font-size:24rpx; }
+.target-name { margin-top:8rpx; color:#1E293B; font-size:34rpx; font-weight:750; }
+.target-relation { margin-top:12rpx; color:#0F766E; font-size:27rpx; font-weight:650; }
+.target-gap { margin-top:8rpx; color:#475569; font-size:25rpx; }
+.target-more { margin-top:16rpx; color:#0EA5E9; font-size:25rpx; }
 .target-line text:last-child { color:#0EA5E9; text-align:right; }
 .target-empty { color:#64748B; }
 .analysis-link { padding:0 30rpx 26rpx; color:#0EA5E9; font-size:25rpx; }

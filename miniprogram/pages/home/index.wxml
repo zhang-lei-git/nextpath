@@ -22,12 +22,16 @@
       <view class="decision-answer">{{firstScreen.school_scope}}</view>
       <view class="decision-rank" wx:if="{{firstScreen.rank_text && firstScreen.rank_text !== '学校范围仍需继续观察'}}">{{firstScreen.rank_text}}</view>
       <view class="decision-score">{{dashboard.latest_exam.total_score}} / {{dashboard.latest_exam.total_full_mark || firstScreen.full_mark}} 分 · 得分率 {{firstScreen.score_rate}}</view>
-      <view class="decision-grade">{{firstScreen.grade_text}}</view>
-      <view class="school-heading" wx:if="{{home.currentSchools.length}}">可以重点了解</view>
-      <view class="school-chips" wx:if="{{home.currentSchools.length}}">
-        <text class="school-chip" wx:for="{{home.currentSchools}}" wx:key="*this" data-name="{{item}}" bindtap="openSchool">{{item}} ›</text>
+      <view class="decision-grade">{{home.positionLabel}}</view>
+      <view class="school-heading" wx:if="{{home.currentSchoolGroups.length}}">对应的高中范围</view>
+      <view class="school-groups" wx:if="{{home.currentSchoolGroups.length}}">
+        <view class="school-group" wx:for="{{home.currentSchoolGroups}}" wx:key="key">
+          <text class="group-label">{{item.label}}</text>
+          <view class="school-chips"><text class="school-chip" wx:for="{{item.schools}}" wx:for-item="school" wx:key="*this" data-name="{{school}}" bindtap="openSchool">{{school}} ›</text></view>
+        </view>
       </view>
-      <view class="uncertain" wx:if="{{!home.currentSchools.length}}">学校范围还不够清晰，继续记录成绩后会补充可参考的高中。</view>
+      <view class="uncertain" wx:if="{{!home.currentSchoolGroups.length}}">按近年录取位置，这属于“{{firstScreen.school_scope}}”这一参考层次；目前没有足够数据对应到具体学校。</view>
+      <view class="school-basis-note" wx:if="{{home.currentSchoolGroups.length}}">学校层次是升学参考分类，并非教育部门正式评级；具体招生信息以学校和教育部门发布为准。</view>
     </view>
 
     <view class="decision-divider"></view>
@@ -37,21 +41,28 @@
       <view class="decision-answer">{{home.projection.school_scope}}</view>
       <view class="decision-rank">{{home.projectionRank}}</view>
       <view class="decision-score" wx:if="{{home.projectionRange}}">{{home.projectionRange}} / {{home.projection.total_full_mark}} 分</view>
-      <view class="school-heading" wx:if="{{home.projectionSchools.length}}">可重点了解</view>
-      <view class="school-chips" wx:if="{{home.projectionSchools.length}}">
-        <text class="school-chip" wx:for="{{home.projectionSchools}}" wx:key="*this" data-name="{{item}}" bindtap="openSchool">{{item}} ›</text>
+      <view class="school-heading" wx:if="{{home.projectionSchoolGroups.length}}">对应的高中范围</view>
+      <view class="school-groups" wx:if="{{home.projectionSchoolGroups.length}}">
+        <view class="school-group" wx:for="{{home.projectionSchoolGroups}}" wx:key="key">
+          <text class="group-label">{{item.label}}</text>
+          <view class="school-chips"><text class="school-chip" wx:for="{{item.schools}}" wx:for-item="school" wx:key="*this" data-name="{{school}}" bindtap="openSchool">{{school}} ›</text></view>
+        </view>
       </view>
-      <view class="uncertain" wx:if="{{!home.projectionSchools.length}}">目前暂时只能估到学校层次。</view>
+      <view class="uncertain" wx:if="{{!home.projectionSchoolGroups.length}}">按目前预估，对应“{{home.projection.school_scope}}”这一参考层次；目前没有足够数据对应到具体学校。</view>
+      <view class="school-basis-note" wx:if="{{home.projectionSchoolGroups.length}}">学校层次是升学参考分类，并非教育部门正式评级；具体招生信息以学校和教育部门发布为准。</view>
     </view>
 
-    <view class="target-line" wx:if="{{home.hasTarget}}" bindtap="goToAnalysis">
-      <text>目标：{{dashboard.target_school}}</text>
-      <text>{{home.targetRelation || '查看目标差距'}} ›</text>
+    <view class="target-block" wx:if="{{home.hasTarget}}" bindtap="goToAnalysis">
+      <view class="target-kicker">目标高中</view>
+      <view class="target-name">{{dashboard.target_school}}</view>
+      <view class="target-relation">按最近成绩：{{home.targetCurrent || '暂缺对比数据'}}</view>
+      <view class="target-gap">按目前趋势：{{home.targetRelation || '暂缺对比数据'}}</view>
+      <view class="target-more">查看目标分析 ›</view>
     </view>
     <view class="target-line target-empty" wx:else bindtap="showProfile">
       <text>还没有设置目标高中</text><text>设置目标，查看差距 ›</text>
     </view>
-    <view class="analysis-link" bindtap="goToAnalysis">查看三种中考情景和完整分析 ›</view>
+    <view class="analysis-link" bindtap="goToAnalysis">查看完整分析 ›</view>
   </view>
 
   <view class="empty card empty-action" wx:if="{{!dashboard.latest_exam && dashboard.profile_complete}}" bindtap="goToEntry">

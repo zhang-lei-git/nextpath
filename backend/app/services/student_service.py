@@ -478,6 +478,7 @@ class StudentService:
             full_mark=full_mark,
             score_rate=score_rate,
             grade_text=grade_text,
+            class_text=f"班级第 {latest.class_rank} 名" if latest.class_rank else None,
             rank_text=rank_text,
             school_scope=(source.school_scope if source else None) or "学校范围仍需继续观察",
             clarity=source.clarity if source else "初步估算",

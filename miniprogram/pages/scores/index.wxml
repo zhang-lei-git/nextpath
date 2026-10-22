@@ -26,7 +26,7 @@
   <view class="score-card card" wx:for="{{exams}}" wx:key="id">
     <view class="score-main">
       <view class="score-name">{{item.name}}</view>
-      <view class="muted">{{item.exam_date}} · 年级第 {{item.grade_rank || '—'}} / {{item.grade_size || '—'}} 名</view>
+      <view class="muted">{{item.exam_date}} · {{item.position_summary}}</view>
       <view class="muted">得分率 {{item.score_rate}} · {{item.grade_percentile}}</view>
     </view>
     <view class="score-side">

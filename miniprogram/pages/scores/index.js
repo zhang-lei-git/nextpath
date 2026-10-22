@@ -24,16 +24,20 @@ Page({
       } catch (_) {
         points = []
       }
+      const hasGradeRanks = points.some((point) => point.grade_rank)
+      const hasClassRanks = points.some((point) => point.class_rank)
       this.setData({
         exams: exams.map((item) => ({
           ...item,
           score_rate: item.total_full_mark ? `${(item.total_score / item.total_full_mark * 100).toFixed(1)}%` : '—',
-          grade_percentile: item.grade_rank && item.grade_size ? `年级前 ${(item.grade_rank / item.grade_size * 100).toFixed(1)}%` : '年级位置待补充'
+          grade_percentile: item.grade_rank && item.grade_size ? `年级前 ${(item.grade_rank / item.grade_size * 100).toFixed(1)}%` : '年级位置待补充',
+          position_summary: item.grade_rank && item.grade_size ? `年级第 ${item.grade_rank} / ${item.grade_size} 名` : item.class_rank ? `班级第 ${item.class_rank} 名` : '排名待补充'
         })),
         points,
         fullMark: points.length ? points[0].full_mark : 640,
         hasIncomplete: points.some((p) => !p.grade_percentile),
-        hasClassRanks: points.some((p) => p.class_rank)
+        hasClassRanks,
+        rankScope: hasGradeRanks ? 'grade' : (hasClassRanks ? 'class' : 'grade')
       })
       this.updateChartTitle()
     }

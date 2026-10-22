@@ -22,20 +22,27 @@ Page({
     if (!forecast) return null
     const current = forecast.current_snapshot || null
     const projection = (forecast.exam_outcomes || []).find((item) => item.key === 'steady') || forecast.reasonable_projection || null
-    const compactSchools = (tiers) => {
-      const names = []
-      ;['reach', 'match', 'safe'].forEach((tier) => (tiers && tiers[tier] || []).forEach((name) => {
-        if (!names.includes(name)) names.push(name)
-      }))
-      return names.slice(0, 4)
+    const schoolGroups = (tiers) => {
+      const labels = { reach: '可冲刺', match: '较匹配', safe: '相对稳妥' }
+      return ['reach', 'match', 'safe'].map((key) => ({
+        key,
+        label: labels[key],
+        schools: (tiers && tiers[key] || []).slice(0, 2)
+      })).filter((group) => group.schools.length)
     }
     return {
       hasTarget: Boolean(dashboard.target_school),
+      targetCurrent: forecast.target_comparison && forecast.target_comparison.current_relation,
       targetRelation: forecast.target_comparison && forecast.target_comparison.projected_relation,
+      positionLabel: dashboard.latest_exam && dashboard.latest_exam.grade_rank && dashboard.latest_exam.grade_size
+        ? `年级第 ${dashboard.latest_exam.grade_rank} / ${dashboard.latest_exam.grade_size} 名`
+        : dashboard.latest_exam && dashboard.latest_exam.class_rank
+          ? `班级第 ${dashboard.latest_exam.class_rank} 名`
+          : '排名信息待补充',
       current,
       projection,
-      currentSchools: compactSchools(current && current.school_tiers),
-      projectionSchools: compactSchools(projection && projection.school_tiers),
+      currentSchoolGroups: schoolGroups(current && current.school_tiers),
+      projectionSchoolGroups: schoolGroups(projection && projection.school_tiers),
       projectionRange: projection && projection.total_range && `${projection.total_range[0]}–${projection.total_range[1]}`,
       projectionRank: projection && projection.estimated_rank_range && projection.estimated_rank_range[0] > 0
         ? `全区第 ${projection.estimated_rank_range[0].toLocaleString()}–${projection.estimated_rank_range[1].toLocaleString()} 名`
