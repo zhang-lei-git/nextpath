@@ -37,6 +37,16 @@
     </view>
   </block>
 
+  <view class="forecast-section" wx:if="{{dashboard.forecast && dashboard.forecast.exam_outcomes.length}}">
+    <view class="section-label">按现在的表现，中考可能到哪里</view>
+    <view class="forecast-card card {{item.key === 'steady' ? 'steady' : ''}}" wx:for="{{dashboard.forecast.exam_outcomes}}" wx:key="key">
+      <view class="forecast-head"><text>{{item.title}}</text><text>{{item.school_scope}}</text></view>
+      <view class="forecast-score">{{item.total_range[0]}}–{{item.total_range[1]}}<text>/ {{item.total_full_mark}} 分</text></view>
+      <view class="forecast-rank">预计全区第 {{item.estimated_rank_range[0]}}–{{item.estimated_rank_range[1]}} 名</view>
+      <view class="forecast-link" bindtap="goToAnalysis">查看对应学校范围 ›</view>
+    </view>
+  </view>
+
   <block wx:if="{{home}}">
     <view class="summary-card card target-card" wx:if="{{home.hasTarget}}" bindtap="goToAnalysis">
       <view class="summary-label">目标高中</view>

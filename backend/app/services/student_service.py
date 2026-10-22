@@ -505,6 +505,7 @@ class StudentService:
                 full_mark=full_mark,
                 score_rate=round(inclusive_total / full_mark * 100, 1) if full_mark else 0,
                 grade_percentile=round(exam.grade_rank / exam.grade_size * 100, 1) if exam.grade_rank and exam.grade_size else None,
+                class_rank=exam.class_rank,
                 comparison_mode=exam.comparison_mode,
             ))
         return TrendResponse(points=points, full_mark_label=f"{scheme.total_full_mark:g}" if scheme else "")

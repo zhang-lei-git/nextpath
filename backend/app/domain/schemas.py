@@ -172,6 +172,7 @@ class TrendPoint(BaseModel):
     full_mark: float
     score_rate: float
     grade_percentile: float | None = None
+    class_rank: int | None = None
     comparison_mode: str = "standard"
 
 

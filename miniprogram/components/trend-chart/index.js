@@ -2,10 +2,11 @@ Component({
   properties: {
     points: { type: Array, value: [] },
     mode: { type: String, value: 'score' },
-    fullMark: { type: Number, value: 0 }
+    fullMark: { type: Number, value: 0 },
+    rankScope: { type: String, value: 'grade' }
   },
   observers: {
-    'points, mode, fullMark'() { this.drawChart() }
+    'points, mode, fullMark, rankScope'() { this.drawChart() }
   },
   lifetimes: {
     attached() { setTimeout(() => this.initCanvas(), 100) }
@@ -49,6 +50,10 @@ Component({
       } else if (this.data.mode === 'percentile') {
         minVal = 0
         maxVal = 100
+      } else if (this.data.mode === 'rank') {
+        minVal = 0
+        maxVal = Math.max(...validValues) * 1.1
+        if (maxVal < 10) maxVal = 10
       } else {
         minVal = Math.min(...validValues) * 0.9
         maxVal = Math.max(...validValues) * 1.1
@@ -111,6 +116,7 @@ Component({
       if (this.data.mode === 'score') return point.total_score || null
       if (this.data.mode === 'rate') return point.score_rate || null
       if (this.data.mode === 'percentile') return point.grade_percentile || null
+      if (this.data.mode === 'rank') return this.data.rankScope === 'class' ? point.class_rank || null : point.grade_rank || null
       return null
     }
   }

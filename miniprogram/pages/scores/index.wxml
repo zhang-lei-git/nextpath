@@ -11,12 +11,13 @@
     <view class="tab-bar">
       <view class="tab {{activeTab === 'score' ? 'active' : ''}}" bindtap="switchTab" data-tab="score">总分</view>
       <view class="tab {{activeTab === 'rate' ? 'active' : ''}}" bindtap="switchTab" data-tab="rate">得分率</view>
-      <view class="tab {{activeTab === 'percentile' ? 'active' : ''}}" bindtap="switchTab" data-tab="percentile">年级位置</view>
+      <view class="tab {{activeTab === 'rank' ? 'active' : ''}}" bindtap="switchTab" data-tab="rank">位置变化</view>
     </view>
+    <view class="rank-scope" wx:if="{{activeTab === 'rank' && hasClassRanks}}"><text>查看</text><text class="rank-scope-option {{rankScope === 'grade' ? 'active' : ''}}" data-scope="grade" bindtap="switchRankScope">年级</text><text class="rank-scope-option {{rankScope === 'class' ? 'active' : ''}}" data-scope="class" bindtap="switchRankScope">班级</text></view>
     <view class="chart-card card">
       <view class="chart-title">{{chartTitle}}</view>
-      <trend-chart points="{{points}}" mode="{{activeTab}}" fullMark="{{fullMark}}"></trend-chart>
-      <view class="chart-note" wx:if="{{activeTab === 'percentile' && hasIncomplete}}">部分考试缺少排名数据，仅展示有数据的点。</view>
+      <trend-chart points="{{points}}" mode="{{activeTab}}" rankScope="{{rankScope}}" fullMark="{{fullMark}}"></trend-chart>
+      <view class="chart-note" wx:if="{{activeTab === 'rank' && rankScope === 'grade' && hasIncomplete}}">部分考试缺少年级排名，已跳过无数据的点。</view>
     </view>
   </view>
   <view class="trend-empty card" wx:if="{{!loading && exams.length === 1}}">再录入一次成绩后，就能看到变化趋势。</view>

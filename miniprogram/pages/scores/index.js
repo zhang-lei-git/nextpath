@@ -6,6 +6,8 @@ Page({
     points: [],
     loading: true,
     activeTab: 'score',
+    rankScope: 'grade',
+    hasClassRanks: false,
     fullMark: 640,
     chartTitle: '总分变化',
     hasIncomplete: false
@@ -30,7 +32,8 @@ Page({
         })),
         points,
         fullMark: points.length ? points[0].full_mark : 640,
-        hasIncomplete: points.some((p) => !p.grade_percentile)
+        hasIncomplete: points.some((p) => !p.grade_percentile),
+        hasClassRanks: points.some((p) => p.class_rank)
       })
       this.updateChartTitle()
     }
@@ -43,9 +46,10 @@ Page({
     this.updateChartTitle()
   },
   updateChartTitle() {
-    const titles = { score: '总分变化', rate: '得分率变化', percentile: '年级位置变化' }
+    const titles = { score: '总分变化', rate: '得分率变化', percentile: '年级位置百分比', rank: this.data.rankScope === 'class' ? '班级名次变化' : '年级名次变化' }
     this.setData({ chartTitle: titles[this.data.activeTab] || '' })
   },
+  switchRankScope(event) { this.setData({ rankScope: event.currentTarget.dataset.scope, activeTab: 'rank' }); this.updateChartTitle() },
   add() { wx.navigateTo({ url: '/pages/score-entry/index' }) },
   edit(event) { wx.navigateTo({ url: `/pages/score-entry/index?id=${event.currentTarget.dataset.id}` }) },
   goHome() { wx.redirectTo({ url: '/pages/home/index' }) },

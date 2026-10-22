@@ -15,3 +15,6 @@
 .score-total { color:#1E293B; font-size:40rpx; font-weight:700; }
 .text-button { color:#0EA5E9; font-size:25rpx; }
 .empty { margin-bottom:20rpx; padding:34rpx 28rpx; color:#94A3B8; font-size:27rpx; text-align:center; }
+.rank-scope { display:flex; align-items:center; gap:20rpx; margin:0 0 16rpx; color:#64748B; font-size:24rpx; }
+.rank-scope-option { padding:8rpx 20rpx; border:1rpx solid #CBD5E1; border-radius:999rpx; }
+.rank-scope-option.active { color:#059669; border-color:#059669; background:#ECFDF5; font-weight:600; }
