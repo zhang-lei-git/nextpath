@@ -16,9 +16,10 @@
     <view class="greeting">{{dashboard.profile_complete ? dashboard.student_name + '的升学位置' : '先建立孩子档案'}}</view>
   </view>
 
-  <view class="decision-card card" wx:if="{{home && dashboard.latest_exam}}">
-    <view class="decision-block current">
-      <view class="decision-kicker">按最近一次成绩</view>
+  <view class="home-decisions" wx:if="{{home && dashboard.latest_exam}}">
+    <view class="decision-card current-card card">
+      <view class="decision-kicker">现在能看什么</view>
+      <view class="decision-label">按最近一次成绩</view>
       <view class="decision-answer">{{firstScreen.school_scope}}</view>
       <view class="decision-rank" wx:if="{{firstScreen.rank_text && firstScreen.rank_text !== '学校范围仍需继续观察'}}">{{firstScreen.rank_text}}</view>
       <view class="decision-score">{{dashboard.latest_exam.total_score}} / {{dashboard.latest_exam.total_full_mark || firstScreen.full_mark}} 分 · 得分率 {{firstScreen.score_rate}}</view>
@@ -34,10 +35,9 @@
       <view class="school-basis-note" wx:if="{{home.currentSchoolGroups.length}}">学校层次是升学参考分类，并非教育部门正式评级；具体招生信息以学校和教育部门发布为准。</view>
     </view>
 
-    <view class="decision-divider"></view>
-
-    <view class="decision-block projection" wx:if="{{home.projection}}">
-      <view class="decision-kicker">按目前趋势估计中考</view>
+    <view class="decision-card projection-card card" wx:if="{{home.projection}}">
+      <view class="decision-kicker">中考大概能到哪里</view>
+      <view class="decision-label">按目前趋势估计中考</view>
       <view class="decision-answer">{{home.projection.school_scope}}</view>
       <view class="decision-rank">{{home.projectionRank}}</view>
       <view class="decision-score" wx:if="{{home.projectionRange}}">{{home.projectionRange}} / {{home.projection.total_full_mark}} 分</view>
@@ -52,17 +52,20 @@
       <view class="school-basis-note" wx:if="{{home.projectionSchoolGroups.length}}">学校层次是升学参考分类，并非教育部门正式评级；具体招生信息以学校和教育部门发布为准。</view>
     </view>
 
-    <view class="target-block" wx:if="{{home.hasTarget}}" bindtap="goToAnalysis">
+    <view class="target-block target-card" wx:if="{{home.hasTarget}}">
       <view class="target-kicker">目标高中</view>
       <view class="target-name">{{dashboard.target_school}}</view>
       <view class="target-relation">按最近成绩：{{home.targetCurrent || '暂缺对比数据'}}</view>
       <view class="target-gap">按目前趋势：{{home.targetRelation || '暂缺对比数据'}}</view>
-      <view class="target-more">查看目标分析 ›</view>
+      <button class="target-button" bindtap="goToAnalysis">查看目标分析</button>
     </view>
-    <view class="target-line target-empty" wx:else bindtap="showProfile">
-      <text>还没有设置目标高中</text><text>设置目标，查看差距 ›</text>
+    <view class="target-block target-card target-empty" wx:else>
+      <view class="target-kicker">目标高中</view>
+      <view class="target-name">还没有设置目标</view>
+      <view class="target-gap">设置目标后，可以看到和目标的具体差距。</view>
+      <button class="target-button" bindtap="showProfile">设置目标高中</button>
     </view>
-    <view class="analysis-link" bindtap="goToAnalysis">查看完整分析 ›</view>
+    <button class="analysis-button" bindtap="goToAnalysis">查看完整分析</button>
   </view>
 
   <view class="empty card empty-action" wx:if="{{!dashboard.latest_exam && dashboard.profile_complete}}" bindtap="goToEntry">
