@@ -11,10 +11,11 @@ def test_school_scope_uses_clear_parent_facing_names() -> None:
     assert BaselinePredictionEngine._school_scope(20, True) == "优质普通高中"
     assert BaselinePredictionEngine._school_scope(40, True) == "普通高中中上段"
     assert BaselinePredictionEngine._school_scope(55, True) == "普通高中"
-    assert BaselinePredictionEngine._school_scope(80, True) == "普高录取位置仍有差距"
+    assert BaselinePredictionEngine._school_scope(80, True) == "普通高中"
     assert BaselinePredictionEngine._school_scope(None, False) == "学校层次暂时无法判断"
-    assert "稳住" not in BaselinePredictionEngine._school_scope(75, True)
-    assert "范围为主" not in BaselinePredictionEngine._school_scope(75, True)
+    assert BaselinePredictionEngine._school_scope(55, True, 90) == "普通高中"
+    assert BaselinePredictionEngine._school_scope(92, True, 90) == "普通高中录取边界"
+    assert BaselinePredictionEngine._school_scope(98, True, 90) == "普高录取位置仍有差距"
 
 
 def test_baseline_prediction_is_explainable() -> None:

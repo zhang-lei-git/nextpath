@@ -170,11 +170,12 @@ class BaselinePredictionEngine:
         prediction_level = self._prediction_level(input_data, annual_curve)
         current_snapshot.clarity = self._clarity(input_data)
         reasonable_projection.clarity = self._clarity(input_data)
+        lowest_school_percentile = self._lowest_public_school_percentile(target_base)
         current_snapshot.school_scope = self._school_scope(
-            current_snapshot.current_percentile, current_snapshot.range_usable
+            current_snapshot.current_percentile, current_snapshot.range_usable, lowest_school_percentile
         )
         reasonable_projection.school_scope = self._school_scope(
-            reasonable_projection.current_percentile, reasonable_projection.range_usable
+            reasonable_projection.current_percentile, reasonable_projection.range_usable, lowest_school_percentile
         )
         if prediction_level == "complete":
             if current_snapshot.range_usable:
@@ -606,7 +607,7 @@ class BaselinePredictionEngine:
         return "普通高中竞争范围"
 
     @staticmethod
-    def _school_scope(percentile: float | None, range_usable: bool) -> str:
+    def _school_scope(percentile: float | None, range_usable: bool, lowest_school_percentile: float | None = None) -> str:
         if percentile is None or not range_usable:
             return "学校层次暂时无法判断"
         if percentile <= 3:
@@ -617,9 +618,19 @@ class BaselinePredictionEngine:
             return "优质普通高中"
         if percentile <= 45:
             return "普通高中中上段"
-        if percentile <= 65:
+        if lowest_school_percentile is None or percentile <= lowest_school_percentile:
             return "普通高中"
+        if percentile <= min(99.5, lowest_school_percentile + 5):
+            return "普通高中录取边界"
         return "普高录取位置仍有差距"
+
+    def _lowest_public_school_percentile(self, candidate_count: int | None) -> float | None:
+        if not self.reference_data or not candidate_count:
+            return None
+        ranks = [reference.rank for reference in self.reference_data.school_references if reference.rank and reference.rank > 0]
+        if not ranks:
+            return None
+        return min(99.5, round(max(ranks) / candidate_count * 100, 2))
 
     @staticmethod
     def _clarity(input_data: PredictionInput) -> str:
