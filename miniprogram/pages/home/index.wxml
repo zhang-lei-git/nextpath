@@ -17,7 +17,7 @@
   </view>
 
   <view class="home-decisions" wx:if="{{home && dashboard.latest_exam}}">
-    <view class="decision-card current-card card">
+    <view class="decision-card current-card card decision-block">
       <view class="decision-kicker">现在能看什么</view>
       <view class="decision-label">按最近一次成绩</view>
       <view class="decision-answer">{{firstScreen.school_scope}}</view>
@@ -35,7 +35,7 @@
       <view class="school-basis-note" wx:if="{{home.currentSchoolGroups.length}}">学校层次是升学参考分类，并非教育部门正式评级；具体招生信息以学校和教育部门发布为准。</view>
     </view>
 
-    <view class="decision-card projection-card card" wx:if="{{home.projection}}">
+    <view class="decision-card projection-card card decision-block" wx:if="{{home.projection}}">
       <view class="decision-kicker">中考大概能到哪里</view>
       <view class="decision-label">按目前趋势估计中考</view>
       <view class="decision-answer">{{home.projection.school_scope}}</view>

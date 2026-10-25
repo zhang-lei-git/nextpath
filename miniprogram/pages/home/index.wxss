@@ -6,7 +6,7 @@
 .current-card { border-top:8rpx solid #059669; }
 .projection-card { border-top:8rpx solid #0EA5E9; background:#F6FBFF; }
 .decision-label { margin-top:8rpx; color:#64748B; font-size:23rpx; }
-.decision-block { padding:32rpx 30rpx; }
+.decision-block { padding:36rpx 32rpx 34rpx; }
 .decision-kicker { color:#64748B; font-size:24rpx; font-weight:600; }
 .decision-answer { margin-top:12rpx; color:#153F3D; font-size:38rpx; font-weight:750; line-height:1.35; }
 .decision-rank { margin-top:8rpx; color:#0F766E; font-size:28rpx; font-weight:650; }
@@ -302,27 +302,27 @@
 }
 .home-decisions > .current-card {
   border-color: #B7E3D2;
-  border-top: 8rpx solid #059669;
+  border-top: 6rpx solid #059669;
   background: #FFFFFF;
 }
 .home-decisions > .projection-card {
   border-color: #B9DDF2;
-  border-top: 8rpx solid #0EA5E9;
+  border-top: 6rpx solid #0EA5E9;
   background: #F5FBFF;
 }
 .home-decisions > .target-card {
   border-color: #F4D28A;
-  border-top: 8rpx solid #D97706;
+  border-top: 6rpx solid #D97706;
   background: #FFFCF3;
 }
-.home-decisions .decision-block { padding: 32rpx; }
-.home-decisions .decision-kicker { color: #64748B; font-size: 24rpx; font-weight: 650; }
-.home-decisions .decision-label { margin-top: 8rpx; color: #94A3B8; font-size: 23rpx; }
-.home-decisions .decision-answer { margin-top: 18rpx; color: #153F3D; font-size: 42rpx; line-height: 1.25; font-weight: 750; }
+.home-decisions .decision-block { padding: 36rpx 32rpx 34rpx; }
+.home-decisions .decision-kicker { color: #64748B; font-size: 24rpx; font-weight: 650; line-height: 1.4; }
+.home-decisions .decision-label { margin-top: 10rpx; color: #94A3B8; font-size: 23rpx; line-height: 1.4; }
+.home-decisions .decision-answer { margin-top: 22rpx; color: #153F3D; font-size: 42rpx; line-height: 1.25; font-weight: 750; }
 .home-decisions .projection-card .decision-answer { color: #075985; }
 .home-decisions .decision-rank { margin-top: 12rpx; font-size: 29rpx; font-weight: 700; }
-.home-decisions .decision-score { margin-top: 18rpx; font-size: 27rpx; }
-.home-decisions .decision-grade { margin-top: 8rpx; font-size: 24rpx; }
+.home-decisions .decision-score { margin-top: 20rpx; font-size: 27rpx; line-height: 1.5; }
+.home-decisions .decision-grade { margin-top: 10rpx; font-size: 24rpx; line-height: 1.5; }
 .home-decisions .school-heading { margin-top: 24rpx; }
 .home-decisions .school-chip { background: #E8F7F0; border: 1rpx solid #B7E3D2; }
 .home-decisions .projection-card .school-chip { background: #EAF6FD; border-color: #B9DDF2; color: #075985; }
