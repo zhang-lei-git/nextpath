@@ -176,6 +176,7 @@ class StudentService:
                 ),
                 class_type_standard=profile.class_type_standard,
                 calibration_level=calibration_level,
+                admission_region=profile.admission_region,
             )
             forecast = predictor.predict(prediction_input)
             report = predictor.build_report(prediction_input)
@@ -487,13 +488,13 @@ class StudentService:
 
     async def trend_data(self, owner_id: str) -> TrendResponse:
         """Return comparable exam trend points for the parent-facing score page."""
-        from app.services.scoring_scheme import scoring_scheme
+        from app.services.scoring_scheme import scoring_scheme_for_region
 
         profile = await self.profiles.get_or_create_demo(owner_id)
         exams = await self.exams.list(profile.id)
         if not exams:
             return TrendResponse(points=[])
-        scheme = scoring_scheme(profile.cohort_year)
+        scheme = scoring_scheme_for_region(profile.admission_region, profile.cohort_year)
         points = []
         for exam in sorted(exams, key=lambda item: item.exam_date)[-20:]:
             inclusive_total = self._inclusive_total(exam)

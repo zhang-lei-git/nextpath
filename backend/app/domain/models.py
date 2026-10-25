@@ -18,6 +18,7 @@ class StudentProfile(Base):
     grade: Mapped[str] = mapped_column(String(16), default="初三")
     cohort_year: Mapped[int] = mapped_column(Integer, default=2026, server_default="2026")
     city: Mapped[str] = mapped_column(String(64), default="西安")
+    admission_region: Mapped[str] = mapped_column(String(64), default="西安城六区", server_default="西安城六区")
     junior_school: Mapped[str | None] = mapped_column(String(128), nullable=True)
     class_type_raw: Mapped[str | None] = mapped_column(String(80), nullable=True)
     class_type_standard: Mapped[str] = mapped_column(String(24), default="未知")

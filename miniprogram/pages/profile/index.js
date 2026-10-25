@@ -4,6 +4,7 @@ Page({
   data: {
     form: { student_name: '', junior_school: '', grade: '初三', cohort_year: 2026, class_type_raw: '', class_type_standard: '未知', target_school: '' },
     grades: ['初一', '初二', '初三'], gradeIndex: 2, saving: false,
+    regions: ['西安城六区', '西咸新区', '周边县区'], regionIndex: 0,
     cohorts: [2026, 2027, 2028], cohortIndex: 0,
     classTypes: ['未知', '创新', '重点', '平行'], classTypeIndex: 0,
     juniorMatches: [], targetMatches: []
@@ -14,7 +15,7 @@ Page({
       const form = {
         student_name: profile.student_name || '',
         junior_school: profile.junior_school || '',
-        grade: profile.grade || '初三', cohort_year: profile.cohort_year || 2026,
+        grade: profile.grade || '初三', cohort_year: profile.cohort_year || 2026, admission_region: profile.admission_region || '西安城六区',
         class_type_raw: profile.class_type_raw || '',
         class_type_standard: profile.class_type_standard || '未知',
         target_school: profile.target_school || ''
@@ -23,7 +24,8 @@ Page({
         form,
         gradeIndex: this.data.grades.indexOf(form.grade),
         classTypeIndex: Math.max(0, this.data.classTypes.indexOf(form.class_type_standard)),
-        cohortIndex: Math.max(0, this.data.cohorts.indexOf(form.cohort_year))
+        cohortIndex: Math.max(0, this.data.cohorts.indexOf(form.cohort_year)),
+        regionIndex: Math.max(0, this.data.regions.indexOf(form.admission_region))
       })
     } catch (_) { wx.showToast({ title: '暂时无法读取档案', icon: 'none' }) }
   },
@@ -63,6 +65,10 @@ Page({
   cohortChange(event) {
     const cohortIndex = Number(event.detail.value)
     this.setData({ 'form.cohort_year': this.data.cohorts[cohortIndex], cohortIndex })
+  },
+  regionChange(event) {
+    const regionIndex = Number(event.detail.value)
+    this.setData({ 'form.admission_region': this.data.regions[regionIndex], regionIndex })
   },
   classTypeChange(event) {
     const classTypeIndex = Number(event.detail.value)

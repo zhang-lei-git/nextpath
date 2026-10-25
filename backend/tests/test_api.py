@@ -138,6 +138,19 @@ def test_family_can_delete_profile_scores_and_reports() -> None:
         assert profile.json()["student_name"] == ""
 
 
+def test_unsupported_admission_region_does_not_use_xian_scheme() -> None:
+    headers = {"X-Demo-User": f"region-family-{uuid4().hex}"}
+    with TestClient(app) as client:
+        profile = client.put(
+            "/api/v1/profile", headers=headers,
+            json={"student_name": "区域测试", "junior_school": "示例初中", "grade": "初三", "admission_region": "西咸新区"},
+        )
+        assert profile.status_code == 200
+        assert profile.json()["admission_region"] == "西咸新区"
+        scheme = client.get("/api/v1/profile/scoring-scheme", headers=headers)
+        assert scheme.status_code == 404
+
+
 def test_seven_mock_exams_generate_saved_reports_and_support_correction(monkeypatch) -> None:
     monkeypatch.setattr(settings, "report_signing_secret", "report-test-secret")
     headers = {"X-Demo-User": f"seven-exam-family-{uuid4().hex}"}

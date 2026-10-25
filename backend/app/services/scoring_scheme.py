@@ -111,3 +111,9 @@ def scoring_scheme_for_cohort(city: str, cohort_year: int) -> ScoringScheme | No
     if city != "西安":
         return None
     return scoring_scheme(cohort_year)
+
+
+def scoring_scheme_for_region(region: str, cohort_year: int) -> ScoringScheme | None:
+    if region != "西安城六区":
+        return None
+    return scoring_scheme(cohort_year)

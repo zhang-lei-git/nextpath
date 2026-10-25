@@ -187,6 +187,7 @@ class StudentProfileUpdate(BaseModel):
     junior_school: str = Field(min_length=1, max_length=128)
     grade: str = Field(default="初三", pattern="^(初一|初二|初三)$")
     cohort_year: int = Field(default=2026, ge=2020, le=2100)
+    admission_region: Literal["西安城六区", "西咸新区", "周边县区"] = "西安城六区"
     class_type_raw: str | None = Field(default=None, max_length=80)
     class_type_standard: Literal["创新", "重点", "平行", "未知"] = "未知"
     target_school: str | None = Field(default=None, max_length=128)
@@ -198,6 +199,7 @@ class StudentProfileRead(BaseModel):
     junior_school: str | None
     grade: str | None
     cohort_year: int
+    admission_region: str
     class_type_raw: str | None
     class_type_standard: str
     target_school: str | None

@@ -8,7 +8,7 @@ from app.services.annual_distribution import AnnualDistributionModel, AnnualDist
 from app.services.published_reference_data import PublishedReferenceData
 from app.services.position_engine import CalibrationPoint, PositionEngine
 from app.services.position_fusion import PositionFusionEngine
-from app.services.scoring_scheme import ScoreBridgeModel, ScoreBridgeResult, scoring_scheme
+from app.services.scoring_scheme import ScoreBridgeModel, ScoreBridgeResult, scoring_scheme_for_region
 from app.services.school_boundary import SchoolAdmissionObservation, SchoolBoundary, SchoolBoundaryModel
 
 
@@ -38,6 +38,7 @@ class PredictionInput:
     rank_history: tuple[tuple[int, int], ...] = ()
     class_type_standard: str | None = None
     calibration_level: str | None = None
+    admission_region: str = "西安城六区"
 
 
 class PredictionEngine(Protocol):
@@ -378,7 +379,7 @@ class BaselinePredictionEngine:
 
     @staticmethod
     def _academic_full_mark(total_full_mark: float | None, analysis_year: int | None) -> float:
-        scheme = scoring_scheme(analysis_year) if analysis_year else None
+        scheme = scoring_scheme_for_region("西安城六区", analysis_year) if analysis_year else None
         scheme_academic = scheme.total_full_mark - scheme.counted_subjects.get("pe", 0) if scheme else DEFAULT_ACADEMIC_FULL_MARK
         if total_full_mark is None:
             return scheme_academic
@@ -395,7 +396,7 @@ class BaselinePredictionEngine:
 
     @staticmethod
     def _total_full_mark(input_data: PredictionInput) -> float:
-        scheme = scoring_scheme(input_data.analysis_year) if input_data.analysis_year else None
+        scheme = scoring_scheme_for_region(input_data.admission_region, input_data.analysis_year) if input_data.analysis_year else None
         if scheme:
             return scheme.total_full_mark
         if input_data.total_full_mark:
@@ -473,7 +474,7 @@ class BaselinePredictionEngine:
             return None
         historical_full_mark = self.reference_data.rank_full_mark
         historical_candidates = self.reference_data.candidate_count
-        target_scheme = scoring_scheme(input_data.analysis_year)
+        target_scheme = scoring_scheme_for_region(input_data.admission_region, input_data.analysis_year)
         if not historical_full_mark or not historical_candidates or not target_scheme:
             return None
         return self.annual_distribution.project(
