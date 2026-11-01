@@ -1,0 +1,341 @@
+{
+  "status": "experimental_not_eligible_for_production",
+  "historical_release": "2025 西安城六区历史升学参考数据（旧系统迁移 v1）",
+  "evaluation_release": "2026 西安城六区升学参考数据（旧系统迁移测试版 v2）",
+  "data_quality": {
+    "historical": [
+      "声明的考生人数小于曲线最大累计位次，百分位口径不可用"
+    ],
+    "evaluation": [
+      "缺少全体考生人数；禁止以截断曲线末位累计人数代替"
+    ]
+  },
+  "interpretation": "留出点来自同一届同一张表；误差只验证分段插值，不能证明考前预测或跨年预测准确。原始累计位次比较未按未知人数归一化。",
+  "calibration": {
+    "method": "monotonic_piecewise_linear",
+    "anchor_count": 14,
+    "holdout_count": 109,
+    "anchors": [
+      [
+        633.0,
+        86
+      ],
+      [
+        623.0,
+        1343
+      ],
+      [
+        613.0,
+        4455
+      ],
+      [
+        603.0,
+        8827
+      ],
+      [
+        593.0,
+        13845
+      ],
+      [
+        583.0,
+        19147
+      ],
+      [
+        573.0,
+        24522
+      ],
+      [
+        563.0,
+        29538
+      ],
+      [
+        553.0,
+        34367
+      ],
+      [
+        543.0,
+        38842
+      ],
+      [
+        533.0,
+        43009
+      ],
+      [
+        523.0,
+        46703
+      ],
+      [
+        513.0,
+        49914
+      ],
+      [
+        511.0,
+        50541
+      ]
+    ],
+    "baseline": {
+      "samples": 102,
+      "mae": 7988.73,
+      "median_absolute_error": 8754.9,
+      "bias": -7988.73
+    },
+    "holdout": {
+      "samples": 109,
+      "mae": 54.69,
+      "median_absolute_error": 30.2,
+      "bias": 34.58
+    },
+    "paired_comparison": {
+      "baseline": {
+        "samples": 102,
+        "mae": 7988.73,
+        "median_absolute_error": 8754.9,
+        "bias": -7988.73
+      },
+      "calibration": {
+        "samples": 102,
+        "mae": 44.84,
+        "median_absolute_error": 28.15,
+        "bias": 23.35
+      }
+    },
+    "unscored_baseline_count": 7,
+    "segments": {
+      "620+": {
+        "baseline": {
+          "samples": 5,
+          "mae": 1307.16,
+          "median_absolute_error": 1363.2,
+          "bias": -1307.16
+        },
+        "calibration": {
+          "samples": 12,
+          "mae": 167.22,
+          "median_absolute_error": 171.6,
+          "bias": 167.22
+        }
+      },
+      "590–619": {
+        "baseline": {
+          "samples": 27,
+          "mae": 4502.98,
+          "median_absolute_error": 4606.4,
+          "bias": -4502.98
+        },
+        "calibration": {
+          "samples": 27,
+          "mae": 81.44,
+          "median_absolute_error": 62.4,
+          "bias": 80.89
+        }
+      },
+      "560–589": {
+        "baseline": {
+          "samples": 27,
+          "mae": 8043.35,
+          "median_absolute_error": 8047.2,
+          "bias": -8043.35
+        },
+        "calibration": {
+          "samples": 27,
+          "mae": 27.36,
+          "median_absolute_error": 22.6,
+          "bias": 13.54
+        }
+      },
+      "530–559": {
+        "baseline": {
+          "samples": 27,
+          "mae": 10425.35,
+          "median_absolute_error": 10238.7,
+          "bias": -10425.35
+        },
+        "calibration": {
+          "samples": 27,
+          "mae": 16.84,
+          "median_absolute_error": 16.6,
+          "bias": -8.35
+        }
+      },
+      "<530": {
+        "baseline": {
+          "samples": 16,
+          "mae": 11754.94,
+          "median_absolute_error": 11777.25,
+          "bias": -11754.94
+        },
+        "calibration": {
+          "samples": 16,
+          "mae": 35.16,
+          "median_absolute_error": 37.35,
+          "bias": -35.09
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "score": 529.5,
+      "baseline_rank": 32788,
+      "reference_rank": 44344.0,
+      "experimental_rank": 44301.9
+    },
+    {
+      "score": 530,
+      "baseline_rank": 32609,
+      "reference_rank": 44152.0,
+      "experimental_rank": 44117.2
+    },
+    {
+      "score": 540,
+      "baseline_rank": 29346,
+      "reference_rank": 40097.0,
+      "experimental_rank": 40092.1
+    },
+    {
+      "score": 550,
+      "baseline_rank": 25548,
+      "reference_rank": 35740.0,
+      "experimental_rank": 35709.5
+    },
+    {
+      "score": 560,
+      "baseline_rank": 21500,
+      "reference_rank": 30996.0,
+      "experimental_rank": 30986.7
+    },
+    {
+      "score": 580,
+      "baseline_rank": 13309,
+      "reference_rank": 20707.0,
+      "experimental_rank": 20759.5
+    }
+  ],
+  "school_boundary_validation": {
+    "status": "blocked_missing_actual_admission_outcomes",
+    "verified_actual_outcomes": 0,
+    "excluded_predictions": [
+      {
+        "school": "西安市第六中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安市第十一中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安市第三十中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安市第七十五中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安市第八十三中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安市第八十五中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西北工业大学附属中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安市铁一中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安交通大学附属中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安高新第一中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "陕西师范大学附属中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安铁一中滨河高级中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "陕西省西安中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安市第三中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安市第一中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安市长安区第一中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安高级中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "陕西师范大学陆港高级中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安高新唐南中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安电子科技大学附属中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安市庆华中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安思源中学",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "搜狐分段预估（2026-05-27），非官方录取线"
+      },
+      {
+        "school": "西安铁一中国际合作学校",
+        "reason": "考前预测/未核验参考线，不是真实录取结果",
+        "source": "网传补充预估（待核验），非官方录取线"
+      }
+    ]
+  },
+  "release_gate": [
+    "核验2026曲线来源与完整覆盖范围",
+    "补齐2025/2026同口径全体考生人数",
+    "获取按学校校区招生代码批次区分的2026真实录取结果",
+    "跨年度时间留出验证后再审核发布"
+  ]
+}
