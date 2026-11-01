@@ -1,0 +1,2616 @@
+{
+  "target_year": 2026,
+  "region": "西安城六区",
+  "cutoff": "2026-06-19",
+  "historical_release": "2025 西安城六区历史升学参考数据（旧系统迁移 v1）",
+  "release_published_at": "2026-08-06 02:32:40",
+  "retrospective_reconstruction": true,
+  "warning": "仅复现现行模型；历史库分母有矛盾，不具备发布资格。导入时间晚于中考，无法声称严格考前数据快照。排名为曲线插值估计，不是官方学校录取排名。",
+  "input_quality": [
+    "声明人数小于曲线最大累计位次"
+  ],
+  "parameters": {
+    "annual_distribution": {
+      "version": "annual-curve-v1-西安",
+      "values": {
+        "engine_contract": "annual-distribution-target-curve-v1",
+        "candidate_count_multiplier": 1.0,
+        "target_score_shift": 0.0,
+        "rank_interval_ratio": 0.08,
+        "minimum_rank_interval": 600
+      }
+    },
+    "school_boundary": {
+      "version": "school-boundary-v1-西安",
+      "values": {
+        "engine_contract": "school-boundary-position-range-v1",
+        "year_decay": 0.75,
+        "plan_elasticity": 0.7,
+        "minimum_boundary_width_pp": 0.8,
+        "preferred_observation_count": 3,
+        "sparse_data_extra_width_pp": 1.5,
+        "anomaly_weight": 0.35,
+        "anomaly_extra_width_pp": 0.8
+      }
+    }
+  },
+  "schools": [
+    {
+      "school": "西北工业大学附属中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "643f49a9-f550-4050-99a9-c83c8a18458e",
+      "historical_score": 785.7,
+      "historical_rank": 1175,
+      "predicted_rank": 1175,
+      "predicted_rank_range": [
+        27,
+        2323
+      ],
+      "predicted_score": 613.2,
+      "predicted_score_range": [
+        608.1,
+        625.7
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市铁一中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "0265f6b1-a8c5-4fa5-a010-ef018482c05b",
+      "historical_score": 782.5,
+      "historical_rank": 1688,
+      "predicted_rank": 1688,
+      "predicted_rank_range": [
+        540,
+        2836
+      ],
+      "predicted_score": 610.7,
+      "predicted_score_range": [
+        606.4,
+        617.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安交通大学附属中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "1971ef63-749c-48c5-adf9-6c72903b06a9",
+      "historical_score": 780.8,
+      "historical_rank": 1978,
+      "predicted_rank": 1978,
+      "predicted_rank_range": [
+        830,
+        3126
+      ],
+      "predicted_score": 609.4,
+      "predicted_score_range": [
+        605.5,
+        615.4
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安高新第一中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "bfbde56b-b4d6-4bdb-93fe-82100805bbc1",
+      "historical_score": 779.8,
+      "historical_rank": 2162,
+      "predicted_rank": 2162,
+      "predicted_rank_range": [
+        1014,
+        3310
+      ],
+      "predicted_score": 608.6,
+      "predicted_score_range": [
+        604.9,
+        614.3
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "陕西师范大学附属中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "76220027-d27c-4bec-b51b-cdd47a1ff191",
+      "historical_score": 776,
+      "historical_rank": 3063,
+      "predicted_rank": 3063,
+      "predicted_rank_range": [
+        1915,
+        4211
+      ],
+      "predicted_score": 605.7,
+      "predicted_score_range": [
+        602.1,
+        609.7
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安铁一中滨河高级中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "c114a97a-6e7b-4d93-b5fe-c97fb7ac6422",
+      "historical_score": 775,
+      "historical_rank": 3300,
+      "predicted_rank": 3300,
+      "predicted_rank_range": [
+        2152,
+        4448
+      ],
+      "predicted_score": 604.9,
+      "predicted_score_range": [
+        601.4,
+        608.7
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "陕西省西安中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "c9e8133f-f075-450e-b07b-0d7a4467a6ba",
+      "historical_score": 766.3,
+      "historical_rank": 5641,
+      "predicted_rank": 5641,
+      "predicted_rank_range": [
+        4493,
+        6789
+      ],
+      "predicted_score": 598.1,
+      "predicted_score_range": [
+        595.2,
+        601.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第三中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "ee1a4d68-e869-497d-8b1b-d35ebfb94c91",
+      "historical_score": 766,
+      "historical_rank": 5728,
+      "predicted_rank": 5728,
+      "predicted_rank_range": [
+        4580,
+        6876
+      ],
+      "predicted_score": 597.9,
+      "predicted_score_range": [
+        595.0,
+        601.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第一中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "90f5a41b-a5ba-4557-9002-102601c40bdc",
+      "historical_score": 759.8,
+      "historical_rank": 7675,
+      "predicted_rank": 7675,
+      "predicted_rank_range": [
+        6527,
+        8823
+      ],
+      "predicted_score": 593.0,
+      "predicted_score_range": [
+        590.3,
+        595.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市长安区第一中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "86658ac6-081b-4f4d-bcde-f8638e2d14a5",
+      "historical_score": 758.3,
+      "historical_rank": 8163,
+      "predicted_rank": 8163,
+      "predicted_rank_range": [
+        7015,
+        9311
+      ],
+      "predicted_score": 591.8,
+      "predicted_score_range": [
+        589.1,
+        594.6
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第八十三中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "051a245d-d1c0-4df2-a244-e2ff25113613",
+      "historical_score": 756.4,
+      "historical_rank": 8780,
+      "predicted_rank": 8780,
+      "predicted_rank_range": [
+        7632,
+        9928
+      ],
+      "predicted_score": 590.4,
+      "predicted_score_range": [
+        587.7,
+        593.1
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第八十五中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "7e34117a-d2e1-4a05-ab21-4c5fa06e3f06",
+      "historical_score": 755.8,
+      "historical_rank": 8975,
+      "predicted_rank": 8975,
+      "predicted_rank_range": [
+        7827,
+        10123
+      ],
+      "predicted_score": 589.9,
+      "predicted_score_range": [
+        587.2,
+        592.6
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安高新一中沣东中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "3d50cd6e-2571-4ed2-b87a-97adbbd54467",
+      "historical_score": 753,
+      "historical_rank": 9913,
+      "predicted_rank": 9913,
+      "predicted_rank_range": [
+        8765,
+        11061
+      ],
+      "predicted_score": 587.7,
+      "predicted_score_range": [
+        585.1,
+        590.4
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市曲江第一中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "dc1ce84f-d628-4eac-9e8a-272b0fde2325",
+      "historical_score": 750.5,
+      "historical_rank": 10760,
+      "predicted_rank": 10760,
+      "predicted_rank_range": [
+        9612,
+        11908
+      ],
+      "predicted_score": 585.8,
+      "predicted_score_range": [
+        583.2,
+        588.4
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第二十六中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "ca6995e1-e4cd-4a39-b353-7bfd0b08a9ca",
+      "historical_score": 748.8,
+      "historical_rank": 11343,
+      "predicted_rank": 11343,
+      "predicted_rank_range": [
+        10195,
+        12491
+      ],
+      "predicted_score": 584.4,
+      "predicted_score_range": [
+        581.8,
+        587.1
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第八十九中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "109986e1-0ae4-4177-823a-d3e7c0bc15c9",
+      "historical_score": 748.6,
+      "historical_rank": 11412,
+      "predicted_rank": 11412,
+      "predicted_rank_range": [
+        10264,
+        12560
+      ],
+      "predicted_score": 584.3,
+      "predicted_score_range": [
+        581.7,
+        586.9
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市经开第一中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "f2673477-fbcb-4477-ba7a-e17ce6d96999",
+      "historical_score": 746.8,
+      "historical_rank": 12033,
+      "predicted_rank": 12033,
+      "predicted_rank_range": [
+        10885,
+        13181
+      ],
+      "predicted_score": 582.9,
+      "predicted_score_range": [
+        580.3,
+        585.5
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西北大学附属中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "f06c1e98-2921-4193-8ec3-2f44cc53cb2a",
+      "historical_score": 739.8,
+      "historical_rank": 14442,
+      "predicted_rank": 14442,
+      "predicted_rank_range": [
+        13294,
+        15590
+      ],
+      "predicted_score": 577.4,
+      "predicted_score_range": [
+        574.6,
+        580.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西咸新区秦汉中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "69ed97db-7606-4852-a454-b512b0ba48ab",
+      "historical_score": 735.8,
+      "historical_rank": 15706,
+      "predicted_rank": 15706,
+      "predicted_rank_range": [
+        14558,
+        16854
+      ],
+      "predicted_score": 574.3,
+      "predicted_score_range": [
+        571.5,
+        577.1
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安高级中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "d8e88e4f-56c4-421e-b805-b70fa622799b",
+      "historical_score": 734.4,
+      "historical_rank": 16149,
+      "predicted_rank": 16149,
+      "predicted_rank_range": [
+        15001,
+        17297
+      ],
+      "predicted_score": 573.2,
+      "predicted_score_range": [
+        570.4,
+        576.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第六中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "7e02afe2-fd9d-4690-815c-6cbc421c1f6e",
+      "historical_score": 728.4,
+      "historical_rank": 18045,
+      "predicted_rank": 18045,
+      "predicted_rank_range": [
+        16897,
+        19193
+      ],
+      "predicted_score": 568.5,
+      "predicted_score_range": [
+        565.7,
+        571.3
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市西光中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "e4bc3569-6cb7-4d12-8f47-ff91a08898c5",
+      "historical_score": 728.3,
+      "historical_rank": 18076,
+      "predicted_rank": 18076,
+      "predicted_rank_range": [
+        16928,
+        19224
+      ],
+      "predicted_score": 568.4,
+      "predicted_score_range": [
+        565.6,
+        571.3
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安高新第三中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "bfde96db-16b6-4271-af22-0b623a2cdb7a",
+      "historical_score": 728,
+      "historical_rank": 18171,
+      "predicted_rank": 18171,
+      "predicted_rank_range": [
+        17023,
+        19319
+      ],
+      "predicted_score": 568.2,
+      "predicted_score_range": [
+        565.4,
+        571.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第七十五中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "3cc4a90e-52bb-4c2a-bc82-0a9e5e68b158",
+      "historical_score": 727,
+      "historical_rank": 18487,
+      "predicted_rank": 18487,
+      "predicted_rank_range": [
+        17339,
+        19635
+      ],
+      "predicted_score": 567.4,
+      "predicted_score_range": [
+        564.6,
+        570.3
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安电子科技大学附属中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "6bf9b5f4-000d-41a8-b0eb-d3deed349fd3",
+      "historical_score": 724,
+      "historical_rank": 19435,
+      "predicted_rank": 19435,
+      "predicted_rank_range": [
+        18287,
+        20583
+      ],
+      "predicted_score": 565.1,
+      "predicted_score_range": [
+        562.2,
+        567.9
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市东城第一中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "b11066f7-b83b-47f6-82cd-927a8a2ef037",
+      "historical_score": 722.4,
+      "historical_rank": 19941,
+      "predicted_rank": 19941,
+      "predicted_rank_range": [
+        18793,
+        21089
+      ],
+      "predicted_score": 563.8,
+      "predicted_score_range": [
+        561.0,
+        566.7
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安建筑科技大学附属中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "ceee8a1e-25ec-4351-b9d7-c8141fe6fc8b",
+      "historical_score": 720.5,
+      "historical_rank": 20541,
+      "predicted_rank": 20541,
+      "predicted_rank_range": [
+        19393,
+        21689
+      ],
+      "predicted_score": 562.3,
+      "predicted_score_range": [
+        559.5,
+        565.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市西航一中",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "4eb5e652-8fbf-4817-909b-7500bbbbd5ae",
+      "historical_score": 719,
+      "historical_rank": 21019,
+      "predicted_rank": 21019,
+      "predicted_rank_range": [
+        19871,
+        22167
+      ],
+      "predicted_score": 561.2,
+      "predicted_score_range": [
+        558.4,
+        564.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市远东第一中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "b549f43c-cb6a-46fd-8bd3-82e10082efd7",
+      "historical_score": 712.2,
+      "historical_rank": 23420,
+      "predicted_rank": 23420,
+      "predicted_rank_range": [
+        22272,
+        24568
+      ],
+      "predicted_score": 555.9,
+      "predicted_score_range": [
+        553.2,
+        558.1
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市庆安高级中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "0fbd5838-dff1-40a8-9c7e-9ccf4ad4fcd5",
+      "historical_score": 711.4,
+      "historical_rank": 23740,
+      "predicted_rank": 23740,
+      "predicted_rank_range": [
+        22592,
+        24888
+      ],
+      "predicted_score": 555.2,
+      "predicted_score_range": [
+        552.1,
+        557.5
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市远东第二中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "8dae4184-bf5c-4e21-8232-9d883a613a1a",
+      "historical_score": 710.6,
+      "historical_rank": 24060,
+      "predicted_rank": 24060,
+      "predicted_rank_range": [
+        22912,
+        25208
+      ],
+      "predicted_score": 554.6,
+      "predicted_score_range": [
+        551.0,
+        556.9
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市航天中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "60f54235-d40a-43e3-afb0-71d48f21af87",
+      "historical_score": 706.5,
+      "historical_rank": 25097,
+      "predicted_rank": 25097,
+      "predicted_rank_range": [
+        23949,
+        26245
+      ],
+      "predicted_score": 551.4,
+      "predicted_score_range": [
+        548.5,
+        554.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第六十六中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "b38e3316-8ab9-412d-895b-1243172f563c",
+      "historical_score": 700.3,
+      "historical_rank": 27151,
+      "predicted_rank": 27151,
+      "predicted_rank_range": [
+        26003,
+        28299
+      ],
+      "predicted_score": 546.6,
+      "predicted_score_range": [
+        543.2,
+        549.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第七十中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "1ffb88e6-6b22-41f8-8438-3f6075c36bd5",
+      "historical_score": 696.6,
+      "historical_rank": 28141,
+      "predicted_rank": 28141,
+      "predicted_rank_range": [
+        26993,
+        29289
+      ],
+      "predicted_score": 543.7,
+      "predicted_score_range": [
+        540.2,
+        546.9
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市育才中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "817db789-f913-482d-ab38-24335fc3c635",
+      "historical_score": 694.9,
+      "historical_rank": 28581,
+      "predicted_rank": 28581,
+      "predicted_rank_range": [
+        27433,
+        29729
+      ],
+      "predicted_score": 542.4,
+      "predicted_score_range": [
+        538.8,
+        545.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市车辆中学",
+      "batch": "第一批次",
+      "campus": null,
+      "historical_fact_id": "e5f9f5df-2331-4732-9b66-abeef59349e1",
+      "historical_score": 687.9,
+      "historical_rank": 30366,
+      "predicted_rank": 30366,
+      "predicted_rank_range": [
+        29218,
+        31514
+      ],
+      "predicted_score": 536.9,
+      "predicted_score_range": [
+        533.4,
+        540.4
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安铁一中国际合作学校",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "bdd52d2a-792d-4de8-9bc2-19668c7549e6",
+      "historical_score": 774.4,
+      "historical_rank": 3453,
+      "predicted_rank": 3453,
+      "predicted_rank_range": [
+        2305,
+        4601
+      ],
+      "predicted_score": 604.4,
+      "predicted_score_range": [
+        600.9,
+        608.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "铁一中陆港高级中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "d65bde34-70d9-4387-9334-ceb455ce0e3c",
+      "historical_score": 764.9,
+      "historical_rank": 6049,
+      "predicted_rank": 6049,
+      "predicted_rank_range": [
+        4901,
+        7197
+      ],
+      "predicted_score": 597.0,
+      "predicted_score_range": [
+        594.2,
+        600.1
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安崇是中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "e4b19ebf-1623-47e3-a811-a0db09e72344",
+      "historical_score": 764.5,
+      "historical_rank": 6176,
+      "predicted_rank": 6176,
+      "predicted_rank_range": [
+        5028,
+        7324
+      ],
+      "predicted_score": 596.7,
+      "predicted_score_range": [
+        593.9,
+        599.7
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西咸新区铁一中金湾中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "5f048203-555b-4133-96d9-9cc786503239",
+      "historical_score": 761.5,
+      "historical_rank": 7132,
+      "predicted_rank": 7132,
+      "predicted_rank_range": [
+        5984,
+        8280
+      ],
+      "predicted_score": 594.3,
+      "predicted_score_range": [
+        591.6,
+        597.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市创新港中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "3f26132a-647a-45f4-be5c-6dbf4f2f37cf",
+      "historical_score": 761.3,
+      "historical_rank": 7196,
+      "predicted_rank": 7196,
+      "predicted_rank_range": [
+        6048,
+        8344
+      ],
+      "predicted_score": 594.2,
+      "predicted_score_range": [
+        591.4,
+        597.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "高新一中陆港中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "2f46b05a-3b09-4e53-a9d4-4c77d7e8d98d",
+      "historical_score": 752.3,
+      "historical_rank": 10150,
+      "predicted_rank": 10150,
+      "predicted_rank_range": [
+        9002,
+        11298
+      ],
+      "predicted_score": 587.2,
+      "predicted_score_range": [
+        584.5,
+        589.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安交通大学附属中学航天高级中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "2d3fc851-1708-4ec2-8817-77518f4d1b29",
+      "historical_score": 748.5,
+      "historical_rank": 11446,
+      "predicted_rank": 11446,
+      "predicted_rank_range": [
+        10298,
+        12594
+      ],
+      "predicted_score": 584.2,
+      "predicted_score_range": [
+        581.6,
+        586.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西咸新区空港实验高级中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "c87dfe1d-3d28-428b-90f1-cc756f41827d",
+      "historical_score": 747.4,
+      "historical_rank": 11826,
+      "predicted_rank": 11826,
+      "predicted_rank_range": [
+        10678,
+        12974
+      ],
+      "predicted_score": 583.3,
+      "predicted_score_range": [
+        580.7,
+        585.9
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市高新第二高级中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "88da34c5-7e75-4c27-9964-3a59287c8d1b",
+      "historical_score": 745.5,
+      "historical_rank": 12482,
+      "predicted_rank": 12482,
+      "predicted_rank_range": [
+        11334,
+        13630
+      ],
+      "predicted_score": 581.8,
+      "predicted_score_range": [
+        579.3,
+        584.5
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市太乙路中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "3b24eed2-a41a-4239-a626-15c2166f43bf",
+      "historical_score": 745.3,
+      "historical_rank": 12551,
+      "predicted_rank": 12551,
+      "predicted_rank_range": [
+        11403,
+        13699
+      ],
+      "predicted_score": 581.7,
+      "predicted_score_range": [
+        579.1,
+        584.3
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安高新一中实验中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "d6fb5a79-e6f7-46d1-b45b-959b63104740",
+      "historical_score": 742.7,
+      "historical_rank": 13447,
+      "predicted_rank": 13447,
+      "predicted_rank_range": [
+        12299,
+        14595
+      ],
+      "predicted_score": 579.7,
+      "predicted_score_range": [
+        577.0,
+        582.3
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第八十九中学分校",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "081cc875-a9d7-4c37-8a55-e0c62f02beab",
+      "historical_score": 741.3,
+      "historical_rank": 13931,
+      "predicted_rank": 13931,
+      "predicted_rank_range": [
+        12783,
+        15079
+      ],
+      "predicted_score": 578.6,
+      "predicted_score_range": [
+        575.8,
+        581.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第八中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "ea563e43-eaaf-4f04-a57c-c03134b28e30",
+      "historical_score": 741.2,
+      "historical_rank": 13965,
+      "predicted_rank": 13965,
+      "predicted_rank_range": [
+        12817,
+        15113
+      ],
+      "predicted_score": 578.5,
+      "predicted_score_range": [
+        575.7,
+        581.1
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市航天城第一中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "fb34b74b-ff05-4508-979e-fca8c95ceeda",
+      "historical_score": 739.8,
+      "historical_rank": 14442,
+      "predicted_rank": 14442,
+      "predicted_rank_range": [
+        13294,
+        15590
+      ],
+      "predicted_score": 577.4,
+      "predicted_score_range": [
+        574.6,
+        580.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市航天城第二中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "85287137-a194-4b70-b94f-1c169254ade8",
+      "historical_score": 739.5,
+      "historical_rank": 14537,
+      "predicted_rank": 14537,
+      "predicted_rank_range": [
+        13389,
+        15685
+      ],
+      "predicted_score": 577.2,
+      "predicted_score_range": [
+        574.3,
+        579.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "陕西师范大学陆港高级中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "9a7c52cd-228c-4e3a-ab9a-0d57620ac4c3",
+      "historical_score": 734,
+      "historical_rank": 16275,
+      "predicted_rank": 16275,
+      "predicted_rank_range": [
+        15127,
+        17423
+      ],
+      "predicted_score": 572.9,
+      "predicted_score_range": [
+        570.0,
+        575.7
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安国际港务区实验中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "89f1d52a-11bf-4b0a-bf8a-f47a26cd6f29",
+      "historical_score": 730,
+      "historical_rank": 17539,
+      "predicted_rank": 17539,
+      "predicted_rank_range": [
+        16391,
+        18687
+      ],
+      "predicted_score": 569.8,
+      "predicted_score_range": [
+        566.9,
+        572.6
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安高新唐南中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "085c4a27-38ff-4699-8195-615fe017a4b4",
+      "historical_score": 729.8,
+      "historical_rank": 17602,
+      "predicted_rank": 17602,
+      "predicted_rank_range": [
+        16454,
+        18750
+      ],
+      "predicted_score": 569.6,
+      "predicted_score_range": [
+        566.8,
+        572.4
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第六中学分校",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "4dfb3141-bf03-4b5c-bdb6-e0410a6e3d84",
+      "historical_score": 729.5,
+      "historical_rank": 17697,
+      "predicted_rank": 17697,
+      "predicted_rank_range": [
+        16549,
+        18845
+      ],
+      "predicted_score": 569.4,
+      "predicted_score_range": [
+        566.5,
+        572.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市曲江第二中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "e4cc4082-f5e8-41ef-976f-fa0843da0367",
+      "historical_score": 729,
+      "historical_rank": 17855,
+      "predicted_rank": 17855,
+      "predicted_rank_range": [
+        16707,
+        19003
+      ],
+      "predicted_score": 569.0,
+      "predicted_score_range": [
+        566.1,
+        571.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第五十五中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "b541c041-d288-432b-9b55-cddb0ce7fbb4",
+      "historical_score": 724.8,
+      "historical_rank": 19182,
+      "predicted_rank": 19182,
+      "predicted_rank_range": [
+        18034,
+        20330
+      ],
+      "predicted_score": 565.7,
+      "predicted_score_range": [
+        562.9,
+        568.5
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市雁塔区第二中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "96256f1d-b1ca-4a2d-9593-f2c7f680d843",
+      "historical_score": 720,
+      "historical_rank": 20699,
+      "predicted_rank": 20699,
+      "predicted_rank_range": [
+        19551,
+        21847
+      ],
+      "predicted_score": 562.0,
+      "predicted_score_range": [
+        559.2,
+        564.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第二中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "2b261be4-694f-4d01-9693-e59ed1226749",
+      "historical_score": 719,
+      "historical_rank": 21019,
+      "predicted_rank": 21019,
+      "predicted_rank_range": [
+        19871,
+        22167
+      ],
+      "predicted_score": 561.2,
+      "predicted_score_range": [
+        558.4,
+        564.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市含光中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "79fab434-5af3-41d4-bd3d-a09d2935e081",
+      "historical_score": 718.5,
+      "historical_rank": 21179,
+      "predicted_rank": 21179,
+      "predicted_rank_range": [
+        20031,
+        22327
+      ],
+      "predicted_score": 560.8,
+      "predicted_score_range": [
+        558.0,
+        563.6
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第七十二中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "e5236a86-fd07-419a-af4f-a4060e7c5ddd",
+      "historical_score": 718.4,
+      "historical_rank": 21211,
+      "predicted_rank": 21211,
+      "predicted_rank_range": [
+        20063,
+        22359
+      ],
+      "predicted_score": 560.7,
+      "predicted_score_range": [
+        557.9,
+        563.5
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第八十二中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "88a994af-8cf7-453d-863a-bfe5ffb7fc6a",
+      "historical_score": 716.8,
+      "historical_rank": 21724,
+      "predicted_rank": 21724,
+      "predicted_rank_range": [
+        20576,
+        22872
+      ],
+      "predicted_score": 559.5,
+      "predicted_score_range": [
+        556.9,
+        562.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市西大附中浐灞中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "6d1ee716-0714-4b99-9759-ca7949d429e7",
+      "historical_score": 716,
+      "historical_rank": 21980,
+      "predicted_rank": 21980,
+      "predicted_rank_range": [
+        20832,
+        23128
+      ],
+      "predicted_score": 558.8,
+      "predicted_score_range": [
+        556.4,
+        561.6
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "高新区第四完全中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "4900475e-6f6d-44d1-802a-7506c8c58ffe",
+      "historical_score": 716,
+      "historical_rank": 21980,
+      "predicted_rank": 21980,
+      "predicted_rank_range": [
+        20832,
+        23128
+      ],
+      "predicted_score": 558.8,
+      "predicted_score_range": [
+        556.4,
+        561.6
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市阳光中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "a830788f-352a-4e42-9b12-b4cde1b671f0",
+      "historical_score": 711,
+      "historical_rank": 23900,
+      "predicted_rank": 23900,
+      "predicted_rank_range": [
+        22752,
+        25048
+      ],
+      "predicted_score": 554.9,
+      "predicted_score_range": [
+        551.6,
+        557.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市经开第三中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "6d105e7c-05bd-4f72-85bd-1562e52c8c3a",
+      "historical_score": 710.1,
+      "historical_rank": 24260,
+      "predicted_rank": 24260,
+      "predicted_rank_range": [
+        23112,
+        25408
+      ],
+      "predicted_score": 554.2,
+      "predicted_score_range": [
+        550.3,
+        556.5
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市五环中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "23d496cd-040c-4820-bc08-a54cd03b70a3",
+      "historical_score": 708,
+      "historical_rank": 24756,
+      "predicted_rank": 24756,
+      "predicted_rank_range": [
+        23608,
+        25904
+      ],
+      "predicted_score": 552.6,
+      "predicted_score_range": [
+        549.2,
+        555.5
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市黄河中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "95a108af-4194-48e6-b8c2-8bcc4cb6a997",
+      "historical_score": 703.2,
+      "historical_rank": 26095,
+      "predicted_rank": 26095,
+      "predicted_rank_range": [
+        24947,
+        27243
+      ],
+      "predicted_score": 548.8,
+      "predicted_score_range": [
+        546.4,
+        551.9
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第四十八中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "6dec6737-f40d-4f9a-8a1f-f97332ccd5c5",
+      "historical_score": 701,
+      "historical_rank": 26896,
+      "predicted_rank": 26896,
+      "predicted_rank_range": [
+        25748,
+        28044
+      ],
+      "predicted_score": 547.1,
+      "predicted_score_range": [
+        544.0,
+        549.6
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市中铁中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "1f614eb1-d33e-486b-8502-549466ba10a1",
+      "historical_score": 697,
+      "historical_rank": 28037,
+      "predicted_rank": 28037,
+      "predicted_rank_range": [
+        26889,
+        29185
+      ],
+      "predicted_score": 544.0,
+      "predicted_score_range": [
+        540.5,
+        547.1
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安雁南中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "b100b84a-0f3f-4dff-b399-f9abc253cf2f",
+      "historical_score": 696.1,
+      "historical_rank": 28270,
+      "predicted_rank": 28270,
+      "predicted_rank_range": [
+        27122,
+        29418
+      ],
+      "predicted_score": 543.3,
+      "predicted_score_range": [
+        539.8,
+        546.6
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市浐灞第二中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "36d49730-8c41-4e9e-a0d8-e86e5e183880",
+      "historical_score": 696,
+      "historical_rank": 28296,
+      "predicted_rank": 28296,
+      "predicted_rank_range": [
+        27148,
+        29444
+      ],
+      "predicted_score": 543.2,
+      "predicted_score_range": [
+        539.7,
+        546.6
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西咸新区泾河新城第一中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "38f6ecc3-95e9-416e-9978-d7e7bbfa08cb",
+      "historical_score": 690.3,
+      "historical_rank": 29754,
+      "predicted_rank": 29754,
+      "predicted_rank_range": [
+        28606,
+        30902
+      ],
+      "predicted_score": 538.8,
+      "predicted_score_range": [
+        535.2,
+        542.3
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第八十六中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "73a331be-13ab-413d-913c-0bfc92361599",
+      "historical_score": 688,
+      "historical_rank": 30340,
+      "predicted_rank": 30340,
+      "predicted_rank_range": [
+        29192,
+        31488
+      ],
+      "predicted_score": 537.0,
+      "predicted_score_range": [
+        533.5,
+        540.5
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市莲湖第一中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "33320021-8b12-449e-8cd3-5849843803d4",
+      "historical_score": 687,
+      "historical_rank": 30595,
+      "predicted_rank": 30595,
+      "predicted_rank_range": [
+        29447,
+        31743
+      ],
+      "predicted_score": 536.2,
+      "predicted_score_range": [
+        532.7,
+        539.7
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市西电中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "338c0362-c77b-4a36-b34a-25d6370440af",
+      "historical_score": 685.1,
+      "historical_rank": 31079,
+      "predicted_rank": 31079,
+      "predicted_rank_range": [
+        29931,
+        32227
+      ],
+      "predicted_score": 534.7,
+      "predicted_score_range": [
+        531.2,
+        538.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市华山中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "30d138fe-8076-4882-8738-7ef2d7e0c8bc",
+      "historical_score": 684,
+      "historical_rank": 31360,
+      "predicted_rank": 31360,
+      "predicted_rank_range": [
+        30212,
+        32508
+      ],
+      "predicted_score": 533.9,
+      "predicted_score_range": [
+        530.3,
+        537.4
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市庆华中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "f1123aa7-6bb5-4e1e-96c7-a4bda3c36799",
+      "historical_score": 683.6,
+      "historical_rank": 31462,
+      "predicted_rank": 31462,
+      "predicted_rank_range": [
+        30314,
+        32610
+      ],
+      "predicted_score": 533.5,
+      "predicted_score_range": [
+        530.0,
+        537.1
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第七十一中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "17e2cf98-4233-41f7-8509-54fd44e10b93",
+      "historical_score": 683.5,
+      "historical_rank": 31488,
+      "predicted_rank": 31488,
+      "predicted_rank_range": [
+        30340,
+        32636
+      ],
+      "predicted_score": 533.5,
+      "predicted_score_range": [
+        530.0,
+        537.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第十一中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "0845fc0f-850f-4608-b92b-179fcc7d2b73",
+      "historical_score": 680.7,
+      "historical_rank": 32201,
+      "predicted_rank": 32201,
+      "predicted_rank_range": [
+        31053,
+        33349
+      ],
+      "predicted_score": 531.3,
+      "predicted_score_range": [
+        527.8,
+        534.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安东仪中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "4c701008-9e63-473a-9457-7cf8ac23ab66",
+      "historical_score": 679.9,
+      "historical_rank": 32406,
+      "predicted_rank": 32406,
+      "predicted_rank_range": [
+        31258,
+        33554
+      ],
+      "predicted_score": 530.7,
+      "predicted_score_range": [
+        527.1,
+        534.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第三十四中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "fe91fef1-5485-4c4e-bec8-dbab947676f3",
+      "historical_score": 676.8,
+      "historical_rank": 33196,
+      "predicted_rank": 33196,
+      "predicted_rank_range": [
+        32048,
+        34344
+      ],
+      "predicted_score": 528.2,
+      "predicted_score_range": [
+        524.7,
+        531.7
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安工业大学附中",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "4c1aa696-f056-4cc7-8034-edbb764beec0",
+      "historical_score": 676.5,
+      "historical_rank": 33272,
+      "predicted_rank": 33272,
+      "predicted_rank_range": [
+        32124,
+        34420
+      ],
+      "predicted_score": 528.0,
+      "predicted_score_range": [
+        524.5,
+        531.5
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安太白学校",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "3b172885-6a10-41f1-ba68-5b8818a889fb",
+      "historical_score": 676.3,
+      "historical_rank": 33324,
+      "predicted_rank": 33324,
+      "predicted_rank_range": [
+        32176,
+        34472
+      ],
+      "predicted_score": 527.8,
+      "predicted_score_range": [
+        524.3,
+        531.4
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第三十中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "753f0244-498b-4102-9b2f-b59ee47a4d06",
+      "historical_score": 675.4,
+      "historical_rank": 33553,
+      "predicted_rank": 33553,
+      "predicted_rank_range": [
+        32405,
+        34701
+      ],
+      "predicted_score": 527.1,
+      "predicted_score_range": [
+        523.6,
+        530.7
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安锦园中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "7ee4811c-411d-4fcb-8e1c-c6fe766d1b27",
+      "historical_score": 671,
+      "historical_rank": 34675,
+      "predicted_rank": 34675,
+      "predicted_rank_range": [
+        33527,
+        35823
+      ],
+      "predicted_score": 523.7,
+      "predicted_score_range": [
+        520.2,
+        527.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安藤信高级中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "402b8a20-2b54-4de7-afc5-0c69c3ca6cd9",
+      "historical_score": 670,
+      "historical_rank": 34930,
+      "predicted_rank": 34930,
+      "predicted_rank_range": [
+        33782,
+        36078
+      ],
+      "predicted_score": 522.9,
+      "predicted_score_range": [
+        519.4,
+        526.4
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第五十八中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "125c810f-7529-4d84-baac-1fb5af35f210",
+      "historical_score": 667.3,
+      "historical_rank": 35619,
+      "predicted_rank": 35619,
+      "predicted_rank_range": [
+        34471,
+        36767
+      ],
+      "predicted_score": 520.8,
+      "predicted_score_range": [
+        517.3,
+        524.3
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第四十五中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "023280e6-b14c-45db-b175-895b670014e2",
+      "historical_score": 667,
+      "historical_rank": 35695,
+      "predicted_rank": 35695,
+      "predicted_rank_range": [
+        34547,
+        36843
+      ],
+      "predicted_score": 520.6,
+      "predicted_score_range": [
+        517.1,
+        524.1
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市大明宫中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "d96e668c-c6ad-421f-aedc-1f2a23d6cb40",
+      "historical_score": 666.8,
+      "historical_rank": 35746,
+      "predicted_rank": 35746,
+      "predicted_rank_range": [
+        34598,
+        36894
+      ],
+      "predicted_score": 520.4,
+      "predicted_score_range": [
+        516.9,
+        523.9
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市昆仑中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "bd22c8fb-4621-470d-af4e-0cbd2f8c819a",
+      "historical_score": 664.6,
+      "historical_rank": 36307,
+      "predicted_rank": 36307,
+      "predicted_rank_range": [
+        35159,
+        37455
+      ],
+      "predicted_score": 518.7,
+      "predicted_score_range": [
+        515.2,
+        522.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第四十四中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "66cf2aff-f924-4096-9f8b-641eb1cf542d",
+      "historical_score": 662,
+      "historical_rank": 36970,
+      "predicted_rank": 36970,
+      "predicted_rank_range": [
+        35822,
+        38118
+      ],
+      "predicted_score": 516.7,
+      "predicted_score_range": [
+        513.2,
+        520.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市汉都新苑中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "8c511568-29b9-4357-b38c-c4e34c09cf67",
+      "historical_score": 661.5,
+      "historical_rank": 37098,
+      "predicted_rank": 37098,
+      "predicted_rank_range": [
+        35950,
+        38246
+      ],
+      "predicted_score": 516.3,
+      "predicted_score_range": [
+        512.8,
+        519.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第三十八中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "f7e590af-a042-4a51-bbbf-5d170f04fe6c",
+      "historical_score": 660.5,
+      "historical_rank": 37352,
+      "predicted_rank": 37352,
+      "predicted_rank_range": [
+        36204,
+        38500
+      ],
+      "predicted_score": 515.5,
+      "predicted_score_range": [
+        512.0,
+        519.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第四十六中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "49638082-37f2-498d-a6db-a1b1ae9ac200",
+      "historical_score": 659.3,
+      "historical_rank": 37659,
+      "predicted_rank": 37659,
+      "predicted_rank_range": [
+        36511,
+        38807
+      ],
+      "predicted_score": 514.6,
+      "predicted_score_range": [
+        511.1,
+        518.1
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "长庆二中",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "934cd72b-4938-4c7e-a916-e3931c3b07bb",
+      "historical_score": 655.7,
+      "historical_rank": 38576,
+      "predicted_rank": 38576,
+      "predicted_rank_range": [
+        37428,
+        39724
+      ],
+      "predicted_score": 511.8,
+      "predicted_score_range": [
+        508.3,
+        515.3
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市东方中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "d1796324-fbe8-41d6-b37f-a16fdaf5231f",
+      "historical_score": 655.1,
+      "historical_rank": 38729,
+      "predicted_rank": 38729,
+      "predicted_rank_range": [
+        37581,
+        39877
+      ],
+      "predicted_score": 511.3,
+      "predicted_score_range": [
+        507.8,
+        514.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市宇航中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "a10060d9-ba75-467a-a653-bd4dda1ad5d4",
+      "historical_score": 654.6,
+      "historical_rank": 38857,
+      "predicted_rank": 38857,
+      "predicted_rank_range": [
+        37709,
+        40005
+      ],
+      "predicted_score": 510.9,
+      "predicted_score_range": [
+        507.4,
+        514.4
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第五十三中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "348515aa-a9c2-4c10-b5fb-d1c7106ed729",
+      "historical_score": 652.7,
+      "historical_rank": 39341,
+      "predicted_rank": 39341,
+      "predicted_rank_range": [
+        38193,
+        40489
+      ],
+      "predicted_score": 509.4,
+      "predicted_score_range": [
+        505.9,
+        512.9
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第四十三中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "c8625c03-6671-429a-ac8e-14e4b5fe434b",
+      "historical_score": 652,
+      "historical_rank": 39520,
+      "predicted_rank": 39520,
+      "predicted_rank_range": [
+        38372,
+        40668
+      ],
+      "predicted_score": 508.9,
+      "predicted_score_range": [
+        505.4,
+        512.4
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第四十二中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "118bd7b9-6d31-4147-87d5-88eb9d2bcdd0",
+      "historical_score": 651.3,
+      "historical_rank": 39699,
+      "predicted_rank": 39699,
+      "predicted_rank_range": [
+        38551,
+        40847
+      ],
+      "predicted_score": 508.3,
+      "predicted_score_range": [
+        504.8,
+        511.8
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安电子科技中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "80b28a63-1056-435c-abee-f66327dab9fd",
+      "historical_score": 649.1,
+      "historical_rank": 40259,
+      "predicted_rank": 40259,
+      "predicted_rank_range": [
+        39111,
+        41407
+      ],
+      "predicted_score": 506.6,
+      "predicted_score_range": [
+        503.1,
+        510.1
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安西港花园高级中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "965d69b8-9878-4576-8f4a-16b5d6fc73b5",
+      "historical_score": 648.2,
+      "historical_rank": 40489,
+      "predicted_rank": 40489,
+      "predicted_rank_range": [
+        39341,
+        41637
+      ],
+      "predicted_score": 505.9,
+      "predicted_score_range": [
+        502.4,
+        509.4
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安外国语学校",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "6c1eae0f-af86-47b2-a13c-bc1bf042f2f7",
+      "historical_score": 647.1,
+      "historical_rank": 40769,
+      "predicted_rank": 40769,
+      "predicted_rank_range": [
+        39621,
+        41917
+      ],
+      "predicted_score": 505.1,
+      "predicted_score_range": [
+        501.5,
+        508.6
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第十九中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "402e5d74-97ee-40e9-b544-db48bbea9f9e",
+      "historical_score": 644.1,
+      "historical_rank": 41534,
+      "predicted_rank": 41534,
+      "predicted_rank_range": [
+        40386,
+        42682
+      ],
+      "predicted_score": 502.7,
+      "predicted_score_range": [
+        499.2,
+        506.2
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第六十二中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "601b03c5-292f-4b3b-9964-82183ce8b79c",
+      "historical_score": 641.9,
+      "historical_rank": 42096,
+      "predicted_rank": 42096,
+      "predicted_rank_range": [
+        40948,
+        43244
+      ],
+      "predicted_score": 501.0,
+      "predicted_score_range": [
+        497.5,
+        504.5
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安市第二十五中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "1d22ca2a-ec13-4783-a590-daa1614b2bb8",
+      "historical_score": 639.3,
+      "historical_rank": 42759,
+      "predicted_rank": 42759,
+      "predicted_rank_range": [
+        41611,
+        43907
+      ],
+      "predicted_score": 499.0,
+      "predicted_score_range": [
+        495.4,
+        502.5
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安博迪学校",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "2654f02a-694e-48b8-8504-b4071cd921fe",
+      "historical_score": 631,
+      "historical_rank": 44867,
+      "predicted_rank": 44867,
+      "predicted_rank_range": [
+        43719,
+        46015
+      ],
+      "predicted_score": 492.5,
+      "predicted_score_range": [
+        488.9,
+        496.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安博爱学校",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "62b7c18f-8d5d-4946-97b9-69ddf3183ccc",
+      "historical_score": 628.2,
+      "historical_rank": 45570,
+      "predicted_rank": 45570,
+      "predicted_rank_range": [
+        44422,
+        46718
+      ],
+      "predicted_score": 490.3,
+      "predicted_score_range": [
+        486.7,
+        493.9
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西咸泾河泾华学校",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "992c168d-6542-4d6b-b711-93a586cf8228",
+      "historical_score": 627,
+      "historical_rank": 45870,
+      "predicted_rank": 45870,
+      "predicted_rank_range": [
+        44722,
+        47018
+      ],
+      "predicted_score": 489.4,
+      "predicted_score_range": [
+        485.8,
+        492.9
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安思源中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "c66ca0a3-7a3a-4e36-b8ff-8e21defc64fe",
+      "historical_score": 623.2,
+      "historical_rank": 46820,
+      "predicted_rank": 46820,
+      "predicted_rank_range": [
+        45672,
+        47968
+      ],
+      "predicted_score": 486.4,
+      "predicted_score_range": [
+        482.8,
+        490.0
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    },
+    {
+      "school": "西安高新区第五高级中学",
+      "batch": "第二批次",
+      "campus": null,
+      "historical_fact_id": "189e7e2e-f6db-4324-863e-4489d1ec6ea7",
+      "historical_score": 617.2,
+      "historical_rank": 48320,
+      "predicted_rank": 48320,
+      "predicted_rank_range": [
+        47172,
+        49468
+      ],
+      "predicted_score": 481.7,
+      "predicted_score_range": [
+        478.2,
+        485.3
+      ],
+      "actual_score": null,
+      "actual_rank": null,
+      "validation_status": "pending_verified_actual",
+      "status": "diagnostic_input_quality_failed",
+      "source": "2025 年学校历史录取参考线（旧系统迁移）"
+    }
+  ],
+  "snapshot_sha256": "9049c5c3587ba1174bd2f5f9f0ec6d61411d5f5ab268695811617b272ede09fc"
+}

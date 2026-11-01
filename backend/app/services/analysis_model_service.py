@@ -56,6 +56,7 @@ DEFAULT_SCHOOL_BOUNDARY_PARAMETERS = {
     "engine_contract": "school-boundary-position-range-v1",
     "year_decay": 0.75,
     "plan_elasticity": 0.7,
+    "max_plan_adjustment_ratio": 0.3,
     "minimum_boundary_width_pp": 0.8,
     "preferred_observation_count": 3,
     "sparse_data_extra_width_pp": 1.5,
@@ -169,6 +170,20 @@ class AnalysisModelService:
         if not model:
             raise HTTPException(status_code=404, detail="未找到分析模型")
         merged_parameters = {**model.parameters, **payload.parameters}
+        if model.analysis_type == 'school_boundary':
+            from math import isfinite
+            bounds = {
+                'year_decay': (0.1, 1), 'plan_elasticity': (0, 2),
+                'max_plan_adjustment_ratio': (0, 1), 'minimum_boundary_width_pp': (0.01, 30),
+                'preferred_observation_count': (1, 10), 'sparse_data_extra_width_pp': (0, 30),
+                'anomaly_weight': (0.01, 1), 'anomaly_extra_width_pp': (0, 30),
+            }
+            for key, (low, high) in bounds.items():
+                value = merged_parameters.get(key, DEFAULT_SCHOOL_BOUNDARY_PARAMETERS[key])
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value) or not low <= value <= high:
+                    raise HTTPException(status_code=422, detail=f'{key} 必须在 {low} 至 {high} 之间')
+                if key == 'preferred_observation_count' and int(value) != value:
+                    raise HTTPException(status_code=422, detail='历史年度数必须是整数')
         if merged_parameters == model.parameters and payload.status == model.status:
             return AnalysisModelRead.model_validate(model)
         version = await self._next_revision(model.version)

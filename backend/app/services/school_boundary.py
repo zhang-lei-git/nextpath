@@ -41,9 +41,9 @@ class SchoolBoundaryModel:
         decay = min(1.0, max(0.1, float(self.parameters.get("year_decay", 0.75))))
         weighted: list[tuple[float, float]] = []
         anomaly_count = 0
-        for index, item in enumerate(usable):
+        for item in usable:
             percentile = item.rank / item.candidate_count * 100
-            weight = decay ** index
+            weight = decay ** (usable[0].reference_year - item.reference_year)
             if item.anomaly:
                 weight *= float(self.parameters.get("anomaly_weight", 0.35))
                 anomaly_count += 1
@@ -53,7 +53,10 @@ class SchoolBoundaryModel:
         plan_change = None
         if latest.plan and latest.previous_year_plan:
             plan_change = (latest.plan - latest.previous_year_plan) / latest.previous_year_plan
-            center *= 1 + plan_change * float(self.parameters.get("plan_elasticity", 0.7))
+            adjustment = plan_change * float(self.parameters.get("plan_elasticity", 0.7))
+            limit = float(self.parameters.get("max_plan_adjustment_ratio", 0.3))
+            center *= 1 + max(-limit, min(limit, adjustment))
+        center = min(99.99, max(0.01, center))
         deviation = sum(abs(value - center) * weight for value, weight in weighted) / sum(weight for _, weight in weighted)
         half_width = max(float(self.parameters.get("minimum_boundary_width_pp", 0.8)), deviation)
         if len(usable) < int(self.parameters.get("preferred_observation_count", 3)):
